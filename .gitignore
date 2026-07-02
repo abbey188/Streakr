@@ -31,3 +31,8 @@ next-env.d.ts
 
 # vercel
 .vercel
+
+.vercel
+
+# vercel CLI upload archives
+asw-*
