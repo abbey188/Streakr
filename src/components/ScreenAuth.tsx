@@ -28,6 +28,9 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
   const [code, setCode] = useState("");
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [authError, setAuthError] = useState("");
+  // Local override: lets the user go back to the email field even while Privy's
+  // OTP state is still "awaiting-code" (re-sending to a new email restarts it).
+  const [editingEmail, setEditingEmail] = useState(false);
 
   // Real auth completion (Privy) flips isAuthenticated; App.tsx reacts and
   // routes onward — this screen only kicks off the chosen method.
@@ -48,9 +51,10 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
     e.preventDefault();
     setAuthError("");
     try {
-      if (!awaitingCode) {
+      if (!awaitingCode || editingEmail) {
         if (!email.trim()) return;
         await sendEmailCode(email.trim());
+        setEditingEmail(false);
       } else {
         if (!code.trim()) return;
         await verifyEmailCode(code.trim());
@@ -204,7 +208,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
                   onSubmit={handleSubmitEmail}
                   className="bg-[#0A0E1A] border border-white/10 rounded-2xl p-4 space-y-3 shadow-inner w-full"
                 >
-                  {!awaitingCode ? (
+                  {(!awaitingCode || editingEmail) ? (
                     /* Step 1 — email entry */
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[9px] font-mono uppercase tracking-wider text-[#8E9299] font-bold">
@@ -241,7 +245,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
                       </div>
                       <button
                         type="button"
-                        onClick={() => { setCode(""); setAuthError(""); setShowEmailInput(true); }}
+                        onClick={() => { setEditingEmail(true); setCode(""); setAuthError(""); }}
                         className="text-[9px] font-mono text-[#8E9299] hover:text-slate-300 transition self-start mt-0.5"
                       >
                         ← Use a different email
@@ -264,7 +268,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
                       ? "Sending code..."
                       : isVerifying
                       ? "Verifying..."
-                      : awaitingCode
+                      : (awaitingCode && !editingEmail)
                       ? "Verify & Connect"
                       : "Send Login Code"}
                     <ArrowRight className="w-4 h-4" />

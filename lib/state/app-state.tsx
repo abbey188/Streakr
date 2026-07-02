@@ -3,12 +3,13 @@
 import {
   createContext, useContext, useState, useEffect, useCallback, ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import type { AvatarConfig, Fixture, GroupMember, ActivityItem } from "@/src/types";
 import { INITIAL_LEADERBOARD, INITIAL_ACTIVITY } from "@/src/data/fixtures";
 import { useIdentity } from "@/lib/identity/context";
 import {
   fetchMe, createUser, updateAvatar as apiUpdateAvatar, makePick as apiMakePick,
-  fetchFixtures,
+  fetchFixtures, joinGroup,
 } from "@/lib/api/client";
 
 /**
@@ -79,6 +80,7 @@ export function useAppState(): AppState {
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const identity = useIdentity();
+  const router = useRouter();
 
   const [profileStatus, setProfileStatus] = useState<ProfileStatus>("loading");
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -102,7 +104,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [activeShareSheet, setActiveShareSheet] = useState<"streak" | "invite" | null>(null);
   const [shareGroupInfo, setShareGroupInfo] = useState<ShareGroupInfo | null>(null);
   const [showTour, setShowTour] = useState(false);
-  const dismissTour = useCallback(() => setShowTour(false), []);
+  // Set when a new user joins via an invite link — on tour dismissal we route
+  // them to Groups so they land in the squad they were invited to.
+  const [landOnGroupsAfterTour, setLandOnGroupsAfterTour] = useState(false);
+  const dismissTour = useCallback(() => {
+    setShowTour(false);
+    if (landOnGroupsAfterTour) {
+      setLandOnGroupsAfterTour(false);
+      router.push("/groups");
+    }
+  }, [landOnGroupsAfterTour, router]);
 
   const triggerToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -163,6 +174,28 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const t = setInterval(load, 30_000);
     return () => { cancelled = true; clearInterval(t); };
   }, [identity.walletAddress]);
+
+  // Consume a pending group invite (from a /join?code link) once the user is
+  // signed in + onboarded — works for existing members and brand-new signups.
+  useEffect(() => {
+    if (profileStatus !== "ready" || !identity.walletAddress) return;
+    let code: string | null = null;
+    try { code = localStorage.getItem("streakr_invite"); } catch { /* no storage */ }
+    if (!code) return;
+    try { localStorage.removeItem("streakr_invite"); } catch { /* ignore */ }
+    joinGroup(identity.walletAddress, code)
+      .then((g) => {
+        if (!g) { triggerToast("That invite code didn't match a group."); return; }
+        triggerToast(`Joined ${g.name}! 🛡️`);
+        // If this is a first-run user (the tour is queued), send them to Groups
+        // once they finish it. Existing users are already on the Groups page.
+        setShowTour((tourQueued) => {
+          if (tourQueued) setLandOnGroupsAfterTour(true);
+          return tourQueued;
+        });
+      })
+      .catch(() => { /* ignore */ });
+  }, [profileStatus, identity.walletAddress, triggerToast]);
 
   // ─── Actions ──────────────────────────────────────────────────────────────
 
