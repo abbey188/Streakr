@@ -52,14 +52,28 @@ The production build is verified green (`npm run build` succeeds; 31 routes incl
 **stopped** — sharing the `.next` dir with `next dev` causes a spurious
 "Cannot find module for page" error.
 
-## 3. Crons (configured in vercel.json)
+## 3. Keeping data fresh — the sync trigger
 
-- `/api/cron/sync-live` runs every 2 min → pulls live/recent matches, fires
-  goal + kickoff notifications, resolves picks, keeps Neon warm.
-- **Plan note:** minute-level crons require Vercel **Pro**. On Hobby, crons run
-  at most daily — for near-real-time on Hobby, point an external scheduler
-  (e.g. cron-job.org) at `https://<domain>/api/cron/sync-live` every 1–2 min
-  with header `Authorization: Bearer <CRON_SECRET>`.
+`/api/cron/sync-live` pulls live/recent matches, fires goal + kickoff
+notifications, resolves picks, and keeps Neon warm. Note: the match you're
+*watching* already polls TxLINE directly every 10s, so this trigger drives
+results / notifications / leaderboards — a 2–5 min cadence is plenty.
+
+**On Vercel Hobby**, Vercel's own cron only runs once/day (that's the
+`0 5 * * *` daily fallback in `vercel.json`). Drive the frequent sync from a free
+external scheduler instead — pick ONE:
+
+- **GitHub Actions (already wired):** `.github/workflows/sync-live.yml` runs every
+  ~5 min. Just add two repo secrets (Settings → Secrets and variables → Actions):
+  `APP_URL` = `https://<your-app>.vercel.app` and `CRON_SECRET` = your Vercel
+  value. Enable Actions and it runs itself. (Manual run available via the Actions
+  tab → "sync-live" → Run workflow.)
+- **cron-job.org (tightest, 1 min):** create a job hitting
+  `https://<domain>/api/cron/sync-live` (POST) every 1–2 min with header
+  `Authorization: Bearer <CRON_SECRET>`.
+
+If you upgrade to **Pro**, just change the `vercel.json` schedule to `*/2 * * * *`
+and delete the external trigger.
 
 ## 4. Full backfill (occasional, not a cron)
 
