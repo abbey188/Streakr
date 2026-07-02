@@ -60,20 +60,17 @@ notifications, resolves picks, and keeps Neon warm. Note: the match you're
 results / notifications / leaderboards — a 2–5 min cadence is plenty.
 
 **On Vercel Hobby**, Vercel's own cron only runs once/day (that's the
-`0 5 * * *` daily fallback in `vercel.json`). Drive the frequent sync from a free
-external scheduler instead — pick ONE:
+`0 5 * * *` daily fallback in `vercel.json`). Drive the frequent sync from
+**cron-job.org**:
 
-- **GitHub Actions (already wired):** `.github/workflows/sync-live.yml` runs every
-  ~5 min. Just add two repo secrets (Settings → Secrets and variables → Actions):
-  `APP_URL` = `https://<your-app>.vercel.app` and `CRON_SECRET` = your Vercel
-  value. Enable Actions and it runs itself. (Manual run available via the Actions
-  tab → "sync-live" → Run workflow.)
-- **cron-job.org (tightest, 1 min):** create a job hitting
-  `https://<domain>/api/cron/sync-live` (POST) every 1–2 min with header
-  `Authorization: Bearer <CRON_SECRET>`.
+- URL: `https://<your-app>.vercel.app/api/cron/sync-live`
+- Method: **POST**
+- Schedule: every **1–2 min**
+- Header: `Authorization: Bearer <CRON_SECRET>`  (same value as the Vercel env)
+- Request timeout: bump to ~90s (the sync can take a few seconds)
 
 If you upgrade to **Pro**, just change the `vercel.json` schedule to `*/2 * * * *`
-and delete the external trigger.
+and delete the cron-job.org job.
 
 ## 4. Full backfill (occasional, not a cron)
 
