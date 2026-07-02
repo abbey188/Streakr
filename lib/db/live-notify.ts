@@ -1,6 +1,5 @@
 import { sql } from "./client";
 import type { Fixture } from "@/src/types";
-import { prefAllows } from "./notify-prefs";
 
 /**
  * Generates live match notifications by diffing freshly-synced fixtures against
@@ -36,6 +35,10 @@ export async function notifyLiveEvents(enriched: Fixture[]): Promise<void> {
   `) as OldFixtureRow[];
   const oldById = new Map(oldRows.map((r) => [r.id, r]));
 
+  // Each block below is a single set-based INSERT…SELECT — the prefs check +
+  // dedupe live in SQL, so the query count is constant no matter how many users
+  // there are (no per-user round-trips). Muted = notification_prefs->>key is
+  // 'false'; anything else (absent/'true') means the type is on.
   for (const f of enriched) {
     const old = oldById.get(f.id);
 
@@ -47,23 +50,16 @@ export async function notifyLiveEvents(enriched: Fixture[]): Promise<void> {
       if (na > oa) scored.push(f.teamA.name);
       if (nb > ob) scored.push(f.teamB.name);
 
-      if (scored.length) {
-        const pickers = (await sql`
-          select p.user_address, u.notification_prefs
-          from picks p join users u on u.wallet_address = p.user_address
+      for (const team of scored) {
+        await sql`
+          insert into notifications (user_address, type, title, body, icon, fixture_id)
+          select p.user_address, 'goal', ${`Goal — ${team}`},
+                 ${`${team} scored! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`}, '⚽', ${f.id}
+          from picks p
+          join users u on u.wallet_address = p.user_address
           where p.fixture_id = ${f.id}
-        `) as { user_address: string; notification_prefs: Record<string, boolean> | null }[];
-
-        for (const team of scored) {
-          for (const pk of pickers) {
-            if (!prefAllows(pk.notification_prefs, "goal")) continue;
-            await sql`
-              insert into notifications (user_address, type, title, body, icon, fixture_id)
-              values (${pk.user_address}, 'goal', ${`Goal — ${team}`},
-                      ${`${team} scored! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`}, '⚽', ${f.id})
-            `;
-          }
-        }
+            and coalesce(u.notification_prefs->>'goal', '') <> 'false'
+        `;
       }
     }
 
@@ -74,26 +70,20 @@ export async function notifyLiveEvents(enriched: Fixture[]): Promise<void> {
       kickoffMs - Date.now() > 0 &&
       kickoffMs - Date.now() <= KICKOFF_SOON_MS;
     if (f.status === "upcoming" && f.round !== "Group Stage" && imminent) {
-      const toRemind = (await sql`
-        select u.wallet_address, u.notification_prefs
+      await sql`
+        insert into notifications (user_address, type, title, body, icon, fixture_id)
+        select u.wallet_address, 'match_start', 'Kickoff soon ⏰',
+               ${`${f.teamA.name} vs ${f.teamB.name} is about to start — lock in your pick!`}, '⏰', ${f.id}
         from users u
-        where not exists (
-          select 1 from picks p where p.user_address = u.wallet_address and p.fixture_id = ${f.id}
-        )
-        and not exists (
-          select 1 from notifications n
-          where n.user_address = u.wallet_address and n.fixture_id = ${f.id} and n.type = 'match_start'
-        )
-      `) as { wallet_address: string; notification_prefs: Record<string, boolean> | null }[];
-
-      for (const u of toRemind) {
-        if (!prefAllows(u.notification_prefs, "match_start")) continue;
-        await sql`
-          insert into notifications (user_address, type, title, body, icon, fixture_id)
-          values (${u.wallet_address}, 'match_start', 'Kickoff soon ⏰',
-                  ${`${f.teamA.name} vs ${f.teamB.name} is about to start — lock in your pick!`}, '⏰', ${f.id})
-        `;
-      }
+        where coalesce(u.notification_prefs->>'match_start', '') <> 'false'
+          and not exists (
+            select 1 from picks p where p.user_address = u.wallet_address and p.fixture_id = ${f.id}
+          )
+          and not exists (
+            select 1 from notifications n
+            where n.user_address = u.wallet_address and n.fixture_id = ${f.id} and n.type = 'match_start'
+          )
+      `;
     }
   }
 }
