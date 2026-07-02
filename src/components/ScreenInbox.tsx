@@ -1,0 +1,176 @@
+import React, { useState } from "react";
+import { ActivityItem, Notification } from "../types";
+import AvatarRenderer from "./AvatarRenderer";
+import { Bell, X } from "lucide-react";
+
+interface ScreenInboxProps {
+  activityList: ActivityItem[];
+  notifications?: Notification[];
+}
+
+export default function ScreenInbox({ activityList, notifications = [] }: ScreenInboxProps) {
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsDismissed, setNotificationsDismissed] = useState(false);
+
+  return (
+    <div className="flex flex-col h-full bg-[#0A0E1A] text-white font-sans overflow-y-auto pb-12 relative">
+      {/* Page Title Row */}
+      <div className="sticky top-0 bg-[#0A0E1A]/85 backdrop-blur-md border-b border-white/5 px-4 py-4 flex items-center justify-between z-30">
+        <div className="flex items-center gap-2">
+          <div className="bg-[#FF4E00]/10 border border-[#FF4E00]/20 p-1.5 rounded-lg text-[#FF4E00]">
+            <Bell className="w-4 h-4" />
+          </div>
+          <h2 className="text-sm font-black italic tracking-tighter uppercase text-white">
+            Inbox
+          </h2>
+        </div>
+      </div>
+
+      <div className="px-4 mt-4 space-y-4 flex-grow z-10 max-w-7xl mx-auto w-full">
+        
+        {/* Opt-In Notification Card (within feed, not intrusive) */}
+        {!notificationsEnabled && !notificationsDismissed && (
+          <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-4 flex items-center justify-between relative overflow-hidden shadow-lg">
+            <div className="absolute right-0 top-0 bottom-0 w-20 bg-[#FF4E00]/5 rounded-l-full filter blur-lg pointer-events-none" />
+            <div className="space-y-1 w-[65%] z-10 text-left">
+              <h4 className="text-xs font-black italic text-slate-200 uppercase tracking-tight">Never miss a bracket round</h4>
+              <p className="text-[9px] text-[#8E9299] leading-relaxed">
+                Allow notifications for World Cup matches and notifications from friends in groups.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 z-10 flex-shrink-0">
+              <button
+                onClick={() => setNotificationsEnabled(true)}
+                className="px-3 py-1.5 bg-[#FF4E00] hover:bg-[#FF4E00]/90 text-white font-black italic text-[10px] rounded-xl shadow cursor-pointer transition"
+                id="inbox-notify-toggle"
+              >
+                Allow
+              </button>
+              <button
+                onClick={() => setNotificationsDismissed(true)}
+                className="p-1.5 bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 text-[#8E9299] hover:text-white rounded-xl transition cursor-pointer"
+                id="inbox-notify-dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── For You — personal notifications (pick results, badges, crowns) ─── */}
+        {notifications.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-[10px] font-mono font-black text-[#8E9299] uppercase tracking-widest pl-1">
+              For You
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {notifications.map((n) => {
+                // Accent per notification type.
+                let accent = "border-white/5";
+                if (n.type === "round_champion") accent = "border-amber-400/40 bg-amber-400/5";
+                else if (n.type === "badge") accent = "border-purple-500/30 bg-purple-500/5";
+                else if (n.type === "goal") accent = "border-emerald-500/30 bg-emerald-500/5";
+                else if (n.type === "match_start") accent = "border-sky-500/30 bg-sky-500/5";
+                else if (n.type === "pick_result") accent = "border-[#FF4E00]/25 bg-[#FF4E00]/5";
+                return (
+                  <div
+                    key={n.id}
+                    className={`bg-[#151B2E] border-2 ${accent} rounded-3xl p-4 shadow-md flex items-start gap-3 relative overflow-hidden transition-all duration-200 hover:border-white/15`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-[#0A0E1A] border border-white/5 flex items-center justify-center flex-shrink-0 text-xl">
+                      {n.icon}
+                    </div>
+                    <div className="flex-grow min-w-0 space-y-1">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-xs font-black italic text-white truncate">{n.title}</span>
+                        <span className="text-[9px] font-mono text-[#8E9299] font-medium flex-shrink-0">
+                          {n.timestamp}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">{n.body}</p>
+                    </div>
+                    {!n.read && (
+                      <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-[#FF4E00] shadow-[0_0_8px_rgba(255,78,0,0.7)]" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ─── From your groups — read-only milestone feed (no reactions) ─── */}
+        <div className="space-y-3">
+          <h4 className="text-[10px] font-mono font-black text-[#8E9299] uppercase tracking-widest pl-1">
+            From your groups
+          </h4>
+
+          {activityList.length === 0 ? (
+            <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-6 text-center space-y-1">
+              <p className="text-xs font-black italic text-slate-300">Nothing from your groups yet</p>
+              <p className="text-[10px] text-[#8E9299] leading-relaxed max-w-[260px] mx-auto">
+                When a groupmate hits a big streak or gets crowned Round Champion, it&apos;ll show up here.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activityList.map((item) => {
+                // Accent + icon by milestone type.
+                let typeBorder = "border-white/5";
+                let typeIcon = "📢";
+                if (item.type === "milestone") {
+                  typeBorder = "border-[#FF4E00]/30 bg-[#FF4E00]/5";
+                  typeIcon = "🔥";
+                } else if (item.type === "win") {
+                  typeBorder = "border-amber-500/30 bg-amber-500/5";
+                  typeIcon = "🏆";
+                } else if (item.type === "badge") {
+                  typeBorder = "border-purple-500/30 bg-purple-500/5";
+                  typeIcon = "🎖️";
+                } else if (item.type === "break") {
+                  typeBorder = "border-red-500/20 bg-red-500/5";
+                  typeIcon = "💀";
+                }
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`bg-[#151B2E] border-2 ${typeBorder} rounded-3xl p-4 shadow-md relative overflow-hidden transition-all duration-200 hover:border-white/10`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#0A0E1A] border border-white/5 p-0.5 flex items-center justify-center flex-shrink-0">
+                        <AvatarRenderer
+                          skinTone={item.avatar?.skinTone}
+                          kitPrimary={item.avatar?.kitPrimary}
+                          kitSecondary={item.avatar?.kitSecondary}
+                          expression={item.avatar?.expression}
+                          size="sm"
+                          isAnimated={false}
+                          upperBodyOnly={true}
+                        />
+                      </div>
+                      <div className="flex-grow min-w-0 space-y-1">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-xs font-black italic text-white truncate">
+                            @{item.username}
+                          </span>
+                          <span className="text-[9px] font-mono text-[#8E9299] font-medium flex-shrink-0">
+                            {item.timestamp}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          <span className="pr-1.5">{typeIcon}</span>
+                          {item.message}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
