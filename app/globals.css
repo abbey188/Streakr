@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom Bento Styling Helpers */
+.bento-bg-dark {
+  background-color: #0A0E1A;
+}
+
+.bento-bg-panel {
+  background-color: #151B2E;
+}
+
+.bento-bg-sub {
+  background-color: #2D364F;
+}
+
+.bento-border-orange {
+  border-color: #FF4E00;
+}
+
+.bento-text-orange {
+  color: #FF4E00;
+}
+
+.bento-glow-orange {
+  box-shadow: 0 0 15px rgba(255, 78, 0, 0.4);
+}
+
+.bento-border-subtle {
+  border-color: rgba(255, 255, 255, 0.08);
+}
