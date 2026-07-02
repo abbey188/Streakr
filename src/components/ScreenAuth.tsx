@@ -101,8 +101,9 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
         </motion.div>
       </div>
 
-      {/* Main Content Area in Responsive Layout Wrapper */}
-      <div className="flex-grow flex flex-col justify-center max-w-7xl mx-auto w-full z-10 px-4 py-6 lg:py-12">
+      {/* Main Content Area — top-aligned on mobile so the logo sits close to the
+          heading (centering pushed it far above the text); centered on desktop. */}
+      <div className="flex-grow flex flex-col justify-start lg:justify-center max-w-7xl mx-auto w-full z-10 px-4 pt-1 pb-6 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Left Column: Visual stake / promo summary */}

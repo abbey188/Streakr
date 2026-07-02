@@ -720,10 +720,10 @@ export default function ScreenHome({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-[#0A0E1A]/95 z-50 flex flex-col justify-between p-5"
+            className="fixed inset-0 bg-[#0A0E1A]/97 z-[60] flex flex-col p-5 sm:p-6"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-shrink-0">
               <span className="text-[10px] font-mono text-slate-300 font-bold uppercase tracking-widest bg-[#151B2E] border border-white/5 px-3 py-1.5 rounded-full">
                 Make your Choice
               </span>
@@ -735,6 +735,9 @@ export default function ScreenHome({
               </button>
             </div>
 
+            {/* Centered content — intro + selectors share the space between the
+                header and the disclaimer, with real breathing room top/bottom. */}
+            <div className="flex-grow flex flex-col justify-center gap-8 sm:gap-10 py-6 min-h-0 overflow-y-auto">
             {/* Middle Call to action instructions */}
             <div className="text-center px-4">
               <span className="inline-block bg-[#FF4E00]/10 border border-[#FF4E00]/20 text-[#FF4E00] text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-1 rounded-full mb-2">
@@ -749,7 +752,7 @@ export default function ScreenHome({
             </div>
 
             {/* Massive Quiz-style Compare Selectors */}
-            <div className="space-y-4 max-w-md w-full mx-auto my-auto">
+            <div className="space-y-4 max-w-md w-full mx-auto">
               {/* Option A (Team A) */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -798,9 +801,10 @@ export default function ScreenHome({
                 </div>
               </motion.button>
             </div>
+            </div>
 
-            {/* Bottom Disclaimer */}
-            <div className="text-center text-[10px] text-[#8E9299] max-w-xs mx-auto pb-6 uppercase font-bold tracking-wide">
+            {/* Bottom Disclaimer — lifted off the very edge */}
+            <div className="text-center text-[10px] text-[#8E9299] max-w-xs mx-auto flex-shrink-0 pt-2 pb-4 uppercase font-bold tracking-wide">
               Picks can be altered at any time until kickoff. Tapping either button locks the selection instantly.
             </div>
           </motion.div>

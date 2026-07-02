@@ -3,7 +3,7 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "Streakr — World Cup '26 Play",
+  title: "Streakr — World Cup '26",
   description:
     "Pick which team advances each knockout match. Build your streak, climb your group, earn bragging rights. World Cup 2026.",
 };
