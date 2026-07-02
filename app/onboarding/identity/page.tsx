@@ -40,5 +40,5 @@ export default function OnboardingIdentityPage() {
     router.push("/play");
   };
 
-  return <ScreenIdentity onBack={() => router.push("/")} onConfirm={handleConfirm} />;
+  return <ScreenIdentity onConfirm={handleConfirm} />;
 }

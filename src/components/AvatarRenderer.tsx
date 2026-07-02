@@ -174,9 +174,9 @@ export const SKIN_TONES = [
   { id: "tone1", color: "#FEE2E2", label: "Warm White", outline: "#312E81" },
   { id: "tone2", color: "#FFEDD5", label: "Soft Cream", outline: "#2E1065" },
   { id: "tone3", color: "#FCD34D", label: "Golden Honey", outline: "#1E1B4B" },
-  { id: "tone4", color: "#D97706", label: "Warm Bronze", outline: "#FFE4E6" },
+  { id: "tone4", color: "#D97706", label: "Warm Bronze", outline: "#E3C7CC" },
   { id: "tone5", color: "#92400E", label: "Rich Cocoa", outline: "#FEF08A" },
-  { id: "tone6", color: "#451A03", label: "Dark Obsidian", outline: "#FDF4FF" },
+  { id: "tone6", color: "#451A03", label: "Dark Obsidian", outline: "#C9C4D6" },
 ];
 
 export const KITS = [
@@ -400,15 +400,17 @@ export default function AvatarRenderer({
           fill={kitSecondary}
         />
 
-        {/* Jersey Number overlay */}
+        {/* Jersey Number overlay — number takes the KIT PRIMARY colour with a
+            secondary/white trim, so on white-striped kits it never reads as a
+            flat white blob against the white stripes. */}
         {jerseyNumber !== "none" && (
           <text
             x="50"
             y="85"
             textAnchor="middle"
-            fill={kitSecondary}
-            stroke={inkColor}
-            strokeWidth="2.5"
+            fill={kitPrimary}
+            stroke={kitSecondary}
+            strokeWidth="3"
             paintOrder="stroke"
             fontSize="18"
             fontWeight="900"

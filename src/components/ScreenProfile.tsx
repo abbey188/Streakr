@@ -3,7 +3,7 @@ import { AvatarConfig } from "../types";
 import AvatarRenderer from "./AvatarRenderer";
 import AvatarCustomizer from "./AvatarCustomizer";
 import { BADGES } from "../data/fixtures";
-import { Award, Flame, Trophy, Settings, Share2, Pen, ArrowLeft, User, LogOut, Bell, Clock, Target, CheckCircle2, Medal, Users } from "lucide-react";
+import { Award, Flame, Trophy, Settings, Share2, Pen, User, LogOut, Bell, Clock, Target, CheckCircle2, Medal, Users } from "lucide-react";
 import { NOTIF_TYPES } from "@/lib/db/notify-prefs";
 
 // Lucide icon per notification type — matches the app's icon language.
@@ -233,7 +233,7 @@ export default function ScreenProfile({
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 30 }}
-            className="absolute inset-0 bg-[#0A0E1A] z-50 flex flex-col overflow-y-auto"
+            className="fixed inset-0 bg-[#0A0E1A] z-[60] flex flex-col overflow-y-auto"
           >
             {/* Sticky header */}
             <div className="sticky top-0 bg-[#0A0E1A]/90 backdrop-blur-md border-b border-white/5 px-5 py-4 flex items-center justify-between z-10">
@@ -265,22 +265,13 @@ export default function ScreenProfile({
             initial={{ opacity: 0, x: 25 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 25 }}
-            className="absolute inset-0 bg-[#0A0E1A] z-50 flex flex-col overflow-y-auto pb-12 text-left"
+            className="fixed inset-0 bg-[#0A0E1A] z-[60] flex flex-col overflow-y-auto pb-12 text-left"
           >
-            {/* Sticky Header with Back Button */}
+            {/* Sticky Header — single close control (Done) */}
             <div className="sticky top-0 bg-[#0A0E1A]/90 backdrop-blur-md border-b border-white/5 px-4 py-4 flex items-center justify-between z-30">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowSettings(false)}
-                  className="p-1.5 bg-[#151B2E] hover:bg-[#2D364F]/70 border border-white/5 rounded-xl text-slate-300 hover:text-white transition cursor-pointer flex items-center justify-center"
-                  id="settings-back-btn"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-                <h2 className="text-sm font-black italic tracking-tighter uppercase text-white">
-                  Profile Settings
-                </h2>
-              </div>
+              <h2 className="text-sm font-black italic tracking-tighter uppercase text-white">
+                Profile Settings
+              </h2>
               <button
                 onClick={() => setShowSettings(false)}
                 className="text-[10px] font-mono text-[#FF4E00] font-bold uppercase tracking-widest bg-[#FF4E00]/10 hover:bg-[#FF4E00]/20 px-3 py-1.5 rounded-xl border border-[#FF4E00]/20 transition cursor-pointer"

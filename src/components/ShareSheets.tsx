@@ -78,7 +78,7 @@ export default function ShareSheets({
   const saveImage = async (): Promise<boolean> => {
     if (!cardRef.current) return false;
     try {
-      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true, backgroundColor: "#0A0E1A" });
       const a = document.createElement("a");
       a.download = fileName;
       a.href = dataUrl;
@@ -107,7 +107,7 @@ export default function ShareSheets({
     // Mobile: share the actual image straight to the X app via the native sheet.
     try {
       if (cardRef.current && typeof navigator !== "undefined" && navigator.canShare) {
-        const blob = await toBlob(cardRef.current, { pixelRatio: 2, cacheBust: true });
+        const blob = await toBlob(cardRef.current, { pixelRatio: 2, cacheBust: true, backgroundColor: "#0A0E1A" });
         if (blob) {
           const file = new File([blob], fileName, { type: "image/png" });
           if (navigator.canShare({ files: [file] })) {
@@ -120,11 +120,11 @@ export default function ShareSheets({
     } catch {
       /* user cancelled or unsupported — fall through to desktop flow */
     }
-    // Desktop: X can't attach images via URL, so save the PNG + open the composer.
-    const ok = await saveImage();
+    // Desktop: X can't attach an image via URL, so just open the composer with
+    // the text + link. No forced download — Download is its own separate button.
     setBusy(false);
     if (typeof window !== "undefined") window.open(intentUrl, "_blank", "noopener,noreferrer");
-    flashMsg(ok ? "Image saved — attach it to your post!" : "Opening X…");
+    flashMsg("Opening X…");
   };
 
   // Format top leaderboard members for invite card

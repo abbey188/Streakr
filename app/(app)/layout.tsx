@@ -60,7 +60,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const isActive = (href: string) => pathname === href;
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A] text-white flex flex-col lg:flex-row font-sans selection:bg-[#FF4E00] selection:text-white antialiased overflow-hidden relative">
+    <div className="min-h-dvh bg-[#0A0E1A] text-white flex flex-col lg:flex-row font-sans selection:bg-[#FF4E00] selection:text-white antialiased overflow-hidden relative">
 
       {/* Toast */}
       <AnimatePresence>
@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col lg:flex-row w-full h-screen overflow-hidden">
+      <div className="flex flex-col lg:flex-row w-full h-dvh overflow-hidden">
 
         {/* PC LEFT SIDEBAR */}
         <aside className="hidden lg:flex flex-col justify-between w-80 bg-[#151B2E] border-r border-white/5 p-6 overflow-y-auto flex-shrink-0">
