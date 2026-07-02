@@ -4,9 +4,7 @@ import {
   createContext, useContext, useState, useEffect, useCallback, ReactNode,
 } from "react";
 import type { AvatarConfig, Fixture, GroupMember, ActivityItem } from "@/src/types";
-import {
-  INITIAL_FIXTURES, INITIAL_LEADERBOARD, INITIAL_ACTIVITY,
-} from "@/src/data/fixtures";
+import { INITIAL_LEADERBOARD, INITIAL_ACTIVITY } from "@/src/data/fixtures";
 import { useIdentity } from "@/lib/identity/context";
 import {
   fetchMe, createUser, updateAvatar as apiUpdateAvatar, makePick as apiMakePick,
@@ -93,8 +91,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [points, setPoints] = useState(0);
   const [userEmail, setUserEmail] = useState("");
 
-  // Gameplay lists — still seeded from mock; live-data wiring is the next step.
-  const [fixtures, setFixtures] = useState<Fixture[]>(INITIAL_FIXTURES);
+  // Fixtures start empty and hydrate from Neon — never flash mock matches on
+  // first paint. (leaderboard/activity mocks below are only share-card fallbacks,
+  // not shown on Play, so they stay.)
+  const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [leaderboard, setLeaderboard] = useState<GroupMember[]>(INITIAL_LEADERBOARD);
   const [activity, setActivity] = useState<ActivityItem[]>(INITIAL_ACTIVITY);
 
