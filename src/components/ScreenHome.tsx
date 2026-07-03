@@ -3,6 +3,7 @@ import { Fixture, AvatarConfig, Team } from "../types";
 import type { GlobalLeaderboardEntry, RoundRace } from "@/lib/api/client";
 import { fetchRoundRace } from "@/lib/api/client";
 import { groupByDay, kickoffLabel } from "@/lib/match-groups";
+import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import AvatarRenderer from "./AvatarRenderer";
 import CountryFlag from "./CountryFlag";
 import { motion, AnimatePresence } from "motion/react";
@@ -78,6 +79,7 @@ export default function ScreenHome({
   onMakePick,
   onOpenProfile,
 }: ScreenHomeProps) {
+  const now = useNow(); // ticks live-match minutes forward between syncs
   // Local state for selected match to predict (Pick Flow)
   const [activePickFixture, setActivePickFixture] = useState<Fixture | null>(null);
   const [successAnimationMatchId, setSuccessAnimationMatchId] = useState<string | null>(null);
@@ -299,7 +301,7 @@ export default function ScreenHome({
                           {/* Header */}
                           <div className="flex justify-between items-center mb-3">
                             <span className="text-[9px] font-mono text-red-400 font-bold tracking-wider uppercase bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
-                              Match Live • {match.minute}'
+                              Match Live • {liveMinuteLabel(match, now)}
                             </span>
                             <span className="text-[9px] font-mono text-[#8E9299] font-bold uppercase">
                               {match.round}

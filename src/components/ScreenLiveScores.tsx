@@ -2,6 +2,7 @@ import React from "react";
 import { Fixture } from "../types";
 import { Tv, Clock } from "lucide-react";
 import { groupByDay, kickoffLabel } from "@/lib/match-groups";
+import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import CountryFlag from "./CountryFlag";
 
 interface ScreenLiveScoresProps {
@@ -10,6 +11,7 @@ interface ScreenLiveScoresProps {
 }
 
 export default function ScreenLiveScores({ fixtures, onOpenMatch }: ScreenLiveScoresProps) {
+  const now = useNow(); // ticks live-match minutes forward between syncs
   // Group fixtures. Upcoming stays soonest-first; completed shows most-recent
   // first (down to the least recent of the round), like a results feed.
   const liveMatches = fixtures.filter((f) => f.status === "live");
@@ -101,7 +103,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch }: ScreenLiveSc
           <div className="flex items-center gap-1.5">
             {isLive ? (
               <span className="inline-flex items-center gap-1 text-[8px] font-bold bg-red-500/10 text-red-500 border border-red-500/20 px-2 py-0.5 rounded-md animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> LIVE • {match.minute}'
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> LIVE • {liveMinuteLabel(match, now)}
               </span>
             ) : isFinished ? (
               <span className="text-[8px] font-mono text-[#8E9299] font-bold uppercase bg-[#0A0E1A] px-2 py-0.5 rounded border border-white/5">
