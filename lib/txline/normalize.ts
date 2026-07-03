@@ -136,10 +136,20 @@ const SOCCER_STATUS: Record<number, { status: MatchStatus; period: string; pens?
   19: { status: "upcoming", period: "PP" },  // postponed
 };
 
-/** Latest entry that carries a Score (highest Ts). */
+/**
+ * Latest CONFIRMED score state (highest Ts). Skips:
+ *  - unconfirmed entries (`Confirmed === false`) — e.g. a goal under VAR review,
+ *    so a disallowed goal never becomes the displayed/notified score;
+ *  - partial "coverage blip" entries with no real Total, which otherwise flicker
+ *    the score to 0-0.
+ */
 function latestScored(entries: RawScoreEntry[]): RawScoreEntry | null {
   let best: RawScoreEntry | null = null;
-  for (const e of entries) if (e.Score && (!best || e.Ts > best.Ts)) best = e;
+  for (const e of entries) {
+    if (e.Confirmed === false) continue;
+    if (!e.Score?.Participant1?.Total && !e.Score?.Participant2?.Total) continue;
+    if (!best || e.Ts > best.Ts) best = e;
+  }
   return best;
 }
 
@@ -181,6 +191,53 @@ export function deriveLiveScore(fixtureId: string, entries: RawScoreEntry[]): Li
     homePenalties: showPens ? p1?.PE?.Goals ?? 0 : undefined,
     awayPenalties: showPens ? p2?.PE?.Goals ?? 0 : undefined,
     advanced,
+  };
+}
+
+// ─── Scorer resolution (goal events → player name via lineups) ────────────────
+
+export interface LastGoal { team: "A" | "B"; scorer: string | null; minute: number }
+
+/** "Ronaldo, Cristiano" → "Ronaldo" (TxLINE names are "Surname, First"). */
+function formatPlayerName(raw: string): string {
+  return raw.split(",")[0]?.trim() || raw.trim();
+}
+
+/**
+ * Most recent CONFIRMED goal — team, scorer (resolved from lineups via
+ * Data.PlayerId = player.normativeId), and minute. Scorer is opportunistic:
+ * some goal events carry no PlayerId, so it can be null (caller falls back to
+ * the team name). Never returns a disallowed/unconfirmed goal.
+ */
+export function deriveLastGoal(entries: RawScoreEntry[]): LastGoal | null {
+  const names = new Map<number, string>();
+  const lineups = entries.find((e) => e.Lineups)?.Lineups;
+  if (lineups) {
+    for (const team of lineups) {
+      for (const slot of team.lineups ?? []) {
+        const nid = slot.player?.normativeId;
+        const nm = slot.player?.preferredName || slot.player?.name;
+        if (nid && nm) names.set(nid, formatPlayerName(nm));
+      }
+    }
+  }
+  let best: RawScoreEntry | null = null;
+  for (const e of entries) {
+    if (e.Confirmed === false) continue;
+    const scored =
+      e.Action === "goal" ||
+      (e.Action === "penalty_outcome" && (e.Data as { Outcome?: string })?.Outcome === "Scored");
+    if (!scored) continue;
+    if (!best || e.Ts > best.Ts) best = e;
+  }
+  if (!best) return null;
+  const team = best.Participant === 1 ? "A" : best.Participant === 2 ? "B" : null;
+  if (!team) return null;
+  const pid = (best.Data as { PlayerId?: number })?.PlayerId;
+  return {
+    team,
+    scorer: pid ? names.get(pid) ?? null : null,
+    minute: Math.floor((best.Clock?.Seconds ?? 0) / 60),
   };
 }
 

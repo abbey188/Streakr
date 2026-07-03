@@ -17,15 +17,19 @@ export default function InboxPage() {
     const wallet = identity.walletAddress;
     if (!wallet) return;
     let cancelled = false;
-    fetchNotifications(wallet)
-      .then((rows) => { if (!cancelled) setNotifications(rows); })
-      .catch(() => { /* keep empty feed on failure */ });
-    fetchMyGroupsActivity(wallet)
-      .then((rows) => { if (!cancelled) setGroupActivity(rows); })
-      .catch(() => { /* keep empty feed on failure */ });
-    // Opening the Inbox clears the unread state.
+    const load = () => {
+      fetchNotifications(wallet)
+        .then((rows) => { if (!cancelled) setNotifications(rows); })
+        .catch(() => { /* keep last feed on failure */ });
+      fetchMyGroupsActivity(wallet)
+        .then((rows) => { if (!cancelled) setGroupActivity(rows); })
+        .catch(() => { /* keep last feed on failure */ });
+    };
+    load();
+    // Keep the feed live while open; re-mark read so the nav badge clears.
+    const t = setInterval(() => { load(); markNotificationsRead(wallet).catch(() => {}); }, 30_000);
     markNotificationsRead(wallet).catch(() => {});
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearInterval(t); };
   }, [identity.walletAddress]);
 
   return <ScreenInbox activityList={groupActivity} notifications={notifications} />;
