@@ -7,7 +7,15 @@
 // Stop with Ctrl+C.
 import fs from "node:fs";
 
-const env = fs.readFileSync(new URL("../.env.local", import.meta.url), "utf8");
+// Read whichever local env file exists (.env.local is blocked on this machine,
+// so .env is the working one).
+function readEnv() {
+  for (const name of [".env.local", ".env"]) {
+    try { return fs.readFileSync(new URL(`../${name}`, import.meta.url), "utf8"); } catch {}
+  }
+  return "";
+}
+const env = readEnv();
 const secret = env.match(/CRON_SECRET="?([^"\n]+)"?/)?.[1] || "";
 const url = "http://localhost:3000/api/cron/sync-live";
 const INTERVAL_MS = 60_000;

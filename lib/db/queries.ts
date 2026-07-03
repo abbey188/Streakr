@@ -123,6 +123,7 @@ interface FixtureRow {
   team_b_flag: string;
   team_b_code: string;
   kickoff_at: string | null;
+  updated_at: string | null;
   user_pick: "A" | "B" | null;
 }
 
@@ -140,6 +141,7 @@ function mapFixture(r: FixtureRow): Fixture {
     minute: r.minute ?? undefined,
     kickoffTime: r.kickoff_time,
     kickoffAt: r.kickoff_at ?? undefined,
+    updatedAt: r.updated_at ?? undefined,
     userPick: r.user_pick ?? undefined,
     actualWinner: r.actual_winner ?? undefined,
   };
@@ -154,7 +156,7 @@ export async function getFixtures(walletAddress?: string): Promise<Fixture[]> {
   const rows = (await sql`
     select
       f.id, f.round, f.status, f.score_a, f.score_b, f.minute,
-      f.kickoff_time, f.kickoff_at, f.actual_winner,
+      f.kickoff_time, f.kickoff_at, f.updated_at, f.actual_winner,
       ta.id as team_a_id, ta.name as team_a_name, ta.flag as team_a_flag, ta.code as team_a_code,
       tb.id as team_b_id, tb.name as team_b_name, tb.flag as team_b_flag, tb.code as team_b_code,
       p.pick as user_pick

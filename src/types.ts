@@ -27,6 +27,7 @@ export interface Fixture {
   minute?: number; // only if live
   kickoffTime: string; // e.g. "20:00" (display fallback)
   kickoffAt?: string; // ISO timestamp — used for accurate local time + day grouping
+  updatedAt?: string; // ISO timestamp of last sync — anchors the live-minute tick
   userPick?: "A" | "B";
   actualWinner?: "A" | "B"; // filled if finished
 }
