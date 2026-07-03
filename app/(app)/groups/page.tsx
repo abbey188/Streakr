@@ -25,6 +25,8 @@ export default function GroupsPage() {
   useEffect(() => {
     if (!wallet) return;
     refreshGroups();
+    const t = setInterval(refreshGroups, 30_000); // keep groups live while open
+    return () => clearInterval(t);
   }, [wallet, refreshGroups]);
 
   const handleCreateGroup = useCallback(

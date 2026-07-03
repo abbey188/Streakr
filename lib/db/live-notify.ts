@@ -1,5 +1,6 @@
 import { sql } from "./client";
 import type { Fixture } from "@/src/types";
+import type { LastGoal } from "@/lib/txline/normalize";
 
 /**
  * Generates live match notifications by diffing freshly-synced fixtures against
@@ -26,7 +27,10 @@ interface OldFixtureRow {
 // kickoff) — not every future fixture the full sync happens to touch.
 const KICKOFF_SOON_MS = 45 * 60 * 1000;
 
-export async function notifyLiveEvents(enriched: Fixture[]): Promise<void> {
+export async function notifyLiveEvents(
+  enriched: Fixture[],
+  lastGoals: Map<string, LastGoal> = new Map()
+): Promise<void> {
   if (enriched.length === 0) return;
   const ids = enriched.map((f) => f.id);
 
@@ -46,19 +50,38 @@ export async function notifyLiveEvents(enriched: Fixture[]): Promise<void> {
     if (f.status === "live" && old) {
       const na = f.scoreA ?? 0, nb = f.scoreB ?? 0;
       const oa = old.score_a ?? 0, ob = old.score_b ?? 0;
-      const scored: string[] = [];
-      if (na > oa) scored.push(f.teamA.name);
-      if (nb > ob) scored.push(f.teamB.name);
+      const scored: { side: "A" | "B"; name: string }[] = [];
+      if (na > oa) scored.push({ side: "A", name: f.teamA.name });
+      if (nb > ob) scored.push({ side: "B", name: f.teamB.name });
+      const lg = lastGoals.get(f.id);
 
-      for (const team of scored) {
+      for (const s of scored) {
+        // Name the scorer when the confirmed last goal matches the team + has one.
+        const scorer = lg && lg.team === s.side ? lg.scorer : null;
+        const title = scorer ? `Goal — ${scorer}` : `Goal — ${s.name}`;
+        const body = scorer
+          ? `${scorer} scores for ${s.name}! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`
+          : `${s.name} scored! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`;
         await sql`
           insert into notifications (user_address, type, title, body, icon, fixture_id)
-          select p.user_address, 'goal', ${`Goal — ${team}`},
-                 ${`${team} scored! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`}, '⚽', ${f.id}
+          select p.user_address, 'goal', ${title}, ${body}, '⚽', ${f.id}
           from picks p
           join users u on u.wallet_address = p.user_address
           where p.fixture_id = ${f.id}
             and coalesce(u.notification_prefs->>'goal', '') <> 'false'
+        `;
+      }
+
+      // ── Match started: first sync that sees it live → ping pickers once ──
+      if (old.status !== "live") {
+        await sql`
+          insert into notifications (user_address, type, title, body, icon, fixture_id)
+          select p.user_address, 'match_start', 'Kickoff! 🏁',
+                 ${`${f.teamA.name} vs ${f.teamB.name} is underway.`}, '🏁', ${f.id}
+          from picks p
+          join users u on u.wallet_address = p.user_address
+          where p.fixture_id = ${f.id}
+            and coalesce(u.notification_prefs->>'match_start', '') <> 'false'
         `;
       }
     }

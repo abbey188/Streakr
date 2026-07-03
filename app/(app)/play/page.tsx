@@ -15,8 +15,16 @@ export default function PlayPage() {
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
 
   useEffect(() => {
-    if (!identity.walletAddress) return;
-    fetchGlobalLeaderboard(identity.walletAddress).then(setGlobalLeaderboard).catch(() => {});
+    const wallet = identity.walletAddress;
+    if (!wallet) return;
+    let cancelled = false;
+    const load = () =>
+      fetchGlobalLeaderboard(wallet)
+        .then((rows) => { if (!cancelled) setGlobalLeaderboard(rows); })
+        .catch(() => {});
+    load();
+    const t = setInterval(load, 30_000); // keep the leaderboard live while open
+    return () => { cancelled = true; clearInterval(t); };
   }, [identity.walletAddress]);
 
   return (

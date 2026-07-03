@@ -126,6 +126,11 @@ export interface RawScore {
   Participant2?: RawTotalScore;
 }
 
+// Lineups: event Data.PlayerId maps to player.normativeId (verified).
+export interface RawLineupPlayer { normativeId?: number; preferredName?: string; name?: string; }
+export interface RawLineupSlot { player?: RawLineupPlayer }
+export interface RawLineupTeam { preferredName?: string; lineups?: RawLineupSlot[] }
+
 export interface RawScoreEntry {
   FixtureId: number;
   Action: string;
@@ -133,8 +138,13 @@ export interface RawScoreEntry {
   StatusId?: number;
   Ts: number;
   Seq: number;
+  // false = the event is unconfirmed / pending (e.g. a goal under VAR review).
+  // Anything affecting score/resolution/notifications must ignore Confirmed=false.
+  Confirmed?: boolean;
+  Participant?: number; // which team the event belongs to (1 or 2)
   Clock?: { Running?: boolean; Seconds?: number };
   Score?: RawScore;
   Stats?: Record<string, number>;
+  Lineups?: RawLineupTeam[];
   Data?: Record<string, unknown>;
 }

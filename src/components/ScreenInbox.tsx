@@ -1,16 +1,48 @@
-import React, { useState } from "react";
-import { ActivityItem, Notification } from "../types";
+import React, { useState, useEffect } from "react";
+import { ActivityItem, Notification as NotificationItem } from "../types";
 import AvatarRenderer from "./AvatarRenderer";
 import { Bell, X } from "lucide-react";
 
 interface ScreenInboxProps {
   activityList: ActivityItem[];
-  notifications?: Notification[];
+  notifications?: NotificationItem[];
 }
 
 export default function ScreenInbox({ activityList, notifications = [] }: ScreenInboxProps) {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [notificationsDismissed, setNotificationsDismissed] = useState(false);
+  // Track the browser's real notification permission (not a local flag) so the
+  // opt-in card reflects reality and never re-appears after you've allowed it.
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setPermission("unsupported");
+      return;
+    }
+    setPermission(Notification.permission);
+    try { if (localStorage.getItem("streakr_notif_dismissed") === "1") setDismissed(true); } catch { /* ignore */ }
+  }, []);
+
+  const requestPermission = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    try {
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      if (result === "granted") {
+        new Notification("Streakr notifications on 🔔", {
+          body: "We'll ping you for goals and your pick results. Manage them anytime in Settings.",
+        });
+      }
+    } catch { /* user dismissed the prompt */ }
+  };
+
+  const dismissCard = () => {
+    setDismissed(true);
+    try { localStorage.setItem("streakr_notif_dismissed", "1"); } catch { /* ignore */ }
+  };
+
+  // Only prompt when the browser hasn't decided yet and the user hasn't dismissed.
+  const showOptIn = permission === "default" && !dismissed;
 
   return (
     <div className="flex flex-col h-full bg-[#0A0E1A] text-white font-sans overflow-y-auto pb-12 relative">
@@ -28,26 +60,26 @@ export default function ScreenInbox({ activityList, notifications = [] }: Screen
 
       <div className="px-4 mt-4 space-y-4 flex-grow z-10 max-w-7xl mx-auto w-full">
         
-        {/* Opt-In Notification Card (within feed, not intrusive) */}
-        {!notificationsEnabled && !notificationsDismissed && (
+        {/* Opt-In Notification Card — requests the real browser permission */}
+        {showOptIn && (
           <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-4 flex items-center justify-between relative overflow-hidden shadow-lg">
             <div className="absolute right-0 top-0 bottom-0 w-20 bg-[#FF4E00]/5 rounded-l-full filter blur-lg pointer-events-none" />
             <div className="space-y-1 w-[65%] z-10 text-left">
-              <h4 className="text-xs font-black italic text-slate-200 uppercase tracking-tight">Never miss a bracket round</h4>
+              <h4 className="text-xs font-black italic text-slate-200 uppercase tracking-tight">Never miss a moment</h4>
               <p className="text-[9px] text-[#8E9299] leading-relaxed">
-                Allow notifications for World Cup matches and notifications from friends in groups.
+                Get pinged for goals, your pick results, and squad milestones. Fine-tune or turn them off anytime in <span className="text-slate-300 font-bold">Settings</span>.
               </p>
             </div>
             <div className="flex items-center gap-2 z-10 flex-shrink-0">
               <button
-                onClick={() => setNotificationsEnabled(true)}
+                onClick={requestPermission}
                 className="px-3 py-1.5 bg-[#FF4E00] hover:bg-[#FF4E00]/90 text-white font-black italic text-[10px] rounded-xl shadow cursor-pointer transition"
                 id="inbox-notify-toggle"
               >
                 Allow
               </button>
               <button
-                onClick={() => setNotificationsDismissed(true)}
+                onClick={dismissCard}
                 className="p-1.5 bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 text-[#8E9299] hover:text-white rounded-xl transition cursor-pointer"
                 id="inbox-notify-dismiss"
               >

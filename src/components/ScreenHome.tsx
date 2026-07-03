@@ -80,6 +80,24 @@ export default function ScreenHome({
   onOpenProfile,
 }: ScreenHomeProps) {
   const now = useNow(); // ticks live-match minutes forward between syncs
+
+  // Result cards the user has dismissed (X) — declutter Play after a pick
+  // resolves. Persisted so they stay gone across refreshes.
+  const [dismissedResults, setDismissedResults] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("streakr_dismissed_results");
+      if (saved) setDismissedResults(new Set(JSON.parse(saved) as string[]));
+    } catch { /* ignore */ }
+  }, []);
+  const dismissResult = (id: string) => {
+    setDismissedResults((prev) => {
+      const next = new Set(prev).add(id);
+      try { localStorage.setItem("streakr_dismissed_results", JSON.stringify([...next])); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
   // Local state for selected match to predict (Pick Flow)
   const [activePickFixture, setActivePickFixture] = useState<Fixture | null>(null);
   const [successAnimationMatchId, setSuccessAnimationMatchId] = useState<string | null>(null);
@@ -151,7 +169,7 @@ export default function ScreenHome({
   // The user's own resolved picks — surfaced right in Play so you don't have to
   // dig into the Hub to learn whether you won or lost. Most recent first.
   const myResults = fixtures
-    .filter((f) => f.userPick && f.status === "finished" && f.actualWinner)
+    .filter((f) => f.userPick && f.status === "finished" && f.actualWinner && !dismissedResults.has(f.id))
     .sort((a, b) => (b.kickoffAt ? Date.parse(b.kickoffAt) : 0) - (a.kickoffAt ? Date.parse(a.kickoffAt) : 0))
     .slice(0, 6);
 
@@ -269,6 +287,13 @@ export default function ScreenHome({
                           {correct ? <CheckCircle2 className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
                           {correct ? "Correct" : "Missed"}
                         </span>
+                        <button
+                          onClick={() => dismissResult(m.id)}
+                          aria-label="Dismiss result"
+                          className="flex-shrink-0 p-1 -mr-1 text-[#8E9299] hover:text-white transition cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     );
                   })}
