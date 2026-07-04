@@ -39,11 +39,16 @@ function bearer(req: NextRequest): string | null {
 export async function verifiedUserId(req: NextRequest): Promise<string | null> {
   const p = privy();
   const token = bearer(req);
-  if (!p || !token) return null;
+  if (!p) {
+    console.warn("[auth] privy client unconfigured (APP_ID/SECRET missing in this env)");
+    return null;
+  }
+  if (!token) return null; // caller logs whether a bearer header was present
   try {
     const claims = await p.verifyAuthToken(token);
     return claims.userId ?? null;
-  } catch {
+  } catch (e) {
+    console.warn("[auth] verifyAuthToken error:", (e as Error)?.message ?? String(e));
     return null;
   }
 }
@@ -114,19 +119,33 @@ export async function authWallet(
   req: NextRequest,
   claimed: string
 ): Promise<{ ok: true; wallet: string } | { ok: false }> {
-  const verified = await getAuthedWallet(req);
+  const rawAuth = req.headers.get("authorization") ?? "";
+  const hasBearer = rawAuth.startsWith("Bearer ");
+
+  // Verify once, then resolve the mapped wallet — so we can log each link.
+  const userId = await verifiedUserId(req);
+  let verified: string | null = null;
+  if (userId) {
+    const rows = (await sql`
+      select wallet_address from users where privy_user_id = ${userId} limit 1
+    `) as { wallet_address: string }[];
+    verified = rows[0]?.wallet_address ?? null;
+  }
 
   if (AUTH_ENFORCED) {
     return verified ? { ok: true, wallet: verified } : { ok: false };
   }
 
-  // Verify-only observability — never rejects.
-  if (verified && verified !== claimed) {
-    console.warn(`[auth bake] token/body wallet MISMATCH: token=${verified} body=${claimed}`);
-  } else if (!verified) {
-    console.warn(`[auth bake] no verified token for body=${claimed}`);
+  // Verify-only observability — never rejects. Distinguishes the three failure
+  // modes: client not sending header / token not verifying / user not mapped.
+  if (verified && verified === claimed) {
+    console.info(`[auth bake] OK → ${claimed}`);
+  } else if (verified) {
+    console.warn(`[auth bake] MISMATCH token=${verified} body=${claimed}`);
   } else {
-    console.info(`[auth bake] ok: token verified → ${claimed}`);
+    console.warn(
+      `[auth bake] UNRESOLVED body=${claimed} | hasBearer=${hasBearer} tokenLen=${rawAuth.length} verifiedUserId=${userId ?? "null"}`
+    );
   }
   return { ok: true, wallet: claimed };
 }
