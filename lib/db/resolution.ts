@@ -284,5 +284,29 @@ async function crown(
   // Global crown → tell their groups (per-group crowns would double-announce).
   if (!groupId) {
     await emitGroupEvent(address, "win", `was crowned ${round} Champion with ${count} correct picks! 🏆`);
+
+    // Broadcast the crowning to EVERYONE who picked in this round (except the
+    // champion, who got the personal note above) so it's visible community-wide,
+    // not just to the winner. Prefs-respected, fires once (crown() is idempotent).
+    // Wrapped so a broadcast failure can never break crowning / resolution.
+    try {
+      const champRow = (await sql`select username from users where wallet_address = ${address}`) as { username: string }[];
+      const champName = champRow[0]?.username ?? "A player";
+      await sql`
+        insert into notifications (user_address, type, title, body, icon)
+        select distinct p.user_address, 'round_champion',
+               ${`${round} Champion crowned 🏆`},
+               ${`@${champName} topped the ${round} with ${count} correct picks — see where you ranked.`},
+               '🏆'
+        from picks p
+        join fixtures f on f.id = p.fixture_id
+        join users u on u.wallet_address = p.user_address
+        where f.round = ${round} and p.resolved = true
+          and p.user_address <> ${address}
+          and coalesce(u.notification_prefs->>'round_champion', '') <> 'false'
+      `;
+    } catch (err) {
+      console.error(`[resolution] champion broadcast failed for ${round}:`, err);
+    }
   }
 }

@@ -533,9 +533,8 @@ export default function ScreenHome({
           <div className="space-y-5">
             
             {/* 3. Knockout Stage tracker — The Road to the Final */}
-            <button
-              onClick={() => setRaceRound(currentStage.round)}
-              className="w-full text-left bg-[#151B2E] border border-white/5 hover:border-[#FF4E00]/30 rounded-3xl p-5 overflow-hidden relative transition group cursor-pointer"
+            <div
+              className="w-full text-left bg-[#151B2E] border border-white/5 rounded-3xl p-5 overflow-hidden relative"
               id="knockout-stage-card"
             >
               <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-[#FF4E00]/10 rounded-full blur-xl pointer-events-none" />
@@ -547,7 +546,7 @@ export default function ScreenHome({
                 <Trophy className="w-8 h-8 text-[#FF4E00]/80 flex-shrink-0" />
               </div>
 
-              {/* Round stepper */}
+              {/* Round stepper — each round is tappable to see its champion/standings */}
               <div className="mt-4 flex items-center z-10 relative">
                 {koStages.map((s, i) => {
                   const isCurrent = s.round === currentStage.round;
@@ -561,12 +560,17 @@ export default function ScreenHome({
                     : isCurrent ? "text-slate-300" : "text-[#8E9299]";
                   return (
                     <React.Fragment key={s.round}>
-                      <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
-                        <div className={`w-3 h-3 rounded-full border-2 ${dot} transition`} />
-                        <span className={`text-[9px] font-mono font-black uppercase tracking-wide ${label}`}>
+                      <button
+                        type="button"
+                        onClick={() => setRaceRound(s.round)}
+                        aria-label={`View ${s.round} standings`}
+                        className="flex flex-col items-center gap-1.5 flex-shrink-0 group/step cursor-pointer"
+                      >
+                        <div className={`w-3 h-3 rounded-full border-2 ${dot} transition group-hover/step:scale-[1.35]`} />
+                        <span className={`text-[9px] font-mono font-black uppercase tracking-wide ${label} group-hover/step:text-white transition`}>
                           {KO_SHORT[s.round]}
                         </span>
-                      </div>
+                      </button>
                       {i < koStages.length - 1 && (
                         <div className={`flex-grow h-0.5 mx-1 -mt-4 rounded-full ${koStages[i].status === "done" ? "bg-emerald-400/40" : "bg-white/10"}`} />
                       )}
@@ -574,9 +578,12 @@ export default function ScreenHome({
                   );
                 })}
               </div>
+              <p className="mt-2 text-[8px] font-mono text-[#8E9299]/70 uppercase tracking-wider text-center z-10 relative">
+                Tap a round to see its champion
+              </p>
 
               {/* Current round + CTA */}
-              <div className="mt-4 flex items-center justify-between z-10 relative">
+              <div className="mt-3 flex items-center justify-between z-10 relative">
                 <p className="text-[10px] text-[#8E9299] leading-relaxed">
                   {currentStage.status === "live"
                     ? <><span className="text-[#FF4E00] font-bold">{currentStage.round}</span> is live — {currentStage.done}/{currentStage.total} decided.</>
@@ -584,12 +591,16 @@ export default function ScreenHome({
                       ? <>The <span className="text-white font-bold">Final</span> is done — champions crowned.</>
                       : <><span className="text-white font-bold">{currentStage.round}</span> up next.</>}
                 </p>
-                <span className="text-[10px] font-black italic text-[#FF4E00] flex items-center gap-0.5 group-hover:gap-1.5 transition-all">
+                <button
+                  type="button"
+                  onClick={() => setRaceRound(currentStage.round)}
+                  className="text-[10px] font-black italic text-[#FF4E00] flex items-center gap-0.5 hover:gap-1.5 transition-all cursor-pointer flex-shrink-0"
+                >
                   {CHAMPION_ROUNDS.has(currentStage.round) ? "Champion race" : "View round"}
                   <ChevronRight className="w-3.5 h-3.5" />
-                </span>
+                </button>
               </div>
-            </button>
+            </div>
 
             {/* Global Arena Leaderboard Widget */}
             <div id="global-leaderboard-widget" className="hidden lg:block bg-[#151B2E] border border-white/5 rounded-3xl p-5 shadow-xl space-y-4">
