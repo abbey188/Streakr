@@ -36,6 +36,12 @@ export interface IdentityActions {
   oauthLoading: boolean;
   /** End the session. */
   signOut: () => Promise<void>;
+  /**
+   * Current access token for authenticating API calls server-side. Returns null
+   * when unauthenticated or not yet ready. The API client attaches it as a
+   * Bearer token; server-side auth verifies it (Wave 2).
+   */
+  getAccessToken: () => Promise<string | null>;
 }
 
 export type UseIdentity = Identity & IdentityActions;

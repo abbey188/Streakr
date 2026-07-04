@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, useEffect, ReactNode } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { usePrivyIdentity } from "./privyAdapter";
+import { setAuthTokenGetter } from "@/lib/api/client";
 import type { UseIdentity } from "./types";
 
 /**
@@ -34,6 +35,7 @@ const STUB_IDENTITY: UseIdentity = {
   emailOtpStage: "idle",
   oauthLoading: false,
   signOut: async () => {},
+  getAccessToken: async () => null,
 };
 
 const IdentityContext = createContext<UseIdentity>(STUB_IDENTITY);
@@ -46,6 +48,12 @@ export function useIdentity(): UseIdentity {
 /** Lives inside PrivyProvider; pipes live Privy state into the context. */
 function PrivyBridge({ children }: { children: ReactNode }) {
   const identity = usePrivyIdentity();
+  // Give the API client a way to fetch the current access token, so every
+  // request carries the Bearer header. Inert until server-side auth is enforced.
+  useEffect(() => {
+    setAuthTokenGetter(identity.getAccessToken);
+    return () => setAuthTokenGetter(null);
+  }, [identity.getAccessToken]);
   return (
     <IdentityContext.Provider value={identity}>
       {children}

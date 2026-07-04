@@ -38,7 +38,7 @@ function mapEmailStage(status: string | undefined): EmailOtpStage {
 }
 
 export function usePrivyIdentity(): UseIdentity {
-  const { ready, authenticated, user, logout } = usePrivy();
+  const { ready, authenticated, user, logout, getAccessToken } = usePrivy();
   const { wallets } = useWallets(); // Solana embedded wallet(s)
   const { sendCode, loginWithCode, state: emailState } = useLoginWithEmail();
   const { initOAuth, loading: oauthLoading } = useLoginWithOAuth();
@@ -98,6 +98,15 @@ export function usePrivyIdentity(): UseIdentity {
     await logout();
   }, [logout]);
 
+  // Never throw from token retrieval — API calls must still go out if it fails.
+  const safeGetAccessToken = useCallback(async (): Promise<string | null> => {
+    try {
+      return await getAccessToken();
+    } catch {
+      return null;
+    }
+  }, [getAccessToken]);
+
   return {
     isLoading: !ready,
     isAuthenticated: authenticated,
@@ -109,5 +118,6 @@ export function usePrivyIdentity(): UseIdentity {
     emailOtpStage: mapEmailStage(emailState?.status),
     oauthLoading,
     signOut,
+    getAccessToken: safeGetAccessToken,
   };
 }
