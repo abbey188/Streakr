@@ -184,7 +184,20 @@ export function deriveLiveScore(fixtureId: string, entries: RawScoreEntry[]): Li
   const p2 = scored?.Score?.Participant2;
   const homeScore = g(p1);
   const awayScore = g(p2);
-  const seconds = scored?.Clock?.Seconds ?? 0;
+
+  // Live minute from the FRESHEST running clock — not latestScored, whose Clock
+  // only updates when a score entry arrives, which freezes the minute in a
+  // goalless match. The running clock streams continuously via coverage updates.
+  let seconds = scored?.Clock?.Seconds ?? 0;
+  let clockTs = scored?.Ts ?? 0;
+  for (const e of entries) {
+    if (e.Confirmed === false) continue;
+    const cs = e.Clock?.Seconds;
+    if (typeof cs === "number" && e.Clock?.Running && e.Ts >= clockTs) {
+      seconds = cs;
+      clockTs = e.Ts;
+    }
+  }
 
   // Only surface penalties once the shootout phase is reached (SofaScore-style).
   const showPens = Boolean(phase.pens) || p1?.PE?.Goals !== undefined || p2?.PE?.Goals !== undefined;
