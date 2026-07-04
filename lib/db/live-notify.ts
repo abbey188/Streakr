@@ -69,11 +69,22 @@ export async function notifyLiveEvents(
           join users u on u.wallet_address = p.user_address
           where p.fixture_id = ${f.id}
             and coalesce(u.notification_prefs->>'goal', '') <> 'false'
+            -- Idempotency: never re-announce the same goal. A transient score
+            -- regression in the derivation would otherwise re-fire it; the body
+            -- carries the exact scoreline, so an identical body = same goal.
+            and not exists (
+              select 1 from notifications n
+              where n.user_address = p.user_address and n.fixture_id = ${f.id}
+                and n.type = 'goal' and n.body = ${body}
+            )
         `;
       }
 
-      // ── Match started: first sync that sees it live → ping pickers once ──
-      if (old.status !== "live") {
+      // ── Match started: the real first whistle only ──────────────────────
+      // Fire ONLY on upcoming→live (not halftime→live for the 2nd half, and not
+      // a finished→"live" mis-derivation blip), and dedupe so it can never
+      // repeat for a user+match.
+      if (old.status === "upcoming") {
         await sql`
           insert into notifications (user_address, type, title, body, icon, fixture_id)
           select p.user_address, 'match_start', 'Kickoff! 🏁',
@@ -82,6 +93,11 @@ export async function notifyLiveEvents(
           join users u on u.wallet_address = p.user_address
           where p.fixture_id = ${f.id}
             and coalesce(u.notification_prefs->>'match_start', '') <> 'false'
+            and not exists (
+              select 1 from notifications n
+              where n.user_address = p.user_address and n.fixture_id = ${f.id}
+                and n.type = 'match_start' and n.title = 'Kickoff! 🏁'
+            )
         `;
       }
     }
