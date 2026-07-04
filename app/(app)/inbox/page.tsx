@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useIdentity } from "@/lib/identity/context";
 import {
-  fetchNotifications, markNotificationsRead, fetchMyGroupsActivity,
+  fetchNotifications, markNotificationsRead, fetchMyGroupsActivity, clearNotifications,
 } from "@/lib/api/client";
 import type { Notification, ActivityItem } from "@/src/types";
 import ScreenInbox from "@/src/components/ScreenInbox";
@@ -32,5 +32,18 @@ export default function InboxPage() {
     return () => { cancelled = true; clearInterval(t); };
   }, [identity.walletAddress]);
 
-  return <ScreenInbox activityList={groupActivity} notifications={notifications} />;
+  const handleClearNotifications = () => {
+    const wallet = identity.walletAddress;
+    if (!wallet) return;
+    setNotifications([]); // optimistic
+    clearNotifications(wallet).catch(() => {});
+  };
+
+  return (
+    <ScreenInbox
+      activityList={groupActivity}
+      notifications={notifications}
+      onClearNotifications={handleClearNotifications}
+    />
+  );
 }

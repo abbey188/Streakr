@@ -186,6 +186,15 @@ export async function markNotificationsRead(walletAddress: string): Promise<void
   });
 }
 
+/** Clear (delete) all of the user's personal notifications — Inbox "Clear all". */
+export async function clearNotifications(walletAddress: string): Promise<void> {
+  await apiFetch("/api/me/notifications", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ walletAddress }),
+  });
+}
+
 /** The badge ids the user has earned (profile marks only these). */
 export async function fetchUserBadges(walletAddress: string): Promise<string[]> {
   const res = await apiFetch(`/api/me/badges?wallet=${encodeURIComponent(walletAddress)}`);
