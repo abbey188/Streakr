@@ -25,6 +25,33 @@ export interface UserState {
   personalBest: number;
 }
 
+// ─── Auth: attach the caller's Privy access token to every request ─────────
+// The identity provider registers a token getter here. `apiFetch` attaches the
+// token as a Bearer header. Fully DEFENSIVE: if the token isn't ready or the
+// getter throws, the request still goes out exactly as before — the server
+// ignores the header until server-side auth is switched on (AUTH_ENFORCED).
+let authTokenGetter: (() => Promise<string | null>) | null = null;
+
+export function setAuthTokenGetter(fn: (() => Promise<string | null>) | null): void {
+  authTokenGetter = fn;
+}
+
+async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  let authHeader: Record<string, string> = {};
+  if (authTokenGetter) {
+    try {
+      const token = await authTokenGetter();
+      if (token) authHeader = { Authorization: `Bearer ${token}` };
+    } catch {
+      /* token not ready → send without it */
+    }
+  }
+  return fetch(input, {
+    ...init,
+    headers: { ...authHeader, ...(init.headers ?? {}) },
+  });
+}
+
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let detail = "";
@@ -42,7 +69,7 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
 
 /** Returning-user lookup. null = first-time user (no profile yet). */
 export async function fetchMe(walletAddress: string): Promise<UserState | null> {
-  const res = await fetch(`/api/me?wallet=${encodeURIComponent(walletAddress)}`);
+  const res = await apiFetch(`/api/me?wallet=${encodeURIComponent(walletAddress)}`);
   const { user } = await jsonOrThrow<{ user: UserState | null }>(res);
   return user;
 }
@@ -54,7 +81,7 @@ export async function createUser(input: {
   email?: string | null;
   avatar: AvatarConfig;
 }): Promise<UserState> {
-  const res = await fetch("/api/users", {
+  const res = await apiFetch("/api/users", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -68,7 +95,7 @@ export async function updateAvatar(
   walletAddress: string,
   avatar: AvatarConfig
 ): Promise<UserState> {
-  const res = await fetch("/api/users/avatar", {
+  const res = await apiFetch("/api/users/avatar", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ walletAddress, avatar }),
@@ -81,7 +108,7 @@ export async function updateAvatar(
 
 export async function fetchFixtures(walletAddress?: string): Promise<Fixture[]> {
   const qs = walletAddress ? `?wallet=${encodeURIComponent(walletAddress)}` : "";
-  const res = await fetch(`/api/fixtures${qs}`);
+  const res = await apiFetch(`/api/fixtures${qs}`);
   const { fixtures } = await jsonOrThrow<{ fixtures: Fixture[] }>(res);
   return fixtures;
 }
@@ -92,7 +119,7 @@ export async function makePick(
   fixtureId: string,
   pick: "A" | "B"
 ): Promise<boolean> {
-  const res = await fetch("/api/picks", {
+  const res = await apiFetch("/api/picks", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ walletAddress, fixtureId, pick }),
@@ -110,13 +137,13 @@ export async function fetchLeaderboard(
   walletAddress?: string
 ): Promise<GlobalLeaderboardEntry[]> {
   const qs = walletAddress ? `?wallet=${encodeURIComponent(walletAddress)}` : "";
-  const res = await fetch(`/api/groups/${groupId}/leaderboard${qs}`);
+  const res = await apiFetch(`/api/groups/${groupId}/leaderboard${qs}`);
   const { leaderboard } = await jsonOrThrow<{ leaderboard: GlobalLeaderboardEntry[] }>(res);
   return leaderboard;
 }
 
 export async function fetchActivity(groupId: string): Promise<ActivityItem[]> {
-  const res = await fetch(`/api/groups/${groupId}/activity`);
+  const res = await apiFetch(`/api/groups/${groupId}/activity`);
   const { activity } = await jsonOrThrow<{ activity: ActivityItem[] }>(res);
   return activity;
 }
@@ -125,14 +152,14 @@ export async function fetchActivity(groupId: string): Promise<ActivityItem[]> {
 
 /** The signed-in user's personal notifications (pick results, badges, crowns). */
 export async function fetchNotifications(walletAddress: string): Promise<Notification[]> {
-  const res = await fetch(`/api/me/notifications?wallet=${encodeURIComponent(walletAddress)}`);
+  const res = await apiFetch(`/api/me/notifications?wallet=${encodeURIComponent(walletAddress)}`);
   const { notifications } = await jsonOrThrow<{ notifications: Notification[] }>(res);
   return notifications;
 }
 
 /** Mark all of the user's notifications read (fire-and-forget on Inbox open). */
 export async function markNotificationsRead(walletAddress: string): Promise<void> {
-  await fetch("/api/me/notifications", {
+  await apiFetch("/api/me/notifications", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ walletAddress }),
@@ -141,28 +168,28 @@ export async function markNotificationsRead(walletAddress: string): Promise<void
 
 /** The badge ids the user has earned (profile marks only these). */
 export async function fetchUserBadges(walletAddress: string): Promise<string[]> {
-  const res = await fetch(`/api/me/badges?wallet=${encodeURIComponent(walletAddress)}`);
+  const res = await apiFetch(`/api/me/badges?wallet=${encodeURIComponent(walletAddress)}`);
   const { badgeIds } = await jsonOrThrow<{ badgeIds: string[] }>(res);
   return badgeIds;
 }
 
 /** Milestone activity from the user's groups (Inbox group feed). */
 export async function fetchMyGroupsActivity(walletAddress: string): Promise<ActivityItem[]> {
-  const res = await fetch(`/api/me/groups-activity?wallet=${encodeURIComponent(walletAddress)}`);
+  const res = await apiFetch(`/api/me/groups-activity?wallet=${encodeURIComponent(walletAddress)}`);
   const { activity } = await jsonOrThrow<{ activity: ActivityItem[] }>(res);
   return activity;
 }
 
 /** Unread notification count for the Inbox nav badge. */
 export async function fetchUnreadCount(walletAddress: string): Promise<number> {
-  const res = await fetch(`/api/me/notifications/unread?wallet=${encodeURIComponent(walletAddress)}`);
+  const res = await apiFetch(`/api/me/notifications/unread?wallet=${encodeURIComponent(walletAddress)}`);
   const { count } = await jsonOrThrow<{ count: number }>(res);
   return count;
 }
 
 /** The user's per-type notification opt-outs ({} = all on). */
 export async function fetchNotificationPrefs(walletAddress: string): Promise<Record<string, boolean>> {
-  const res = await fetch(`/api/me/notification-prefs?wallet=${encodeURIComponent(walletAddress)}`);
+  const res = await apiFetch(`/api/me/notification-prefs?wallet=${encodeURIComponent(walletAddress)}`);
   const { prefs } = await jsonOrThrow<{ prefs: Record<string, boolean> }>(res);
   return prefs;
 }
@@ -172,7 +199,7 @@ export async function updateNotificationPrefs(
   walletAddress: string,
   prefs: Record<string, boolean>
 ): Promise<Record<string, boolean>> {
-  const res = await fetch("/api/me/notification-prefs", {
+  const res = await apiFetch("/api/me/notification-prefs", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ walletAddress, prefs }),
@@ -205,7 +232,7 @@ export async function fetchRoundRace(
 ): Promise<RoundRace> {
   const qs = new URLSearchParams({ round });
   if (walletAddress) qs.set("wallet", walletAddress);
-  const res = await fetch(`/api/rounds/race?${qs.toString()}`);
+  const res = await apiFetch(`/api/rounds/race?${qs.toString()}`);
   const { race } = await jsonOrThrow<{ race: RoundRace }>(res);
   return race;
 }
@@ -231,14 +258,14 @@ export async function fetchGlobalLeaderboard(
   walletAddress?: string
 ): Promise<GlobalLeaderboardEntry[]> {
   const qs = walletAddress ? `?wallet=${encodeURIComponent(walletAddress)}` : "";
-  const res = await fetch(`/api/leaderboard/global${qs}`);
+  const res = await apiFetch(`/api/leaderboard/global${qs}`);
   const { leaderboard } = await jsonOrThrow<{ leaderboard: GlobalLeaderboardEntry[] }>(res);
   return leaderboard;
 }
 
 /** Groups the user belongs to. */
 export async function fetchMyGroups(walletAddress: string): Promise<GroupSummary[]> {
-  const res = await fetch(`/api/groups?wallet=${encodeURIComponent(walletAddress)}`);
+  const res = await apiFetch(`/api/groups?wallet=${encodeURIComponent(walletAddress)}`);
   const { groups } = await jsonOrThrow<{ groups: GroupSummary[] }>(res);
   return groups;
 }
@@ -249,7 +276,7 @@ export async function createGroup(
   emoji: string,
   leaderboardType: LeaderboardType = "streak"
 ): Promise<GroupSummary> {
-  const res = await fetch("/api/groups", {
+  const res = await apiFetch("/api/groups", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ walletAddress, name, emoji, leaderboardType }),
@@ -263,7 +290,7 @@ export async function joinGroup(
   walletAddress: string,
   inviteCode: string
 ): Promise<GroupSummary | null> {
-  const res = await fetch("/api/groups/join", {
+  const res = await apiFetch("/api/groups/join", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ walletAddress, inviteCode }),
@@ -274,7 +301,7 @@ export async function joinGroup(
 }
 
 export async function fetchBadges(): Promise<Badge[]> {
-  const res = await fetch("/api/badges");
+  const res = await apiFetch("/api/badges");
   const { badges } = await jsonOrThrow<{ badges: Badge[] }>(res);
   return badges;
 }
@@ -287,7 +314,7 @@ export interface MatchDetailResponse {
 
 /** Match detail (score + timeline + stats) + each team's last-5 form. */
 export async function fetchMatchDetail(fixtureId: string): Promise<MatchDetailResponse | null> {
-  const res = await fetch(`/api/matches/${encodeURIComponent(fixtureId)}`);
+  const res = await apiFetch(`/api/matches/${encodeURIComponent(fixtureId)}`);
   if (res.status === 404) return null;
   return jsonOrThrow<MatchDetailResponse>(res);
 }
