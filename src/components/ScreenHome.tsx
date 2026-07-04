@@ -322,7 +322,13 @@ export default function ScreenHome({
                   {liveMatches.map((match) => {
                     const hasPicked = !!match.userPick;
                     const pickName = match.userPick === "A" ? match.teamA.name : match.teamB.name;
-                    
+                    // Pick window (Issue 5): open only while 0-0, no red, first half.
+                    const pickOpen = match.pickOpen === true;
+                    const closeReason =
+                      match.pickCloseReason === "goal" ? "first goal"
+                      : match.pickCloseReason === "red" ? "red card"
+                      : null;
+
                     return (
                       <div
                         key={match.id}
@@ -374,31 +380,60 @@ export default function ScreenHome({
                           </div>
                         </div>
 
-                        {/* Dynamic Prediction feedback */}
-                        <div className="mt-4 pt-3.5 border-t border-white/5 flex items-center justify-between">
-                          {hasPicked ? (
-                            <div className="flex items-center gap-2 bg-[#0A0E1A] border border-white/5 px-3.5 py-2.5 rounded-2xl w-full justify-between shadow-inner">
-                              <div className="flex items-center gap-1.5">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                <span className="text-xs text-[#8E9299] font-bold uppercase tracking-wider text-[10px]">Your Pick:</span>
-                                <span className="text-xs font-black text-[#FF4E00]">
-                                  {pickName}
+                        {/* Pick window states (Issue 5). Buttons stopPropagation so
+                            they don't also open the tap-to-detail overlay. */}
+                        <div className="mt-4 pt-3.5 border-t border-white/5">
+                          {pickOpen && !hasPicked ? (
+                            // ① OPEN, not picked — the money state
+                            <>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setActivePickFixture(match); }}
+                                className="w-full bg-[#FF4E00] hover:bg-[#ff6a2a] rounded-2xl py-2.5 px-3.5 flex items-center justify-between transition shadow-lg shadow-[#FF4E00]/20 cursor-pointer"
+                              >
+                                <span className="flex items-center gap-1.5 text-xs font-black text-white uppercase tracking-tight">
+                                  <Zap className="w-4 h-4" /> Pick before the first goal
                                 </span>
+                                <ChevronRight className="w-4 h-4 text-white" />
+                              </button>
+                              <p className="mt-1.5 text-[8px] font-mono text-[#8E9299]/70 uppercase tracking-wider text-center">
+                                Open till the first goal, a red card, or halftime
+                              </p>
+                            </>
+                          ) : pickOpen && hasPicked ? (
+                            // ② OPEN, picked — still changeable
+                            <div className="flex items-center gap-2 bg-[#0A0E1A] border border-[#FF4E00]/20 px-3.5 py-2.5 rounded-2xl w-full justify-between shadow-inner">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                <span className="text-[10px] text-[#8E9299] font-bold uppercase tracking-wider">Your Pick:</span>
+                                <span className="text-xs font-black text-[#FF4E00] truncate">{pickName}</span>
                               </div>
-                              <span className="text-[9px] font-mono font-bold bg-[#FF4E00]/10 text-[#FF4E00] border border-[#FF4E00]/20 px-2 py-0.5 rounded-full">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setActivePickFixture(match); }}
+                                className="text-[9px] font-mono text-slate-300 hover:text-white bg-[#2D364F]/50 border border-white/5 px-2.5 py-1 rounded-lg transition flex-shrink-0 cursor-pointer"
+                              >
+                                Change
+                              </button>
+                            </div>
+                          ) : hasPicked ? (
+                            // ③ CLOSED, picked
+                            <div className="flex items-center gap-2 bg-[#0A0E1A] border border-white/5 px-3.5 py-2.5 rounded-2xl w-full justify-between shadow-inner">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                <span className="text-[10px] text-[#8E9299] font-bold uppercase tracking-wider">Your Pick:</span>
+                                <span className="text-xs font-black text-[#FF4E00] truncate">{pickName}</span>
+                              </div>
+                              <span className="text-[9px] font-mono font-bold bg-[#FF4E00]/10 text-[#FF4E00] border border-[#FF4E00]/20 px-2 py-0.5 rounded-full flex-shrink-0">
                                 Locked
                               </span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 bg-[#0A0E1A]/45 border border-white/5 px-3.5 py-2.5 rounded-2xl w-full justify-between shadow-inner opacity-70">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs text-[#8E9299] font-bold uppercase tracking-wider text-[10px]">Your Pick:</span>
-                                <span className="text-xs font-black text-slate-500 uppercase tracking-tight">
-                                  No Prediction
-                                </span>
-                              </div>
-                              <span className="text-[9px] font-mono font-bold bg-white/5 text-slate-400 border border-white/5 px-2 py-0.5 rounded-full uppercase">
-                                Closed
+                            // ④ CLOSED, not picked
+                            <div className="flex items-center gap-2 bg-[#0A0E1A]/45 border border-white/5 px-3.5 py-2.5 rounded-2xl w-full justify-between shadow-inner opacity-80">
+                              <span className="text-[10px] text-[#8E9299] font-bold uppercase tracking-wider">
+                                Picks closed{closeReason ? ` · ${closeReason}` : ""}
+                              </span>
+                              <span className="text-[9px] font-mono font-bold bg-white/5 text-slate-400 border border-white/5 px-2 py-0.5 rounded-full uppercase flex-shrink-0">
+                                Missed
                               </span>
                             </div>
                           )}
@@ -791,7 +826,7 @@ export default function ScreenHome({
                 WHO ADVANCES?
               </h2>
               <p className="text-xs text-[#8E9299] mt-2 max-w-sm mx-auto leading-relaxed">
-                No draws. Includes extra time and penalties. Keep choosing the right teams to build your streak!
+                No draws — includes extra time and penalties. You can lock in right up to the <span className="text-white font-bold">first goal, a red card, or halftime</span>, whichever comes first. Get in early!
               </p>
             </div>
 

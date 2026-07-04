@@ -74,6 +74,11 @@ create table if not exists fixtures (
   actual_winner  text check (actual_winner in ('A','B')),  -- filled when finished
   updated_at     timestamptz not null default now()
 );
+
+-- Pick window (Issue 5): open until first goal / red card / 2nd-half kickoff.
+-- Computed during sync from the live snapshot; drives the live-card pick states.
+alter table fixtures add column if not exists pick_open boolean;
+alter table fixtures add column if not exists pick_close_reason text;
 create index if not exists fixtures_status_idx on fixtures (status);
 create index if not exists fixtures_kickoff_idx on fixtures (kickoff_at);
 

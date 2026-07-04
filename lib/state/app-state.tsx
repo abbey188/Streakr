@@ -256,16 +256,32 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const makePick = useCallback(
     (fixtureId: string, pick: "A" | "B") => {
+      const match = fixtures.find((f) => f.id === fixtureId);
+      const prevPick = match?.userPick; // for revert if the server rejects
+      // Optimistic update + toast.
       setFixtures((prev) =>
         prev.map((f) => (f.id === fixtureId ? { ...f, userPick: pick } : f))
       );
-      const match = fixtures.find((f) => f.id === fixtureId);
       if (match) {
         const teamName = pick === "A" ? match.teamA.name : match.teamB.name;
         triggerToast(`Pick locked: ${teamName} to advance!`);
       }
       if (identity.walletAddress) {
-        apiMakePick(identity.walletAddress, fixtureId, pick).catch(() => {});
+        apiMakePick(identity.walletAddress, fixtureId, pick)
+          .then((res) => {
+            if (!res.ok) {
+              // Window closed between render and submit → revert + explain.
+              setFixtures((prev) =>
+                prev.map((f) => (f.id === fixtureId ? { ...f, userPick: prevPick } : f))
+              );
+              const why =
+                res.reason === "goal" ? "a goal was scored"
+                : res.reason === "red" ? "a red card"
+                : "the match moved on";
+              triggerToast(`Picks just closed — ${why}.`);
+            }
+          })
+          .catch(() => {});
       }
     },
     [fixtures, identity.walletAddress, triggerToast]

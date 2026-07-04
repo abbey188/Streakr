@@ -125,6 +125,8 @@ interface FixtureRow {
   kickoff_at: string | null;
   updated_at: string | null;
   user_pick: "A" | "B" | null;
+  pick_open: boolean | null;
+  pick_close_reason: string | null;
 }
 
 function mapFixture(r: FixtureRow): Fixture {
@@ -144,6 +146,8 @@ function mapFixture(r: FixtureRow): Fixture {
     updatedAt: r.updated_at ?? undefined,
     userPick: r.user_pick ?? undefined,
     actualWinner: r.actual_winner ?? undefined,
+    pickOpen: r.pick_open ?? undefined,
+    pickCloseReason: (r.pick_close_reason as Fixture["pickCloseReason"]) ?? null,
   };
 }
 
@@ -157,6 +161,7 @@ export async function getFixtures(walletAddress?: string): Promise<Fixture[]> {
     select
       f.id, f.round, f.status, f.score_a, f.score_b, f.minute,
       f.kickoff_time, f.kickoff_at, f.updated_at, f.actual_winner,
+      f.pick_open, f.pick_close_reason,
       ta.id as team_a_id, ta.name as team_a_name, ta.flag as team_a_flag, ta.code as team_a_code,
       tb.id as team_b_id, tb.name as team_b_name, tb.flag as team_b_flag, tb.code as team_b_code,
       p.pick as user_pick
