@@ -331,3 +331,35 @@ export async function fetchMatchDetail(fixtureId: string): Promise<MatchDetailRe
   if (res.status === 404) return null;
   return jsonOrThrow<MatchDetailResponse>(res);
 }
+
+// ─── Announcements ─────────────────────────────────────────────────────────
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  icon: string | null;
+  kind: string; // info | tip | warning | update
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  priority: number;
+}
+
+/** Live announcements for the glance strip. Dismissal is client-side. */
+export async function fetchAnnouncements(): Promise<Announcement[]> {
+  try {
+    const res = await apiFetch("/api/announcements");
+    const { announcements } = await jsonOrThrow<{
+      announcements: Array<{
+        id: string; title: string; body: string; icon: string | null; kind: string;
+        cta_label: string | null; cta_href: string | null; priority: number;
+      }>;
+    }>(res);
+    return announcements.map((a) => ({
+      id: a.id, title: a.title, body: a.body, icon: a.icon, kind: a.kind,
+      ctaLabel: a.cta_label, ctaHref: a.cta_href, priority: a.priority,
+    }));
+  } catch {
+    return [];
+  }
+}
