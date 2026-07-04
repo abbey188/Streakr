@@ -26,9 +26,11 @@ const WC_START_EPOCH_DAY = Math.floor(Date.parse("2026-06-14T00:00:00Z") / 86400
 const BATCH = 12;
 
 // Light-sync window: refresh matches from 4h ago (covers a full match incl.
-// ET/penalties) through 30 min ahead (so "about to start" reminders fire).
+// ET/penalties) through 45 min ahead — matches KICKOFF_SOON_MS so the "about to
+// start" pick reminder actually fires across its full 45-min window (it was
+// previously capped at 30 min by this future bound).
 const WINDOW_PAST_MS = 4 * 60 * 60 * 1000;
-const WINDOW_FUTURE_MS = 30 * 60 * 1000;
+const WINDOW_FUTURE_MS = 45 * 60 * 1000;
 
 /**
  * Enrich raw fixtures with live score/status (batched parallel scores calls).

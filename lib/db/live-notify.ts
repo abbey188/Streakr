@@ -77,6 +77,7 @@ export async function notifyLiveEvents(
               where n.user_address = p.user_address and n.fixture_id = ${f.id}
                 and n.type = 'goal' and n.body = ${body}
             )
+          on conflict do nothing
         `;
       }
 
@@ -98,6 +99,7 @@ export async function notifyLiveEvents(
               where n.user_address = p.user_address and n.fixture_id = ${f.id}
                 and n.type = 'match_start' and n.title = 'Kickoff! 🏁'
             )
+          on conflict do nothing
         `;
       }
     }
@@ -122,6 +124,7 @@ export async function notifyLiveEvents(
             select 1 from notifications n
             where n.user_address = u.wallet_address and n.fixture_id = ${f.id} and n.type = 'match_start'
           )
+        on conflict do nothing
       `;
     }
   }
