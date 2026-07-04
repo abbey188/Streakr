@@ -136,16 +136,15 @@ export async function authWallet(
     return verified ? { ok: true, wallet: verified } : { ok: false };
   }
 
-  // Verify-only observability — never rejects. Distinguishes the three failure
-  // modes: client not sending header / token not verifying / user not mapped.
-  if (verified && verified === claimed) {
-    console.info(`[auth bake] OK → ${claimed}`);
-  } else if (verified) {
-    console.warn(`[auth bake] MISMATCH token=${verified} body=${claimed}`);
-  } else {
-    console.warn(
-      `[auth bake] UNRESOLVED body=${claimed} | hasBearer=${hasBearer} tokenLen=${rawAuth.length} verifiedUserId=${userId ?? "null"}`
-    );
+  // Verify-only observability — never rejects. Persist to a debug table so we can
+  // read the exact break (client header / token verify / mapping) reliably.
+  try {
+    await sql`
+      insert into auth_debug (wallet, has_bearer, token_len, user_id, verified_wallet)
+      values (${claimed}, ${hasBearer}, ${rawAuth.length}, ${userId}, ${verified})
+    `;
+  } catch {
+    /* debug write must never affect the request */
   }
   return { ok: true, wallet: claimed };
 }
