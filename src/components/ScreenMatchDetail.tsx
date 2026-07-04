@@ -223,7 +223,9 @@ export default function ScreenMatchDetail({ fixtureId, onBack }: ScreenMatchDeta
             <div className="space-y-2">
               {detail.events.length === 0 ? (
                 <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">
-                  {s.status === "upcoming" ? "Match hasn't kicked off yet." : "No events yet."}
+                  {s.status === "upcoming"
+                    ? "Match hasn't kicked off yet."
+                    : "Underway — no key events yet. Goals, cards & subs appear here."}
                 </div>
               ) : (
                 detail.events.map((e: MatchEvent) => (
