@@ -520,6 +520,11 @@ export async function markNotificationsRead(walletAddress: string): Promise<void
   await sql`update notifications set read = true where user_address = ${walletAddress} and read = false`;
 }
 
+/** Clear (delete) all of a user's personal notifications — the Inbox "Clear all". */
+export async function clearNotifications(walletAddress: string): Promise<void> {
+  await sql`delete from notifications where user_address = ${walletAddress}`;
+}
+
 /** Count of unread notifications — powers the Inbox nav badge. */
 export async function getUnreadNotificationCount(walletAddress: string): Promise<number> {
   const rows = (await sql`

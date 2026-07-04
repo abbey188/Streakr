@@ -568,8 +568,10 @@ export default function ScreenHome({
 
           </div>
 
-          {/* Right Info Sidebar Column */}
-          <div className="space-y-5">
+          {/* Right Info Sidebar Column.
+              order-first on mobile floats the champion-race card to the top of Play
+              (above notifications → live → upcoming); desktop layout is unchanged. */}
+          <div className="space-y-5 order-first lg:order-none">
             
             {/* 3. Knockout Stage tracker — The Road to the Final */}
             <div
