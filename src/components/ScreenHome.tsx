@@ -608,7 +608,7 @@ export default function ScreenHome({
                         aria-label={`View ${s.round} standings`}
                         className="flex flex-col items-center gap-1.5 flex-shrink-0 group/step cursor-pointer"
                       >
-                        <div className={`w-3 h-3 rounded-full ${dot} ring-2 ring-[#FF4E00]/55 ring-offset-2 ring-offset-[#151B2E] transition group-hover/step:ring-[#FF4E00] group-hover/step:scale-125`} />
+                        <div className={`w-2.5 h-2.5 rounded-full ${dot} ring-2 ring-[#FF4E00]/55 ring-offset-[3px] ring-offset-[#151B2E] transition group-hover/step:ring-[#FF4E00] group-hover/step:scale-125`} />
                         <span className={`text-[9px] font-mono font-black uppercase tracking-wide ${label} group-hover/step:text-white transition`}>
                           {KO_SHORT[s.round]}
                         </span>
