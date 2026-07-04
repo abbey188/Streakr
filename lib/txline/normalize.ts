@@ -154,13 +154,30 @@ function latestScored(entries: RawScoreEntry[]): RawScoreEntry | null {
 }
 
 export function deriveLiveScore(fixtureId: string, entries: RawScoreEntry[]): LiveScore {
-  // Phases progress NS(1)→H1(2)→…→F(5)→ET→PENS. Take the furthest phase reached
-  // (max StatusId) — newest-by-timestamp can be a stale coverage_update at NS.
-  const statusId = entries.reduce(
-    (m, e) => (typeof e.StatusId === "number" && e.StatusId > m ? e.StatusId : m),
-    1
-  );
-  const phase = SOCCER_STATUS[statusId] ?? { status: "upcoming" as MatchStatus, period: "NS" };
+  // Determine the furthest real PHASE reached AND whether the match is FINALISED.
+  //
+  // TxLINE (MainNet, 1 Jul 2026 release): the `game_finalised` action now carries
+  // StatusId/period = 100 as a definitive settlement marker — set regardless of
+  // HOW the match ended (regulation / extra time / penalties / abandoned). 100 is
+  // not a play phase, so a naive max(StatusId) latches onto it, misses the phase
+  // map, and strands a finished match as "upcoming" (the Play-page bug). We read
+  // 100 (and the game_finalised action, for older data) as "finalised" and take
+  // the winning METHOD from the deepest real phase code actually seen.
+  let realMax = 1; // furthest genuine game phase (1..19)
+  let finalised = false;
+  for (const e of entries) {
+    const sid = e.StatusId;
+    if (sid === 100) finalised = true;
+    else if (typeof sid === "number" && SOCCER_STATUS[sid] && sid > realMax) realMax = sid;
+    if (e.Action === "game_finalised") finalised = true;
+  }
+  let phase = SOCCER_STATUS[realMax] ?? { status: "upcoming" as MatchStatus, period: "NS" };
+  if (finalised && !phase.finished) {
+    // Finalised while the deepest phase code was still mid-play — settle it,
+    // inferring the method from how far the match progressed.
+    const period = realMax >= 11 ? "PENS" : realMax >= 6 ? "AET" : "FT";
+    phase = { status: "finished", period, finished: true, pens: realMax >= 11 };
+  }
 
   const scored = latestScored(entries);
   const p1 = scored?.Score?.Participant1;
@@ -209,7 +226,8 @@ function formatPlayerName(raw: string): string {
  * some goal events carry no PlayerId, so it can be null (caller falls back to
  * the team name). Never returns a disallowed/unconfirmed goal.
  */
-export function deriveLastGoal(entries: RawScoreEntry[]): LastGoal | null {
+/** normativeId → display surname, built from the Lineups block in the stream. */
+function buildPlayerNames(entries: RawScoreEntry[]): Map<number, string> {
   const names = new Map<number, string>();
   const lineups = entries.find((e) => e.Lineups)?.Lineups;
   if (lineups) {
@@ -221,6 +239,11 @@ export function deriveLastGoal(entries: RawScoreEntry[]): LastGoal | null {
       }
     }
   }
+  return names;
+}
+
+export function deriveLastGoal(entries: RawScoreEntry[]): LastGoal | null {
+  const names = buildPlayerNames(entries);
   let best: RawScoreEntry | null = null;
   for (const e of entries) {
     if (e.Confirmed === false) continue;
@@ -271,69 +294,126 @@ const minuteOf = (e: RawScoreEntry): number => {
 };
 
 /**
- * Builds the timeline from the chronological stream. The stream retransmits each
- * event several times (full-game + per-half stat messages) and card/sub team
- * isn't in the action itself, so:
- *   • goals/cards → emitted when the cumulative Score COUNT increments (exact
- *     count + correct team, naturally deduped)
- *   • subs/VAR → from action entries (team via Data.Participant), deduped
- * Corners are left to the stats panel (too frequent for a timeline).
+ * Builds the timeline directly from the ACTION stream — the SSE-ready model.
+ *
+ * Each timeline entry is derived from a single confirmed action (goal, penalty
+ * outcome, card, sub, VAR) rather than from score-count deltas. This lets every
+ * event carry the player's name (Data.PlayerId → lineup normativeId) and lets
+ * VAR sort itself out for free:
+ *   • Confirmed === false  → skipped entirely (disallowed / under-review goals
+ *     never reach the timeline, so a chalked-off goal doesn't linger).
+ *   • penalty_outcome      → a goal only when Outcome==="Scored"; otherwise a
+ *     "Penalty missed/saved" beat.
+ * The stream retransmits actions (full-game + per-half messages), so events are
+ * deduped by a content key (action + team + minute + player). Team comes from
+ * the top-level Participant (goals/cards) or Data.Participant (subs). The
+ * authoritative scoreline still comes from deriveLiveScore — this is the feed.
  */
 export function buildEvents(entries: RawScoreEntry[]): MatchEvent[] {
-  // Dedupe retransmits by Seq, process in order.
   const bySeq = new Map<number, RawScoreEntry>();
   for (const e of entries) if (!bySeq.has(e.Seq)) bySeq.set(e.Seq, e);
   const chrono = [...bySeq.values()].sort((a, b) => a.Seq - b.Seq);
 
-  const events: MatchEvent[] = [];
-  let g1 = 0, g2 = 0, y1 = 0, y2 = 0, r1 = 0, r2 = 0;
-  const actionSeen = new Set<string>();
+  const names = buildPlayerNames(entries);
+  const nameOf = (pid: unknown): string | undefined =>
+    typeof pid === "number" ? names.get(pid) : undefined;
+
+  // Collect candidates, then collapse retransmits. The stream sends the same
+  // action many times; some copies carry Data.PlayerId, some don't. We bucket
+  // by (type + team + minute) and, per bucket, keep every DISTINCT named
+  // version (so a double-sub in one minute survives) while dropping the
+  // player-less retransmits — unless nothing in the bucket was ever named, in
+  // which case we keep a single anonymous event so the beat isn't lost.
+  interface Cand { bucket: string; who?: string; ev: MatchEvent }
+  const cands: Cand[] = [];
 
   for (const e of chrono) {
-    const t = e.Score?.Participant1?.Total;
-    const u = e.Score?.Participant2?.Total;
-    const ng1 = t?.Goals ?? g1, ng2 = u?.Goals ?? g2;
-    const ny1 = t?.YellowCards ?? y1, ny2 = u?.YellowCards ?? y2;
-    const nr1 = t?.RedCards ?? r1, nr2 = u?.RedCards ?? r2;
+    if (e.Confirmed === false) continue; // VAR-pending / disallowed — never show
     const min = minuteOf(e);
-    const goalDetail =
-      e.Action === "goal" ? (String(e.Data?.GoalType ?? "") || undefined) : undefined;
-    const goalType = e.Data?.GoalType === "Penalty" ? "penalty" : "goal";
+    const team = e.Participant === 1 ? "A" : e.Participant === 2 ? "B" : undefined;
+    const d = e.Data ?? {};
+    const id = `${e.FixtureId}-${e.Seq}`;
 
-    // Goals — one event per increment, attributed to the side whose count grew.
-    for (let k = g1; k < ng1; k++)
-      events.push({ id: `${e.FixtureId}-gA-${k}`, minute: min, team: "A", type: goalType, detail: goalDetail });
-    for (let k = g2; k < ng2; k++)
-      events.push({ id: `${e.FixtureId}-gB-${k}`, minute: min, team: "B", type: goalType, detail: goalDetail });
-    for (let k = y1; k < ny1; k++)
-      events.push({ id: `${e.FixtureId}-yA-${k}`, minute: min, team: "A", type: "yellow" });
-    for (let k = y2; k < ny2; k++)
-      events.push({ id: `${e.FixtureId}-yB-${k}`, minute: min, team: "B", type: "yellow" });
-    for (let k = r1; k < nr1; k++)
-      events.push({ id: `${e.FixtureId}-rA-${k}`, minute: min, team: "A", type: "red" });
-    for (let k = r2; k < nr2; k++)
-      events.push({ id: `${e.FixtureId}-rB-${k}`, minute: min, team: "B", type: "red" });
-
-    // Subs — collapse retransmits to one per team per minute (the stream
-    // duplicates them and PlayerOutId isn't reliably present).
-    if (e.Action === "substitution") {
-      const teamSub = partOf(e.Data) ?? "A";
-      const key = `sub-${min}-${teamSub}`;
-      if (!actionSeen.has(key)) {
-        actionSeen.add(key);
-        events.push({ id: `${e.FixtureId}-${e.Seq}`, minute: min, team: teamSub, type: "sub" });
+    switch (e.Action) {
+      case "goal": {
+        if (!team) break;
+        const pen = d.GoalType === "Penalty";
+        const scorer = nameOf(d.PlayerId);
+        cands.push({
+          bucket: `goal-${team}-${min}`, who: scorer,
+          ev: { id, minute: min, team, type: pen ? "penalty" : "goal",
+                detail: scorer ? (pen ? `${scorer} (pen)` : scorer) : undefined },
+        });
+        break;
       }
-    } else if (e.Action === "var") {
-      // Collapse VAR check + outcome at the same minute into one entry.
-      const key = `var-${min}`;
-      if (!actionSeen.has(key)) {
-        actionSeen.add(key);
-        events.push({ id: `${e.FixtureId}-${e.Seq}`, minute: min, team: partOf(e.Data) ?? "A", type: "var", detail: String(e.Data?.Type ?? "") || undefined });
+      case "penalty_outcome": {
+        if (!team) break;
+        const taker = nameOf(d.PlayerId);
+        const scored = d.Outcome === "Scored";
+        cands.push({
+          bucket: `goal-${team}-${min}`, who: taker,
+          ev: scored
+            ? { id, minute: min, team, type: "penalty",
+                detail: taker ? `${taker} (pen)` : "scored" }
+            : { id, minute: min, team, type: "penalty",
+                detail: `${taker ? `${taker} — ` : ""}penalty ${String(d.Outcome ?? "missed").toLowerCase()}` },
+        });
+        break;
+      }
+      case "yellow_card":
+      case "red_card": {
+        if (!team) break;
+        const player = nameOf(d.PlayerId);
+        const type = e.Action === "red_card" ? "red" : "yellow";
+        cands.push({
+          bucket: `${type}-${team}-${min}`, who: player,
+          ev: { id, minute: min, team, type, detail: player },
+        });
+        break;
+      }
+      case "substitution": {
+        const teamSub = partOf(d) ?? team ?? "A";
+        const on = nameOf(d.PlayerInId) ?? nameOf(d.PlayerId);
+        const off = nameOf(d.PlayerOutId);
+        const detail = on || off ? `${on ?? "?"} on${off ? `, ${off} off` : ""}` : undefined;
+        cands.push({
+          bucket: `sub-${teamSub}-${min}`, who: on ?? off,
+          ev: { id, minute: min, team: teamSub, type: "sub", detail },
+        });
+        break;
+      }
+      case "var": {
+        cands.push({
+          bucket: `var-${min}`, who: undefined,
+          ev: { id, minute: min, team: team ?? "A", type: "var",
+                detail: (String(d.Type ?? "").toLowerCase() || "review") + " check" },
+        });
+        break;
       }
     }
-
-    g1 = ng1; g2 = ng2; y1 = ny1; y2 = ny2; r1 = nr1; r2 = nr2;
   }
 
-  return events.reverse(); // newest first
+  const byBucket = new Map<string, Cand[]>();
+  for (const c of cands) {
+    const list = byBucket.get(c.bucket);
+    if (list) list.push(c); else byBucket.set(c.bucket, [c]);
+  }
+
+  const events: MatchEvent[] = [];
+  for (const group of byBucket.values()) {
+    const named = group.filter((c) => c.who);
+    if (named.length) {
+      const seenWho = new Set<string>();
+      for (const c of named) {
+        if (seenWho.has(c.who!)) continue; // same player retransmitted
+        seenWho.add(c.who!);
+        events.push(c.ev);
+      }
+    } else {
+      events.push(group[0].ev); // never named — keep one anonymous beat
+    }
+  }
+
+  // Newest first. Stable sort keeps same-minute events grouped.
+  return events.sort((a, b) => b.minute - a.minute);
 }
