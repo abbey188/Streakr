@@ -132,10 +132,17 @@ async function upsertFixtures(fixtures: Fixture[]): Promise<void> {
       ${fixtures.map((f) => f.actualWinner ?? null)}::text[]
     ) as t(id, round, a, b, status, sa, sb, minute, kt, ka, winner)
     on conflict (id) do update set
-      round = excluded.round, status = excluded.status,
-      score_a = excluded.score_a, score_b = excluded.score_b,
-      minute = excluded.minute, kickoff_at = excluded.kickoff_at,
-      actual_winner = excluded.actual_winner, updated_at = now()
+      round = excluded.round,
+      -- 'finished' is TERMINAL: once a match is settled, a later sync can never
+      -- regress its status/score/winner (a bad derivation must not un-finish a
+      -- match and put it back on the Play page). Schedule fields still refresh.
+      status        = case when fixtures.status = 'finished' then 'finished'         else excluded.status        end,
+      score_a       = case when fixtures.status = 'finished' then fixtures.score_a    else excluded.score_a       end,
+      score_b       = case when fixtures.status = 'finished' then fixtures.score_b    else excluded.score_b       end,
+      minute        = case when fixtures.status = 'finished' then fixtures.minute     else excluded.minute        end,
+      actual_winner = case when fixtures.status = 'finished' then fixtures.actual_winner else excluded.actual_winner end,
+      kickoff_at    = excluded.kickoff_at,
+      updated_at    = now()
   `;
 }
 
@@ -174,9 +181,32 @@ export async function syncLiveFixtures(): Promise<{ discovered: number; refreshe
   const raw = await txlineClient.getFixturesSnapshot(COMPETITION_ID, WC_START_EPOCH_DAY);
   const roundByGroup = buildRoundMap(raw); // built from the FULL list
   const now = Date.now();
+
+  // Safety net: any knockout fixture already past kickoff but NOT finished in the
+  // DB — regardless of the light-sync window. Guarantees a match that finished
+  // outside the window (long ET/pens, or a cron gap) still gets re-derived and
+  // settled, so it can never linger on the Play page. Self-healing: once settled,
+  // the terminal-status guard keeps it finished and it drops out of this set.
+  // Bounded to the last 3 days to stay cheap.
+  const stuckRows = (await sql`
+    select id from fixtures
+    where status <> 'finished'
+      and round <> 'Group Stage'
+      and kickoff_at is not null
+      and kickoff_at < now()
+      and kickoff_at > now() - interval '3 days'
+  `) as { id: string }[];
+  const stuckIds = new Set(stuckRows.map((r) => r.id));
+  if (stuckIds.size > 0) {
+    console.warn(
+      `[sync] safety-net: re-checking ${stuckIds.size} past-kickoff unfinished fixture(s): ${[...stuckIds].join(", ")}`
+    );
+  }
+
   const near = raw.filter((rf) => {
     const t = Number(rf.StartTime); // epoch ms
-    return Number.isFinite(t) && t >= now - WINDOW_PAST_MS && t <= now + WINDOW_FUTURE_MS;
+    const inWindow = Number.isFinite(t) && t >= now - WINDOW_PAST_MS && t <= now + WINDOW_FUTURE_MS;
+    return inWindow || stuckIds.has(String(rf.FixtureId));
   });
 
   const { fixtures: enriched, lastGoals } = await enrichFixtures(near, roundByGroup);
