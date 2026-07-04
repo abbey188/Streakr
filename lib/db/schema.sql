@@ -46,6 +46,14 @@ create table if not exists users (
   last_seen_at    timestamptz not null default now()
 );
 
+-- Privy user DID (did:privy:...) bound at signup, used for server-side auth:
+-- verify the caller's Privy token -> userId -> this row's wallet_address. Added
+-- via ALTER so existing deployments pick it up without a table rebuild. Nullable
+-- during the auth rollout; backfilled for existing users on first authed touch.
+alter table users add column if not exists privy_user_id text;
+create unique index if not exists users_privy_user_id_key
+  on users (privy_user_id) where privy_user_id is not null;
+
 -- ─── fixtures ─────────────────────────────────────────────────────────
 -- Synced from TxLINE (handoff §7). Composes into the `Fixture` shape.
 -- `actual_winner` is who ADVANCES (incl. extra time / penalties), not the

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { makePick } from "@/lib/db/queries";
+import { authWallet } from "@/lib/auth/server-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,14 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const ok = await makePick(body.walletAddress, body.fixtureId, body.pick);
+    // Verify-only during the bake: logs token health, never rejects. Once
+    // AUTH_ENFORCED=true, an unverified caller is rejected here (401) and the
+    // wallet comes from the token, not the body.
+    const auth = await authWallet(req, body.walletAddress);
+    if (!auth.ok) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    const ok = await makePick(auth.wallet, body.fixtureId, body.pick);
     if (!ok) {
       return NextResponse.json(
         { error: "Pick rejected — match already kicked off" },
