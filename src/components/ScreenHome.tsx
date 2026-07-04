@@ -6,6 +6,7 @@ import { groupByDay, kickoffLabel } from "@/lib/match-groups";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import AvatarRenderer from "./AvatarRenderer";
 import CountryFlag from "./CountryFlag";
+import ScreenMatchDetail from "./ScreenMatchDetail";
 import { motion, AnimatePresence } from "motion/react";
 import { Flame, Zap, Award, ChevronRight, X, Sparkles, Trophy, CheckCircle2, Globe, Search, Maximize2, Crown } from "lucide-react";
 
@@ -111,6 +112,10 @@ export default function ScreenHome({
   const koStages = KO_ROUNDS.map((round) => ({ round, ...roundStatus(fixtures, round) }));
   // "Current" round = first that isn't finished (else the last round).
   const currentStage = koStages.find((s) => s.status !== "done") ?? koStages[koStages.length - 1];
+
+  // Match-detail overlay — tap a live match to peek stats/timeline without
+  // leaving Play (the Hub route stays the canonical history browser).
+  const [detailFixtureId, setDetailFixtureId] = useState<string | null>(null);
 
   // Round Champion race modal (opens on the selected knockout round).
   const [raceRound, setRaceRound] = useState<string | null>(null);
@@ -317,7 +322,11 @@ export default function ScreenHome({
                     return (
                       <div
                         key={match.id}
-                        className="bg-[#151B2E] border border-red-500/25 rounded-3xl p-4 shadow-xl relative overflow-hidden flex flex-col justify-between"
+                        onClick={() => setDetailFixtureId(match.id)}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View live stats: ${match.teamA.name} vs ${match.teamB.name}`}
+                        className="group bg-[#151B2E] border border-red-500/25 hover:border-red-500/50 rounded-3xl p-4 shadow-xl relative overflow-hidden flex flex-col justify-between cursor-pointer transition"
                       >
                         {/* Subtle live background glow */}
                         <div className="absolute right-0 top-0 bottom-0 w-24 bg-red-500/5 rounded-l-full filter blur-xl pointer-events-none" />
@@ -328,8 +337,9 @@ export default function ScreenHome({
                             <span className="text-[9px] font-mono text-red-400 font-bold tracking-wider uppercase bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
                               Match Live • {liveMinuteLabel(match, now)}
                             </span>
-                            <span className="text-[9px] font-mono text-[#8E9299] font-bold uppercase">
+                            <span className="flex items-center gap-1 text-[9px] font-mono text-[#8E9299] font-bold uppercase">
                               {match.round}
+                              <ChevronRight className="w-3.5 h-3.5 text-[#8E9299] group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                             </span>
                           </div>
 
@@ -724,17 +734,6 @@ export default function ScreenHome({
               })()}
             </div>
 
-            {/* Premium Streak Tip Widget */}
-            <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-5 relative overflow-hidden">
-              <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-[#FF4E00]/5 rounded-full blur-xl pointer-events-none" />
-              <h4 className="text-xs font-black italic text-slate-200 uppercase tracking-tight flex items-center gap-1.5">
-                🔥 Pro Streak Strategy
-              </h4>
-              <p className="text-[10px] text-[#8E9299] leading-relaxed mt-1.5">
-                Knockout stages have no draws! If a match goes to Extra Time or Penalty Shootouts, your pick tracks who eventually wins. Lock in early, and check your Group Feed to see who else has made their calls!
-              </p>
-            </div>
-
           </div>
 
         </div>
@@ -1060,6 +1059,20 @@ export default function ScreenHome({
                 );
               })()}
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Match-detail overlay (tap a live match on Play) ───────────────── */}
+      <AnimatePresence>
+        {detailFixtureId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[65] bg-[#0A0E1A]"
+          >
+            <ScreenMatchDetail fixtureId={detailFixtureId} onBack={() => setDetailFixtureId(null)} />
           </motion.div>
         )}
       </AnimatePresence>
