@@ -223,15 +223,13 @@ export async function makePick(
   fixtureId: string,
   pick: "A" | "B"
 ): Promise<boolean> {
+  // The authoritative pick-window check (fresh live data — Issue 5) runs in the
+  // /api/picks route via getPickWindow. Here we keep only a minimal safety guard:
+  // never accept a pick on a match the DB already considers finished.
   const guard = (await sql`
-    select status, kickoff_at from fixtures where id = ${fixtureId}
-  `) as { status: Fixture["status"]; kickoff_at: string | null }[];
-  if (guard.length === 0) return false;
-  // Freeze picks by STATUS *and* by TIME. The time check is defence-in-depth:
-  // even if a data glitch left a kicked-off match marked 'upcoming', we still
-  // refuse the pick, so a played match can never be gamed.
-  const kickedOff = guard[0].kickoff_at ? Date.parse(guard[0].kickoff_at) <= Date.now() : false;
-  if (guard[0].status !== "upcoming" || kickedOff) return false;
+    select status from fixtures where id = ${fixtureId}
+  `) as { status: Fixture["status"] }[];
+  if (guard.length === 0 || guard[0].status === "finished") return false;
 
   await sql`
     insert into picks (user_address, fixture_id, pick)
