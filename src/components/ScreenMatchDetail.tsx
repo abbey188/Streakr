@@ -100,14 +100,19 @@ export default function ScreenMatchDetail({ fixtureId, onBack }: ScreenMatchDeta
   // Poll fast while the match is live so the watched game feels real-time
   // (the per-match snapshot is cheap). Cron drives the rest of the app.
   useEffect(() => {
-    if (detail?.score.status !== "live") return;
+    // Poll while the match is IN PLAY — including halftime, so we catch the
+    // second-half kickoff and don't freeze on the HT state.
+    const st = detail?.score.status;
+    if (st !== "live" && st !== "halftime") return;
     const t = setInterval(load, 10000);
     return () => clearInterval(t);
   }, [detail?.score.status, load]);
 
   const s = detail?.score;
   const isLive = s?.status === "live";
+  const isHalftime = s?.status === "halftime";
   const isFinished = s?.status === "finished";
+  const inPlay = isLive || isHalftime; // match underway (score + live styling)
   const showPens = s?.homePenalties !== undefined && s?.awayPenalties !== undefined;
 
   return (
@@ -129,11 +134,15 @@ export default function ScreenMatchDetail({ fixtureId, onBack }: ScreenMatchDeta
       ) : (
         <div className="px-4 mt-4 space-y-5 max-w-2xl mx-auto w-full">
           {/* Scoreboard */}
-          <div className={`bg-[#151B2E] border rounded-3xl p-5 shadow-xl relative overflow-hidden ${isLive ? "border-red-500/30 ring-1 ring-red-500/15" : "border-white/5"}`}>
+          <div className={`bg-[#151B2E] border rounded-3xl p-5 shadow-xl relative overflow-hidden ${inPlay ? "border-red-500/30 ring-1 ring-red-500/15" : "border-white/5"}`}>
             <div className="flex justify-center mb-3">
               {isLive ? (
                 <span className="inline-flex items-center gap-1.5 text-[9px] font-bold bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-0.5 rounded-full animate-pulse">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> LIVE • {s.minute}' {s.period && s.period !== "1H" && s.period !== "2H" ? `· ${s.period}` : ""}
+                </span>
+              ) : isHalftime ? (
+                <span className="inline-flex items-center gap-1.5 text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> HALF TIME
                 </span>
               ) : isFinished ? (
                 <span className="text-[9px] font-mono text-[#8E9299] font-bold uppercase bg-[#0A0E1A] px-2.5 py-0.5 rounded-full border border-white/5">
@@ -153,7 +162,7 @@ export default function ScreenMatchDetail({ fixtureId, onBack }: ScreenMatchDeta
               </div>
 
               <div className="flex flex-col items-center px-2">
-                {isFinished || isLive ? (
+                {isFinished || inPlay ? (
                   <span className={`text-4xl font-mono font-black tracking-wider ${isLive ? "text-red-500" : "text-white"}`}>
                     {s.homeScore}<span className="text-[#8E9299] mx-1">-</span>{s.awayScore}
                   </span>
