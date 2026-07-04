@@ -36,7 +36,11 @@ export function setAuthTokenGetter(fn: (() => Promise<string | null>) | null): v
   authTokenGetter = fn;
 }
 
-async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+async function apiFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  retried = false
+): Promise<Response> {
   let authHeader: Record<string, string> = {};
   if (authTokenGetter) {
     try {
@@ -46,10 +50,19 @@ async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promi
       /* token not ready → send without it */
     }
   }
-  return fetch(input, {
+  const res = await fetch(input, {
     ...init,
     headers: { ...authHeader, ...(init.headers ?? {}) },
   });
+
+  // Graceful recovery: a 401 usually means the token wasn't ready on the first
+  // try (e.g. right after load). Re-fetch a fresh token and retry ONCE. A 401 is
+  // returned before any mutation runs, so retrying a POST is safe. If it still
+  // 401s, the error propagates and the caller shows a normal failure.
+  if (res.status === 401 && authTokenGetter && !retried) {
+    return apiFetch(input, init, true);
+  }
+  return res;
 }
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
