@@ -667,3 +667,30 @@ export async function getRoundRace(
     })),
   };
 }
+
+// ─── Announcements ─────────────────────────────────────────────────────────
+
+export interface AnnouncementRow {
+  id: string;
+  title: string;
+  body: string;
+  icon: string | null;
+  kind: string;
+  cta_label: string | null;
+  cta_href: string | null;
+  priority: number;
+}
+
+/** Announcements that are live right now (active + within their window), top priority first. */
+export async function getActiveAnnouncements(): Promise<AnnouncementRow[]> {
+  return (await sql`
+    select id, title, body, icon, kind, cta_label, cta_href, priority
+    from announcements
+    where active = true
+      and starts_at <= now()
+      and (ends_at is null or ends_at >= now())
+      and audience = 'all'
+    order by priority desc, created_at desc
+    limit 10
+  `) as AnnouncementRow[];
+}

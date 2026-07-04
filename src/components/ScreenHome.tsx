@@ -7,6 +7,7 @@ import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import AvatarRenderer from "./AvatarRenderer";
 import CountryFlag from "./CountryFlag";
 import ScreenMatchDetail from "./ScreenMatchDetail";
+import AnnouncementBanner from "./AnnouncementBanner";
 import { motion, AnimatePresence } from "motion/react";
 import { Flame, Zap, Award, ChevronRight, X, Sparkles, Trophy, CheckCircle2, Globe, Search, Maximize2, Crown } from "lucide-react";
 
@@ -257,6 +258,9 @@ export default function ScreenHome({
           
           {/* Main Matches Column */}
           <div className="lg:col-span-2 space-y-6">
+
+            {/* Backend-drivable announcement strip (tips / updates), dismissible */}
+            <AnnouncementBanner />
 
             {/* 0. Your latest results — proactive win/loss surfacing */}
             {myResults.length > 0 && (
@@ -550,10 +554,13 @@ export default function ScreenHome({
               <div className="mt-4 flex items-center z-10 relative">
                 {koStages.map((s, i) => {
                   const isCurrent = s.round === currentStage.round;
+                  // Inner sphere = status (green when done, orange when live, faint
+                  // when upcoming). The orange RING around it is a constant
+                  // "tappable" affordance on every round (added below).
                   const dot =
-                    s.status === "done" ? "bg-emerald-400 border-emerald-400"
-                    : s.status === "live" ? "bg-[#FF4E00] border-[#FF4E00] shadow-[0_0_8px_rgba(255,78,0,0.7)]"
-                    : "bg-transparent border-white/20";
+                    s.status === "done" ? "bg-emerald-400"
+                    : s.status === "live" ? "bg-[#FF4E00] shadow-[0_0_8px_rgba(255,78,0,0.85)]"
+                    : "bg-white/10";
                   const label =
                     s.status === "done" ? "text-emerald-400"
                     : s.status === "live" ? "text-[#FF4E00]"
@@ -566,7 +573,7 @@ export default function ScreenHome({
                         aria-label={`View ${s.round} standings`}
                         className="flex flex-col items-center gap-1.5 flex-shrink-0 group/step cursor-pointer"
                       >
-                        <div className={`w-3 h-3 rounded-full border-2 ${dot} transition group-hover/step:scale-[1.35]`} />
+                        <div className={`w-3 h-3 rounded-full ${dot} ring-2 ring-[#FF4E00]/55 ring-offset-2 ring-offset-[#151B2E] transition group-hover/step:ring-[#FF4E00] group-hover/step:scale-125`} />
                         <span className={`text-[9px] font-mono font-black uppercase tracking-wide ${label} group-hover/step:text-white transition`}>
                           {KO_SHORT[s.round]}
                         </span>

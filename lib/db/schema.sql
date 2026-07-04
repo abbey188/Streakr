@@ -177,3 +177,23 @@ create table if not exists round_champions (
 -- One champion per (round, scope). Coalesce null group_id so global is unique too.
 create unique index if not exists round_champions_uniq
   on round_champions (round, coalesce(group_id, '00000000-0000-0000-0000-000000000000'::uuid));
+
+-- ─── announcements (backend-drivable glance strip; per-user dismissal client-side) ─
+-- One row = one announcement shown to all (or a future audience). Created from
+-- the backend (INSERT). "Live" = active AND now within [starts_at, ends_at].
+create table if not exists announcements (
+  id         uuid primary key default gen_random_uuid(),
+  title      text not null,
+  body       text not null,
+  icon       text,                                  -- emoji
+  kind       text not null default 'info',          -- info | tip | warning | update
+  cta_label  text,
+  cta_href   text,
+  audience   text not null default 'all',           -- 'all' | future segments
+  priority   integer not null default 0,            -- higher shows first
+  starts_at  timestamptz not null default now(),
+  ends_at    timestamptz,                            -- null = no expiry
+  active     boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create index if not exists announcements_live_idx on announcements (active, starts_at);
