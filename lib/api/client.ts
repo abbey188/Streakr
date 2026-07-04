@@ -126,20 +126,27 @@ export async function fetchFixtures(walletAddress?: string): Promise<Fixture[]> 
   return fixtures;
 }
 
-/** Lock or change a pick. Returns false if rejected (match already kicked off). */
+export type PickResult = { ok: boolean; reason?: string };
+
+/** Lock or change a pick. On rejection (409) returns { ok:false, reason } — the
+ *  reason says why the window closed (goal / red / secondhalf / finished). */
 export async function makePick(
   walletAddress: string,
   fixtureId: string,
   pick: "A" | "B"
-): Promise<boolean> {
+): Promise<PickResult> {
   const res = await apiFetch("/api/picks", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ walletAddress, fixtureId, pick }),
   });
-  if (res.status === 409) return false;
+  if (res.status === 409) {
+    let reason: string | undefined;
+    try { reason = (await res.json())?.reason; } catch { /* ignore */ }
+    return { ok: false, reason };
+  }
   await jsonOrThrow<{ ok: true }>(res);
-  return true;
+  return { ok: true };
 }
 
 // ─── Social / meta ─────────────────────────────────────────────────────────

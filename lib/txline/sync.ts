@@ -3,6 +3,7 @@ import type { RawFixture } from "./client";
 import { sql } from "@/lib/db/client";
 import { txlineClient } from "./client";
 import { deriveLiveScore, deriveLastGoal, normalizeFixture, buildRoundMap, type LastGoal } from "./normalize";
+import { derivePickWindow } from "@/lib/pick-window";
 import { resolveFinishedFixtures } from "@/lib/db/resolution";
 import { notifyLiveEvents } from "@/lib/db/live-notify";
 
@@ -48,11 +49,11 @@ async function enrichFixtures(
         const id = String(rf.FixtureId);
         try {
           const entries = await txlineClient.getScoresSnapshot(rf.FixtureId);
-          return {
-            fixture: normalizeFixture(rf, deriveLiveScore(id, entries), round),
-            id,
-            lastGoal: deriveLastGoal(entries),
-          };
+          const fixture = normalizeFixture(rf, deriveLiveScore(id, entries), round);
+          const pw = derivePickWindow(id, entries);
+          fixture.pickOpen = pw.open;
+          fixture.pickCloseReason = (pw.reason ?? null) as Fixture["pickCloseReason"];
+          return { fixture, id, lastGoal: deriveLastGoal(entries) };
         } catch {
           return { fixture: normalizeFixture(rf, null, round), id, lastGoal: null };
         }
@@ -119,8 +120,9 @@ async function upsertFixtures(fixtures: Fixture[]): Promise<void> {
   await upsertTeams(fixtures);
   await sql`
     insert into fixtures (id, txline_id, round, team_a_id, team_b_id, status,
-                          score_a, score_b, minute, kickoff_time, kickoff_at, actual_winner)
-    select id, id, round, a, b, status, sa, sb, minute, kt, ka, winner
+                          score_a, score_b, minute, kickoff_time, kickoff_at, actual_winner,
+                          pick_open, pick_close_reason)
+    select id, id, round, a, b, status, sa, sb, minute, kt, ka, winner, po, pcr
     from unnest(
       ${fixtures.map((f) => f.id)}::text[], ${fixtures.map((f) => f.round)}::text[],
       ${fixtures.map((f) => f.teamA.id)}::text[], ${fixtures.map((f) => f.teamB.id)}::text[],
@@ -129,8 +131,10 @@ async function upsertFixtures(fixtures: Fixture[]): Promise<void> {
       ${fixtures.map((f) => f.minute ?? null)}::int[],
       ${fixtures.map((f) => f.kickoffTime)}::text[],
       ${fixtures.map((f) => f.kickoffAt ?? null)}::timestamptz[],
-      ${fixtures.map((f) => f.actualWinner ?? null)}::text[]
-    ) as t(id, round, a, b, status, sa, sb, minute, kt, ka, winner)
+      ${fixtures.map((f) => f.actualWinner ?? null)}::text[],
+      ${fixtures.map((f) => f.pickOpen ?? null)}::boolean[],
+      ${fixtures.map((f) => f.pickCloseReason ?? null)}::text[]
+    ) as t(id, round, a, b, status, sa, sb, minute, kt, ka, winner, po, pcr)
     on conflict (id) do update set
       round = excluded.round,
       -- 'finished' is TERMINAL: once a match is settled, a later sync can never
@@ -141,6 +145,8 @@ async function upsertFixtures(fixtures: Fixture[]): Promise<void> {
       score_b       = case when fixtures.status = 'finished' then fixtures.score_b    else excluded.score_b       end,
       minute        = case when fixtures.status = 'finished' then fixtures.minute     else excluded.minute        end,
       actual_winner = case when fixtures.status = 'finished' then fixtures.actual_winner else excluded.actual_winner end,
+      pick_open         = excluded.pick_open,
+      pick_close_reason = excluded.pick_close_reason,
       kickoff_at    = excluded.kickoff_at,
       updated_at    = now()
   `;
