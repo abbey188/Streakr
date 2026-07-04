@@ -169,6 +169,11 @@ create table if not exists notifications (
   created_at    timestamptz not null default now()
 );
 create index if not exists notifications_user_idx on notifications (user_address, created_at desc);
+-- Idempotency for live events: one goal/kickoff per (user, fixture, body). Backs
+-- `on conflict do nothing` so concurrent sync runs can't create duplicates.
+create unique index if not exists notifications_live_dedup
+  on notifications (user_address, fixture_id, type, body)
+  where type in ('goal','match_start') and fixture_id is not null;
 
 -- ─── round champions (R32/R16/QF, global + per-group; idempotent) ─────────
 create table if not exists round_champions (
