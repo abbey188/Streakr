@@ -80,8 +80,9 @@ without a terminal phase code.
 - **`Confirmed === false` entries are skipped** everywhere (score, minute, goals, events).
 - **`finished` is terminal in the DB** — once settled, a later sync can't un-finish a
   match (protects against flicker). Corollary: a *wrongly* finished match must be
-  repaired manually (see `scratchpad/repair-match.mjs` pattern) — so our guards must
-  stop a bad finish **before** it's written.
+  repaired manually — `node --env-file=.env scripts/unresolve-fixture.mjs <id>`
+  (dry-run; `--apply` to execute). So our guards must stop a bad finish **before**
+  it's written; the script is the recovery valve if one ever slips through.
 
 ---
 
