@@ -277,6 +277,30 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
               )}
             </div>
 
+            {/* Consent — passive clickwrap. Links open in a new tab so a pending
+                pick isn't lost by navigating away mid-signup. */}
+            <p className="text-[10px] leading-relaxed text-[#8E9299] text-center pt-1">
+              By continuing, you agree to our{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-300 hover:text-white underline underline-offset-2"
+              >
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-300 hover:text-white underline underline-offset-2"
+              >
+                Privacy Policy
+              </a>
+              .
+            </p>
+
           </div>
 
         </div>
