@@ -172,18 +172,27 @@ export function deriveLiveScore(fixtureId: string, entries: RawScoreEntry[]): Li
     if (e.Action === "game_finalised") finalised = true;
   }
   let phase = SOCCER_STATUS[realMax] ?? { status: "upcoming" as MatchStatus, period: "NS" };
-  if (finalised && !phase.finished) {
-    // Finalised while the deepest phase code was still mid-play — settle it,
-    // inferring the method from how far the match progressed.
-    const period = realMax >= 11 ? "PENS" : realMax >= 6 ? "AET" : "FT";
-    phase = { status: "finished", period, finished: true, pens: realMax >= 11 };
-  }
 
   const scored = latestScored(entries);
   const p1 = scored?.Score?.Participant1;
   const p2 = scored?.Score?.Participant2;
   const homeScore = g(p1);
   const awayScore = g(p2);
+
+  if (finalised && !phase.finished) {
+    // A finalise marker landed while the deepest phase code was still mid-play.
+    // Only settle the match if the result is actually DECISIVE — a non-level
+    // score, or a penalty-shootout result. A "finalised" on a LEVEL score with no
+    // shootout is a premature/glitch marker (a knockout cannot end level), so keep
+    // the real play phase instead of freezing a still-live match as finished —
+    // which was nulling the minute (card showed "HT") and closing picks as
+    // "finished" while play continued. Real decisive finishes still settle here.
+    const decisive = homeScore !== awayScore || pe(p1) !== pe(p2);
+    if (decisive) {
+      const period = realMax >= 11 ? "PENS" : realMax >= 6 ? "AET" : "FT";
+      phase = { status: "finished", period, finished: true, pens: realMax >= 11 };
+    }
+  }
 
   // Live minute from the FRESHEST running clock — not latestScored, whose Clock
   // only updates when a score entry arrives, which freezes the minute in a
