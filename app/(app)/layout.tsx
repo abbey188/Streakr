@@ -159,8 +159,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             )}
           </div>
 
-          {/* Mobile bottom nav */}
-          <nav className="lg:hidden bg-[#151B2E] border-t border-white/5 py-2.5 px-3 flex justify-between items-center z-30 select-none pb-safe-bottom">
+          {/* Mobile bottom nav — pad the bottom by the home-indicator inset
+              (env resolves to 0 on devices without one, so nothing shifts there). */}
+          <nav
+            className="lg:hidden bg-[#151B2E] border-t border-white/5 pt-2.5 px-3 flex justify-between items-center z-30 select-none"
+            style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom))" }}
+          >
             {NAV_ITEMS.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;

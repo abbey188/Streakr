@@ -11,7 +11,9 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Streakr",
-    statusBarStyle: "black-translucent",
+    // "black" (not translucent) keeps content below the status bar so top
+    // headers don't slide under the clock in standalone mode.
+    statusBarStyle: "black",
   },
   icons: {
     apple: "/apple-touch-icon.png",
@@ -22,6 +24,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#0A0E1A",
+  // Fill the screen edge-to-edge in standalone mode AND expose the real
+  // env(safe-area-inset-*) values so the bottom nav can clear the home indicator.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
