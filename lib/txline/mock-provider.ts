@@ -89,10 +89,6 @@ function buildScore(f: Fixture): LiveScore {
 }
 
 export const mockTxlineProvider: TxlineProvider = {
-  async getFixtures(): Promise<Fixture[]> {
-    return INITIAL_FIXTURES;
-  },
-
   async getMatchDetail(fixtureId: string): Promise<MatchDetail | null> {
     const f = INITIAL_FIXTURES.find((x) => x.id === fixtureId);
     if (!f) return null;
