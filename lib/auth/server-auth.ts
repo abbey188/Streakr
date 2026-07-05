@@ -41,8 +41,20 @@ export async function verifiedUserId(req: NextRequest): Promise<string | null> {
   const p = privy();
   const token = bearer(req);
   if (!p || !token) return null;
+
+  // Fast path: verify locally with the override key. If it's set but malformed,
+  // this throws — we must NOT reject the user; fall through to JWKS instead, so a
+  // bad key can never break auth (worst case: no speed-up).
+  if (VERIFICATION_KEY) {
+    try {
+      const claims = await p.verifyAuthToken(token, VERIFICATION_KEY);
+      return claims.userId ?? null;
+    } catch (e) {
+      console.warn("[auth] verification-key override failed, using JWKS:", (e as Error)?.message);
+    }
+  }
   try {
-    const claims = await p.verifyAuthToken(token, VERIFICATION_KEY);
+    const claims = await p.verifyAuthToken(token);
     return claims.userId ?? null;
   } catch (e) {
     console.warn("[auth] verifyAuthToken error:", (e as Error)?.message ?? String(e));
