@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getNotificationPrefs, updateNotificationPrefs } from "@/lib/db/queries";
+import { authWallet } from "@/lib/auth/server-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +28,10 @@ export async function PATCH(req: NextRequest) {
   if (!body.walletAddress || typeof body.prefs !== "object" || body.prefs === null) {
     return NextResponse.json({ error: "walletAddress and prefs required" }, { status: 400 });
   }
+  const auth = await authWallet(req, body.walletAddress);
+  if (!auth.ok) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   try {
-    const prefs = await updateNotificationPrefs(body.walletAddress, body.prefs);
+    const prefs = await updateNotificationPrefs(auth.wallet, body.prefs);
     return NextResponse.json({ prefs });
   } catch (err) {
     console.error("PATCH /api/me/notification-prefs failed:", err);

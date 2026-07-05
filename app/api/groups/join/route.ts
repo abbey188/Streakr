@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { joinGroup } from "@/lib/db/queries";
+import { authWallet } from "@/lib/auth/server-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,9 @@ export async function POST(req: NextRequest) {
     if (!body.walletAddress || !body.inviteCode?.trim()) {
       return NextResponse.json({ error: "walletAddress and inviteCode are required" }, { status: 400 });
     }
-    const group = await joinGroup(body.walletAddress, body.inviteCode.trim());
+    const auth = await authWallet(req, body.walletAddress);
+    if (!auth.ok) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const group = await joinGroup(auth.wallet, body.inviteCode.trim());
     if (!group) {
       return NextResponse.json({ error: "No group found for that code" }, { status: 404 });
     }
