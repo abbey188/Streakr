@@ -56,8 +56,12 @@ export async function notifyLiveEvents(
       const lg = lastGoals.get(f.id);
 
       for (const s of scored) {
-        // Name the scorer when the confirmed last goal matches the team + has one.
-        const scorer = lg && lg.team === s.side ? lg.scorer : null;
+        // Require a CONFIRMED goal ACTION for this team — not just a bumped score
+        // count. A bare count blip (bad-feed flicker to 0–1, or a goal later
+        // disallowed) has no backing goal action, so lg won't match → we skip it
+        // instead of firing a phantom "Goal" (see Brazil 0–0 Norway incident).
+        if (!lg || lg.team !== s.side) continue;
+        const scorer = lg.scorer;
         const title = scorer ? `Goal — ${scorer}` : `Goal — ${s.name}`;
         const body = scorer
           ? `${scorer} scores for ${s.name}! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`
