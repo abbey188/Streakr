@@ -13,6 +13,13 @@ import { sql } from "@/lib/db/client";
 
 const APP_ID = process.env.PRIVY_APP_ID || process.env.NEXT_PUBLIC_PRIVY_APP_ID || "";
 const APP_SECRET = process.env.PRIVY_APP_SECRET || "";
+// Optional: Privy's public verification key (PEM). When set, access tokens are
+// verified LOCALLY instead of a network round-trip to Privy's JWKS on cold starts
+// — noticeably faster per authed request. Falls back to JWKS if unset. Tolerates
+// a single-line env value with escaped newlines.
+const VERIFICATION_KEY = process.env.PRIVY_VERIFICATION_KEY
+  ? process.env.PRIVY_VERIFICATION_KEY.replace(/\\n/g, "\n")
+  : undefined;
 
 /** Master switch. Only enforce where Privy is actually configured. */
 export const AUTH_ENFORCED = process.env.AUTH_ENFORCED === "true" && Boolean(APP_ID && APP_SECRET);
@@ -35,7 +42,7 @@ export async function verifiedUserId(req: NextRequest): Promise<string | null> {
   const token = bearer(req);
   if (!p || !token) return null;
   try {
-    const claims = await p.verifyAuthToken(token);
+    const claims = await p.verifyAuthToken(token, VERIFICATION_KEY);
     return claims.userId ?? null;
   } catch (e) {
     console.warn("[auth] verifyAuthToken error:", (e as Error)?.message ?? String(e));

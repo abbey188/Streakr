@@ -84,6 +84,9 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
       config={{
         loginMethods: ["email", "google", "apple"],
         embeddedWallets: {
+          // Suppress Privy's built-in wallet UIs (the "wallet created — protected
+          // by Privy" modal on signup). The embedded wallet is identity-only here.
+          showWalletUIs: false,
           solana: { createOnLogin: "users-without-wallets" },
         },
         appearance: {
