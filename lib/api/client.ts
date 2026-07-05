@@ -195,6 +195,15 @@ export async function clearNotifications(walletAddress: string): Promise<void> {
   });
 }
 
+/**
+ * Permanently delete the caller's account + all data (right to erasure). The
+ * server identifies the caller from their token, so no wallet is sent.
+ */
+export async function deleteAccount(): Promise<void> {
+  const res = await apiFetch("/api/me/account", { method: "DELETE" });
+  await jsonOrThrow<{ ok: true }>(res);
+}
+
 /** The badge ids the user has earned (profile marks only these). */
 export async function fetchUserBadges(walletAddress: string): Promise<string[]> {
   const res = await apiFetch(`/api/me/badges?wallet=${encodeURIComponent(walletAddress)}`);

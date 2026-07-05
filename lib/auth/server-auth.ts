@@ -87,6 +87,17 @@ export async function bindPrivyUser(walletAddress: string, userId: string): Prom
   `;
 }
 
+/** Delete a Privy user (account deletion / right to erasure). Best-effort. */
+export async function deletePrivyUser(userId: string): Promise<void> {
+  const p = privy();
+  if (!p) return;
+  try {
+    await p.deleteUser(userId);
+  } catch (e) {
+    console.error("[auth] deletePrivyUser failed:", (e as Error)?.message ?? e);
+  }
+}
+
 /**
  * The authoritative wallet for the caller — verified server-side, SELF-HEALING:
  *   token → userId → (fast) users.privy_user_id → wallet
