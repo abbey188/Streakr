@@ -33,13 +33,22 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     if (!wallet) return;
     if (pathname === "/inbox") { setUnreadCount(0); return; }
     let cancelled = false;
-    const load = () =>
+    const load = () => {
+      // Skip while the tab is backgrounded; refresh immediately on refocus.
+      if (typeof document !== "undefined" && document.hidden) return;
       fetchUnreadCount(wallet)
         .then((n) => { if (!cancelled) setUnreadCount(n); })
         .catch(() => {});
+    };
     load();
     const t = setInterval(load, 60_000);
-    return () => { cancelled = true; clearInterval(t); };
+    const onVisible = () => { if (!document.hidden) load(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [identity.walletAddress, pathname]);
 
   // ─── Auth/onboarding guard ────────────────────────────────────────────────

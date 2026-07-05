@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  createContext, useContext, useState, useEffect, useCallback, ReactNode,
+  createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
 import type { AvatarConfig, Fixture, GroupMember, ActivityItem } from "@/src/types";
@@ -115,9 +115,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   }, [landOnGroupsAfterTour, router]);
 
+  // Track the dismiss timer so rapid toasts don't clear each other early.
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerToast = useCallback((msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(""), 2500);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMessage(""), 2500);
   }, []);
 
   // ─── Profile bootstrap (returning-user rehydrate / new-user detection) ────
@@ -166,13 +169,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!identity.walletAddress) return;
     const wallet = identity.walletAddress;
     let cancelled = false;
-    const load = () =>
+    const load = () => {
+      // Don't poll a backgrounded tab — we refetch immediately on refocus below.
+      if (typeof document !== "undefined" && document.hidden) return;
       fetchFixtures(wallet)
         .then((rows) => { if (!cancelled && rows.length > 0) setFixtures(rows); })
         .catch(() => { /* keep last-good fixtures on failure */ });
+    };
     load();
     const t = setInterval(load, 30_000);
-    return () => { cancelled = true; clearInterval(t); };
+    const onVisible = () => { if (!document.hidden) load(); }; // fresh data on return
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [identity.walletAddress]);
 
   // Consume a pending group invite (from a /join?code link) once the user is
