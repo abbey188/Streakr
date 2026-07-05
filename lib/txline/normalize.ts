@@ -190,13 +190,24 @@ export function deriveLiveScore(fixtureId: string, entries: RawScoreEntry[]): Li
   // goalless match. The running clock streams continuously via coverage updates.
   let seconds = scored?.Clock?.Seconds ?? 0;
   let clockTs = scored?.Ts ?? 0;
+  let clockRunning = false;
   for (const e of entries) {
     if (e.Confirmed === false) continue;
     const cs = e.Clock?.Seconds;
     if (typeof cs === "number" && e.Clock?.Running && e.Ts >= clockTs) {
       seconds = cs;
       clockTs = e.Ts;
+      clockRunning = true;
     }
+  }
+  // The freshest running-clock entry is itself seconds-to-a-minute old (coverage
+  // updates are periodic). While the match is live, advance the clock to real
+  // time so the minute reflects NOW — not when the last tick arrived. Without
+  // this, the value the sync stores is already behind, and cards (which anchor
+  // their client-side tick to the sync time) read persistently late. Capped so a
+  // stalled feed can't run the clock away.
+  if (phase.status === "live" && clockRunning) {
+    seconds += Math.min(3 * 60, Math.max(0, (Date.now() - clockTs) / 1000));
   }
 
   // Only surface penalties once the shootout phase is reached (SofaScore-style).
