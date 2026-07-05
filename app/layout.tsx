@@ -16,6 +16,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black",
   },
   icons: {
+    // Declaring `icons` overrides Next's file-convention icons, so the browser
+    // favicon must be listed explicitly here too (else the tab icon disappears).
+    icon: "/icon.svg",
     apple: "/apple-touch-icon.png",
   },
 };
