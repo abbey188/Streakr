@@ -481,6 +481,27 @@ export default function ScreenProfile({
                   )}
                 </div>
               )}
+
+              {/* Legal — open in a new tab so the app/session stays put */}
+              <div className="flex items-center justify-center gap-3 pt-1 pb-2">
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-mono uppercase tracking-wider text-[#8E9299] hover:text-white transition"
+                >
+                  Terms of Service
+                </a>
+                <span className="text-[#8E9299]/40">·</span>
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-mono uppercase tracking-wider text-[#8E9299] hover:text-white transition"
+                >
+                  Privacy Policy
+                </a>
+              </div>
             </div>
           </motion.div>
         )}
