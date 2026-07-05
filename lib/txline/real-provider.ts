@@ -1,11 +1,12 @@
-import type { Fixture } from "@/src/types";
 import type { TxlineProvider, MatchDetail } from "./types";
 import { txlineClient, type RawFixture } from "./client";
 import { normalizeFixture, deriveLiveScore, deriveStats, buildEvents } from "./normalize";
 
 /**
  * Real TxLINE provider — pulls live World Cup data server-side and normalizes it.
- * Short in-memory caches keep the fixtures list snappy without hammering the API.
+ * The fixtures LIST is served from Neon (see lib/db/queries.getFixtures); this
+ * provider only powers single-match detail. A short raw-snapshot cache keeps the
+ * per-match lookup snappy without re-pulling the whole schedule each request.
  */
 
 const COMPETITION_ID = Number(process.env.TXLINE_WORLD_CUP_COMPETITION_ID || 72);
@@ -14,9 +15,8 @@ const COMPETITION_ID = Number(process.env.TXLINE_WORLD_CUP_COMPETITION_ID || 72)
 // 404'd. Anchor to the World Cup start so the snapshot covers the whole tournament.
 const WC_START_EPOCH_DAY = Math.floor(Date.parse("2026-06-14T00:00:00Z") / 86400000);
 
-// Tiny caches (per server instance). Fixtures list is the expensive one
-// (fans out to a scores call per fixture), so cache it briefly.
-let fixturesCache: { at: number; data: Fixture[] } | null = null;
+// Brief per-instance cache of the raw whole-tournament snapshot that
+// getMatchDetail scans. Scores are always fetched fresh per detail request.
 let rawFixturesCache: { at: number; data: RawFixture[] } | null = null;
 const FIXTURES_TTL = 30_000;
 
@@ -30,30 +30,6 @@ async function getRawFixtures(): Promise<RawFixture[]> {
 }
 
 export const realTxlineProvider: TxlineProvider = {
-  async getFixtures(): Promise<Fixture[]> {
-    if (fixturesCache && Date.now() - fixturesCache.at < FIXTURES_TTL) {
-      return fixturesCache.data;
-    }
-    const raw = await getRawFixtures();
-    // Enrich each fixture with live score/status (parallel scores snapshots).
-    const fixtures = await Promise.all(
-      raw.map(async (rf) => {
-        try {
-          const entries = await txlineClient.getScoresSnapshot(rf.FixtureId);
-          const live = deriveLiveScore(String(rf.FixtureId), entries);
-          return normalizeFixture(rf, live);
-        } catch {
-          return normalizeFixture(rf, null); // fall back to upcoming if scores fail
-        }
-      })
-    );
-    // Sort: live first, then upcoming (soonest), then finished.
-    const order = { live: 0, upcoming: 1, finished: 2 } as const;
-    fixtures.sort((a, b) => order[a.status] - order[b.status]);
-    fixturesCache = { at: Date.now(), data: fixtures };
-    return fixtures;
-  },
-
   async getMatchDetail(fixtureId: string): Promise<MatchDetail | null> {
     const raw = await getRawFixtures();
     const rf = raw.find((x) => String(x.FixtureId) === String(fixtureId));

@@ -1,4 +1,4 @@
-import type { Fixture, Team } from "@/src/types";
+import type { Team } from "@/src/types";
 
 /**
  * Normalized, app-facing TxLINE data model. TxLINE's raw payloads (see
@@ -91,8 +91,6 @@ export interface MatchDetail {
  * getTxlineProvider() based on whether a TxLINE token is configured.
  */
 export interface TxlineProvider {
-  /** All fixtures (normalized to our Fixture shape). */
-  getFixtures(): Promise<Fixture[]>;
   /** Full detail (score + events + stats + lineups) for one fixture. */
   getMatchDetail(fixtureId: string): Promise<MatchDetail | null>;
 }
