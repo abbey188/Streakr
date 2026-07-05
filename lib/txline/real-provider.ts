@@ -9,6 +9,10 @@ import { normalizeFixture, deriveLiveScore, deriveStats, buildEvents } from "./n
  */
 
 const COMPETITION_ID = Number(process.env.TXLINE_WORLD_CUP_COMPETITION_ID || 72);
+// Without a start day, the fixtures snapshot only returns the handful of matches
+// nearest "now" — so match-detail lookups for finished (and most other) fixtures
+// 404'd. Anchor to the World Cup start so the snapshot covers the whole tournament.
+const WC_START_EPOCH_DAY = Math.floor(Date.parse("2026-06-14T00:00:00Z") / 86400000);
 
 // Tiny caches (per server instance). Fixtures list is the expensive one
 // (fans out to a scores call per fixture), so cache it briefly.
@@ -20,7 +24,7 @@ async function getRawFixtures(): Promise<RawFixture[]> {
   if (rawFixturesCache && Date.now() - rawFixturesCache.at < FIXTURES_TTL) {
     return rawFixturesCache.data;
   }
-  const data = await txlineClient.getFixturesSnapshot(COMPETITION_ID);
+  const data = await txlineClient.getFixturesSnapshot(COMPETITION_ID, WC_START_EPOCH_DAY);
   rawFixturesCache = { at: Date.now(), data };
   return data;
 }
