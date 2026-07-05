@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateUserAvatar } from "@/lib/db/queries";
+import { authWallet } from "@/lib/auth/server-auth";
 import type { AvatarConfig } from "@/src/types";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,9 @@ export async function PATCH(req: NextRequest) {
         { status: 400 }
       );
     }
-    const user = await updateUserAvatar(body.walletAddress, body.avatar);
+    const auth = await authWallet(req, body.walletAddress);
+    if (!auth.ok) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const user = await updateUserAvatar(auth.wallet, body.avatar);
     return NextResponse.json({ user });
   } catch (err) {
     console.error("PATCH /api/users/avatar failed:", err);

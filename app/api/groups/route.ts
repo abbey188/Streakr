@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createGroup, getUserGroups, type LeaderboardType } from "@/lib/db/queries";
+import { authWallet } from "@/lib/auth/server-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +31,13 @@ export async function POST(req: NextRequest) {
     if (!body.walletAddress || !body.name?.trim()) {
       return NextResponse.json({ error: "walletAddress and name are required" }, { status: 400 });
     }
+    const auth = await authWallet(req, body.walletAddress);
+    if (!auth.ok) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     const type: LeaderboardType =
       body.leaderboardType === "points" || body.leaderboardType === "both"
         ? body.leaderboardType
         : "streak";
-    const group = await createGroup(body.walletAddress, body.name.trim(), body.emoji || "🏆", type);
+    const group = await createGroup(auth.wallet, body.name.trim(), body.emoji || "🏆", type);
     return NextResponse.json({ group }, { status: 201 });
   } catch (err) {
     console.error("POST /api/groups failed:", err);
