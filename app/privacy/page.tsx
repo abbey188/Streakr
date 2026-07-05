@@ -36,6 +36,8 @@ export default function PrivacyPage() {
           items={[
             <><strong className="text-slate-200">Account data</strong> — your email address and login identifiers (handled by our authentication provider, Privy), a Solana wallet address created for your account, your chosen username, and your avatar/mascot configuration.</>,
             <><strong className="text-slate-200">Gameplay data</strong> — your match picks, streaks, points, badges, group memberships, and leaderboard positions.</>,
+            <><strong className="text-slate-200">Content &amp; social data</strong> — your username, group names, and (as social features roll out) posts, comments, votes, and reactions you create.</>,
+            <><strong className="text-slate-200">Purchase data</strong> — if we introduce optional cosmetic purchases, our payment processor handles your payment; we receive limited records such as that a purchase was made, the item, the amount, and your country for tax purposes — never your full card number.</>,
             <><strong className="text-slate-200">Notification data</strong> — your notification preferences and, if you enable them, push-notification subscriptions.</>,
             <><strong className="text-slate-200">Technical data</strong> — IP address, device and browser information, and log/usage data generated when you interact with the Service.</>,
             <><strong className="text-slate-200">Cookies &amp; local storage</strong> — small identifiers used to keep you signed in and remember preferences (see section 8).</>,
@@ -52,6 +54,8 @@ export default function PrivacyPage() {
         <Bullets
           items={[
             "Create and operate your account, wallet identity, and gameplay (streaks, picks, leaderboards).",
+            "Operate social and community features (profiles, groups, posts, comments) and moderate content.",
+            "Process and support any optional purchases and prevent payment fraud.",
             "Send you service and match-related notifications you have not opted out of.",
             "Keep the Service secure, prevent cheating, fraud, and abuse, and enforce our Terms.",
             "Understand and improve how the Service is used.",
@@ -88,10 +92,16 @@ export default function PrivacyPage() {
           ))}
         />
         <p>
-          Some information (such as your username, avatar, streak, and leaderboard rank) is
-          visible to other users by design. Your email address and wallet private keys are
-          never shown publicly. We may also disclose data if required by law, to protect our
-          rights or users&rsquo; safety, or in connection with a corporate transaction.
+          Some information (such as your username, avatar, streak, leaderboard rank, and any
+          posts or comments you make) is visible to other users by design. Your email address
+          and wallet private keys are never shown publicly. We may also disclose data if
+          required by law, to protect our rights or users&rsquo; safety, or in connection with a
+          corporate transaction.
+        </p>
+        <p>
+          If and when we introduce optional purchases, payments will be handled by a
+          third-party payment processor that we will add to the list above. We do not receive
+          or store your full card number.
         </p>
       </Section>
 
