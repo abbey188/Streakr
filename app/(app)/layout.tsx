@@ -78,7 +78,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             initial={{ y: -30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -30, opacity: 0 }}
-            className="fixed top-6 left-1/2 -translate-x-1/2 bg-[#151B2E] border-2 border-[#FF4E00] text-slate-100 font-black italic text-xs px-4 py-2.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2 max-w-xs text-center shadow-[0_0_15px_rgba(255,78,0,0.4)]"
+            className="fixed left-1/2 -translate-x-1/2 bg-[#151B2E] border-2 border-[#FF4E00] text-slate-100 font-black italic text-xs px-4 py-2.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2 max-w-xs text-center shadow-[0_0_15px_rgba(255,78,0,0.4)]"
+            style={{ top: "calc(1.5rem + env(safe-area-inset-top))" }}
           >
             <span className="text-[#FF4E00]">🔥</span>
             <span>{app.toastMessage}</span>
@@ -133,8 +134,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        {/* MAIN */}
-        <main className="flex-grow h-full flex flex-col overflow-hidden relative bg-[#0A0E1A]">
+        {/* MAIN — pad the top by the status-bar/notch inset so screen headers
+            clear the clock in standalone mode (env is 0 elsewhere; nav is a
+            flex child at the bottom, so it's unaffected). */}
+        <main
+          className="flex-grow h-full flex flex-col overflow-hidden relative bg-[#0A0E1A]"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
+        >
           <div className="flex-grow overflow-hidden relative w-full h-full flex flex-col">
             {children}
 
