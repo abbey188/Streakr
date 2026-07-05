@@ -156,13 +156,12 @@ function latestScored(entries: RawScoreEntry[]): RawScoreEntry | null {
 export function deriveLiveScore(fixtureId: string, entries: RawScoreEntry[]): LiveScore {
   // Determine the furthest real PHASE reached AND whether the match is FINALISED.
   //
-  // TxLINE (MainNet, 1 Jul 2026 release): the `game_finalised` action now carries
-  // StatusId/period = 100 as a definitive settlement marker — set regardless of
-  // HOW the match ended (regulation / extra time / penalties / abandoned). 100 is
-  // not a play phase, so a naive max(StatusId) latches onto it, misses the phase
-  // map, and strands a finished match as "upcoming" (the Play-page bug). We read
-  // 100 (and the game_finalised action, for older data) as "finalised" and take
-  // the winning METHOD from the deepest real phase code actually seen.
+  // Finalised is driven ONLY by the `game_finalised` action. TxLINE's settlement
+  // StatusId 100 is NOT a reliable finalise signal on its own — we saw it ride on
+  // a non-terminal `disconnected` event (5 Jul 2026, Brazil v Norway), which would
+  // otherwise end a live match and resolve picks mid-game (see docs/txline/FEED_LOG
+  // A1 / M1). 100 is not a play phase, so it's excluded from the phase max; the
+  // winning METHOD (FT/AET/PENS) is inferred from the deepest real phase code seen.
   let realMax = 1; // furthest genuine game phase (1..19)
   let finalised = false;
   for (const e of entries) {
