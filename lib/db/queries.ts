@@ -525,6 +525,14 @@ export async function clearNotifications(walletAddress: string): Promise<void> {
   await sql`delete from notifications where user_address = ${walletAddress}`;
 }
 
+/**
+ * Delete a user account and all their data (right to erasure). The users row FK
+ * cascades to picks, notifications, group_members, and round_champions.
+ */
+export async function deleteUserAccount(walletAddress: string): Promise<void> {
+  await sql`delete from users where wallet_address = ${walletAddress}`;
+}
+
 /** Count of unread notifications — powers the Inbox nav badge. */
 export async function getUnreadNotificationCount(walletAddress: string): Promise<number> {
   const rows = (await sql`

@@ -3,7 +3,7 @@ import { AvatarConfig } from "../types";
 import AvatarRenderer from "./AvatarRenderer";
 import AvatarCustomizer from "./AvatarCustomizer";
 import { BADGES } from "../data/fixtures";
-import { Award, Flame, Trophy, Settings, Share2, Pen, User, LogOut, Bell, Clock, Target, CheckCircle2, Medal, Users } from "lucide-react";
+import { Award, Flame, Trophy, Settings, Share2, Pen, User, LogOut, Bell, Clock, Target, CheckCircle2, Medal, Users, Trash2, AlertTriangle } from "lucide-react";
 import { NOTIF_TYPES } from "@/lib/db/notify-prefs";
 
 // Lucide icon per notification type — matches the app's icon language.
@@ -30,6 +30,7 @@ interface ScreenProfileProps {
   onUpdateAvatar: (newConfig: AvatarConfig) => void;
   onOpenStreakShare: () => void;
   onSignOut?: () => void;
+  onDeleteAccount?: () => void | Promise<void>;
 }
 
 export default function ScreenProfile({
@@ -45,6 +46,7 @@ export default function ScreenProfile({
   onUpdateAvatar,
   onOpenStreakShare,
   onSignOut,
+  onDeleteAccount,
 }: ScreenProfileProps) {
   const earnedBadges = new Set(earnedBadgeIds);
   // A type is ON unless explicitly false.
@@ -54,6 +56,19 @@ export default function ScreenProfile({
   const [showEditor, setShowEditor] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Account deletion: two-step confirm inside Settings, then a busy state.
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await onDeleteAccount?.();
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // Editing the mascot saves the FULL config (incl. jersey number + headgear)
   // via the shared customizer, then closes the modal.
@@ -417,6 +432,55 @@ export default function ScreenProfile({
                 <LogOut className="w-4 h-4" />
                 Sign Out
               </button>
+
+              {/* Danger zone — delete account + data (right to erasure) */}
+              {onDeleteAccount && (
+                <div className="bg-[#151B2E] border border-red-500/15 rounded-3xl p-5 space-y-3 shadow-xl">
+                  <div className="flex items-center gap-2 text-red-400">
+                    <AlertTriangle className="w-4 h-4" />
+                    <h4 className="text-xs font-black italic uppercase tracking-wider text-slate-200">
+                      Delete Account
+                    </h4>
+                  </div>
+                  <p className="text-[9px] text-[#8E9299] leading-relaxed">
+                    Permanently delete your account and all your data — picks, streaks,
+                    groups, and login. This can&apos;t be undone.
+                  </p>
+
+                  {!confirmDelete ? (
+                    <button
+                      onClick={() => setConfirmDelete(true)}
+                      className="w-full bg-[#0A0E1A] hover:bg-red-950/40 border border-red-500/20 hover:border-red-500/40 text-red-400 font-black italic text-xs py-3 rounded-2xl flex items-center justify-center gap-2 transition cursor-pointer"
+                      id="profile-delete-account-btn"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete my account
+                    </button>
+                  ) : (
+                    <div className="space-y-2.5 border-t border-red-500/15 pt-3">
+                      <p className="text-[10px] font-bold text-red-300 leading-relaxed">
+                        Are you sure? This permanently erases everything and signs you out.
+                      </p>
+                      <div className="flex gap-2.5">
+                        <button
+                          onClick={() => setConfirmDelete(false)}
+                          disabled={deleting}
+                          className="flex-1 bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-300 font-black italic text-xs py-3 rounded-2xl transition cursor-pointer disabled:opacity-40"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleDeleteAccount}
+                          disabled={deleting}
+                          className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black italic text-xs py-3 rounded-2xl flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-60"
+                        >
+                          {deleting ? "Deleting…" : "Delete forever"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         )}

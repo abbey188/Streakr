@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppState } from "@/lib/state/app-state";
 import { useIdentity } from "@/lib/identity/context";
 import {
-  fetchUserBadges, fetchNotificationPrefs, updateNotificationPrefs,
+  fetchUserBadges, fetchNotificationPrefs, updateNotificationPrefs, deleteAccount,
 } from "@/lib/api/client";
 import ScreenProfile from "@/src/components/ScreenProfile";
 
@@ -41,6 +41,17 @@ export default function ProfilePage() {
     router.replace("/");
   };
 
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteAccount(); // wipes DB (cascade) + Privy user server-side
+    } catch (e) {
+      console.error("Account deletion failed:", e);
+      alert("Sorry — we couldn't delete your account. Please try again.");
+      return;
+    }
+    await handleSignOut(); // clear local session + go home
+  };
+
   return (
     <ScreenProfile
       avatar={app.avatar}
@@ -55,6 +66,7 @@ export default function ProfilePage() {
       onUpdateAvatar={app.updateUserAvatar}
       onOpenStreakShare={() => app.openShareSheet("streak")}
       onSignOut={handleSignOut}
+      onDeleteAccount={handleDeleteAccount}
     />
   );
 }
