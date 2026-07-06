@@ -9,6 +9,14 @@ import {
 
 type Status = "loading" | "on" | "off" | "denied" | "unsupported";
 
+const OPTOUT_KEY = "streakr_push_off";
+function isOptedOut(): boolean {
+  try { return localStorage.getItem(OPTOUT_KEY) === "1"; } catch { return false; }
+}
+function setOptedOut(v: boolean): void {
+  try { v ? localStorage.setItem(OPTOUT_KEY, "1") : localStorage.removeItem(OPTOUT_KEY); } catch { /* no storage */ }
+}
+
 /**
  * Master push-notification opt-in. "On" reflects an ACTUAL saved subscription,
  * not just the OS permission — so a granted-permission-but-failed-save state
@@ -27,7 +35,9 @@ export default function PushToggle() {
       const perm = pushPermission();
       if (perm === "unsupported") return setStatus("unsupported");
       if (perm === "denied") return setStatus("denied");
-      if (perm === "granted") {
+      // Respect an explicit turn-off: don't auto-resubscribe just because the OS
+      // permission is still granted (permission can't be revoked from code).
+      if (perm === "granted" && !isOptedOut()) {
         // Self-heal: re-send the current subscription to the server. Confirms
         // the save actually works and surfaces the failing step if it doesn't.
         try {
@@ -46,6 +56,7 @@ export default function PushToggle() {
   const enable = async () => {
     setBusy(true);
     setError("");
+    setOptedOut(false); // clear any prior opt-out
     try {
       const p = await enablePush();
       if (p === "granted") setStatus("on");
@@ -61,6 +72,7 @@ export default function PushToggle() {
 
   const disable = async () => {
     setBusy(true);
+    setOptedOut(true); // remember the choice so open-app self-heal doesn't re-enable
     try {
       await disablePush();
       setStatus("off");
