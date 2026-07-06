@@ -1,6 +1,15 @@
 import { sql } from "./client";
 import type { Fixture } from "@/src/types";
 import type { LastGoal } from "@/lib/txline/normalize";
+import { sendPush, type PushPayload } from "@/lib/push/server";
+
+/** Mirror freshly-inserted notifications to Web Push. Best-effort (sendPush never
+ *  throws); rows come from the insert's RETURNING so we push to EXACTLY the users
+ *  who were newly notified (dedup already applied). */
+async function pushToUsers(rows: { user_address: string }[], payload: PushPayload): Promise<void> {
+  if (rows.length === 0) return;
+  await Promise.all(rows.map((r) => sendPush(r.user_address, payload)));
+}
 
 /**
  * Generates live match notifications by diffing freshly-synced fixtures against
@@ -66,7 +75,7 @@ export async function notifyLiveEvents(
         const body = scorer
           ? `${scorer} scores for ${s.name}! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`
           : `${s.name} scored! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`;
-        await sql`
+        const goalRows = (await sql`
           insert into notifications (user_address, type, title, body, icon, fixture_id)
           select p.user_address, 'goal', ${title}, ${body}, '⚽', ${f.id}
           from picks p
@@ -82,7 +91,11 @@ export async function notifyLiveEvents(
                 and n.type = 'goal' and n.body = ${body}
             )
           on conflict do nothing
-        `;
+          returning user_address
+        `) as { user_address: string }[];
+        await pushToUsers(goalRows, {
+          title, body, icon: "⚽", url: "/play", tag: `${f.id}-goal-${na}-${nb}`,
+        });
       }
 
       // ── Match started: the real first whistle only ──────────────────────
@@ -90,10 +103,11 @@ export async function notifyLiveEvents(
       // a finished→"live" mis-derivation blip), and dedupe so it can never
       // repeat for a user+match.
       if (old.status === "upcoming") {
-        await sql`
+        const startBody = `${f.teamA.name} vs ${f.teamB.name} is underway.`;
+        const startRows = (await sql`
           insert into notifications (user_address, type, title, body, icon, fixture_id)
           select p.user_address, 'match_start', 'Kickoff! 🏁',
-                 ${`${f.teamA.name} vs ${f.teamB.name} is underway.`}, '🏁', ${f.id}
+                 ${startBody}, '🏁', ${f.id}
           from picks p
           join users u on u.wallet_address = p.user_address
           where p.fixture_id = ${f.id}
@@ -104,7 +118,11 @@ export async function notifyLiveEvents(
                 and n.type = 'match_start' and n.title = 'Kickoff! 🏁'
             )
           on conflict do nothing
-        `;
+          returning user_address
+        `) as { user_address: string }[];
+        await pushToUsers(startRows, {
+          title: "Kickoff! 🏁", body: startBody, icon: "🏁", url: "/play", tag: `${f.id}-start`,
+        });
       }
     }
 
@@ -115,10 +133,11 @@ export async function notifyLiveEvents(
       kickoffMs - Date.now() > 0 &&
       kickoffMs - Date.now() <= KICKOFF_SOON_MS;
     if (f.status === "upcoming" && f.round !== "Group Stage" && imminent) {
-      await sql`
+      const soonBody = `${f.teamA.name} vs ${f.teamB.name} is about to start — lock in your pick!`;
+      const soonRows = (await sql`
         insert into notifications (user_address, type, title, body, icon, fixture_id)
         select u.wallet_address, 'match_start', 'Kickoff soon ⏰',
-               ${`${f.teamA.name} vs ${f.teamB.name} is about to start — lock in your pick!`}, '⏰', ${f.id}
+               ${soonBody}, '⏰', ${f.id}
         from users u
         where coalesce(u.notification_prefs->>'match_start', '') <> 'false'
           and not exists (
@@ -129,7 +148,11 @@ export async function notifyLiveEvents(
             where n.user_address = u.wallet_address and n.fixture_id = ${f.id} and n.type = 'match_start'
           )
         on conflict do nothing
-      `;
+        returning user_address
+      `) as { user_address: string }[];
+      await pushToUsers(soonRows, {
+        title: "Kickoff soon ⏰", body: soonBody, icon: "⏰", url: "/play", tag: `${f.id}-soon`,
+      });
     }
   }
 }
