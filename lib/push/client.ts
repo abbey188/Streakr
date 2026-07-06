@@ -65,12 +65,15 @@ async function registerSW(): Promise<ServiceWorkerRegistration> {
  */
 export async function enablePush(): Promise<NotificationPermission | "unsupported"> {
   if (!isPushSupported()) return "unsupported";
-  if (!VAPID_PUBLIC) throw new Error("Push not configured");
+  if (!VAPID_PUBLIC) throw new Error("Push not configured (missing VAPID key)");
 
-  const reg = await registerSW();
+  // Request permission FIRST, synchronously within the click. Safari drops the
+  // user-gesture context across a long await (e.g. registering the SW), which
+  // makes the prompt silently fail — so ask before doing any async work.
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission;
 
+  const reg = await registerSW();
   let sub = await reg.pushManager.getSubscription();
   if (!sub) {
     sub = await reg.pushManager.subscribe({
