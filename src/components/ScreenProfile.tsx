@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { AvatarConfig } from "../types";
 import AvatarRenderer from "./AvatarRenderer";
 import AvatarCustomizer from "./AvatarCustomizer";
+import PushToggle from "./PushToggle";
 import { BADGES } from "../data/fixtures";
 import { Award, Flame, Trophy, Settings, Share2, Pen, User, LogOut, Bell, Clock, Target, CheckCircle2, Medal, Users, Trash2, AlertTriangle } from "lucide-react";
 import { NOTIF_TYPES } from "@/lib/db/notify-prefs";
@@ -385,8 +386,12 @@ export default function ScreenProfile({
                   </h4>
                 </div>
                 <p className="text-[9px] text-[#8E9299] leading-relaxed -mt-2">
-                  Choose what you get pinged about. Everything's on by default.
+                  Turn on push to get alerts on your device, then choose what you&apos;re pinged about.
                 </p>
+
+                {/* Master device push opt-in (Web Push). */}
+                <PushToggle />
+
                 <div className="space-y-3 border-t border-white/5 pt-3">
                   {NOTIF_TYPES.map((t) => {
                     const on = prefOn(t.key);
