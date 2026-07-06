@@ -165,15 +165,23 @@ create table if not exists notifications (
   body          text not null,
   icon          text,            -- emoji
   fixture_id    text,            -- optional link + dedupe key for live events
+  dedup_key     text,            -- stable per-event key for goal dedup (goal action Seq)
   read          boolean not null default false,
   created_at    timestamptz not null default now()
 );
+alter table notifications add column if not exists dedup_key text;
 create index if not exists notifications_user_idx on notifications (user_address, created_at desc);
--- Idempotency for live events: one goal/kickoff per (user, fixture, body). Backs
+-- Kickoff dedup by body (one per user+fixture). Goals dedup by a STABLE key
+-- (the goal action's Seq) instead of body — so a rapid double fires twice while
+-- a score flicker / late scorer-resolution can't duplicate. Backs
 -- `on conflict do nothing` so concurrent sync runs can't create duplicates.
+drop index if exists notifications_live_dedup;
 create unique index if not exists notifications_live_dedup
   on notifications (user_address, fixture_id, type, body)
-  where type in ('goal','match_start') and fixture_id is not null;
+  where type = 'match_start' and fixture_id is not null;
+create unique index if not exists notifications_goal_dedup
+  on notifications (user_address, fixture_id, dedup_key)
+  where type = 'goal' and dedup_key is not null;
 
 -- ─── round champions (R32/R16/QF, global + per-group; idempotent) ─────────
 create table if not exists round_champions (
