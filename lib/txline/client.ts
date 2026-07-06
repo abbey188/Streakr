@@ -88,9 +88,11 @@ export const txlineClient = {
   getScoresSnapshot: (fixtureId: string | number) =>
     txlineGet<RawScoreEntry[]>(`/scores/snapshot/${fixtureId}`),
 
-  /** Chronological score updates for a fixture (SSE text → parsed entries). */
-  getScoresUpdates: (fixtureId: string | number) =>
-    txlineGetSse(`/scores/updates/${fixtureId}`),
+  /** Chronological score updates for a fixture (SSE text → parsed entries). The
+   *  historical log arrives on connect; a short timeout captures it without
+   *  waiting out the live stream (used by the sync's goal detection). */
+  getScoresUpdates: (fixtureId: string | number, timeoutMs?: number) =>
+    txlineGetSse(`/scores/updates/${fixtureId}`, timeoutMs),
 };
 
 // ─── Raw TxLINE shapes (only the fields we consume) ─────────────────────────

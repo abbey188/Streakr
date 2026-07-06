@@ -163,21 +163,30 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     })();
   }, [identity.isLoading, identity.isAuthenticated, identity.walletAddress, identity.email, bootstrapped]);
 
+  // Keep a live view of fixtures for the poller to read without re-arming.
+  const fixturesRef = useRef<Fixture[]>([]);
+  fixturesRef.current = fixtures;
+
   // Fixtures from Neon, polled so live scores + completed results stay fresh
-  // without a manual refresh (a lightweight stand-in until the SSE proxy lands).
+  // without a manual refresh. ADAPTIVE: every 15s while a match is live, ~45s
+  // when idle — visibility-gated so backgrounded tabs don't poll.
   useEffect(() => {
     if (!identity.walletAddress) return;
     const wallet = identity.walletAddress;
     let cancelled = false;
     const load = () => {
-      // Don't poll a backgrounded tab — we refetch immediately on refocus below.
       if (typeof document !== "undefined" && document.hidden) return;
       fetchFixtures(wallet)
         .then((rows) => { if (!cancelled && rows.length > 0) setFixtures(rows); })
         .catch(() => { /* keep last-good fixtures on failure */ });
     };
     load();
-    const t = setInterval(load, 30_000);
+    let tick = 0;
+    const t = setInterval(() => {
+      const anyLive = fixturesRef.current.some((f) => f.status === "live");
+      tick++;
+      if (anyLive || tick % 3 === 0) load(); // live → 15s; idle → every 3rd (~45s)
+    }, 15_000);
     const onVisible = () => { if (!document.hidden) load(); }; // fresh data on return
     document.addEventListener("visibilitychange", onVisible);
     return () => {

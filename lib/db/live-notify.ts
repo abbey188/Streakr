@@ -1,6 +1,6 @@
 import { sql } from "./client";
 import type { Fixture } from "@/src/types";
-import type { LastGoal } from "@/lib/txline/normalize";
+import type { DerivedGoal } from "@/lib/txline/normalize";
 import { sendPush, type PushPayload } from "@/lib/push/server";
 
 /** Mirror freshly-inserted notifications to Web Push. Best-effort (sendPush never
@@ -38,7 +38,7 @@ const KICKOFF_SOON_MS = 45 * 60 * 1000;
 
 export async function notifyLiveEvents(
   enriched: Fixture[],
-  lastGoals: Map<string, LastGoal> = new Map()
+  goalsByFixture: Map<string, DerivedGoal[]> = new Map()
 ): Promise<void> {
   if (enriched.length === 0) return;
   const ids = enriched.map((f) => f.id);
@@ -55,46 +55,39 @@ export async function notifyLiveEvents(
   for (const f of enriched) {
     const old = oldById.get(f.id);
 
-    // ── Goals: per-team score increase in a live match ────────────────────
-    if (f.status === "live" && old) {
+    // ── Goals: one notification per CONFIRMED goal ACTION ─────────────────
+    // Keyed off the goal action's stable Seq (dedup_key), NOT a score-count
+    // diff — so rapid doubles each fire, and a score flicker can't duplicate.
+    if (f.status === "live") {
       const na = f.scoreA ?? 0, nb = f.scoreB ?? 0;
-      const oa = old.score_a ?? 0, ob = old.score_b ?? 0;
-      const scored: { side: "A" | "B"; name: string }[] = [];
-      if (na > oa) scored.push({ side: "A", name: f.teamA.name });
-      if (nb > ob) scored.push({ side: "B", name: f.teamB.name });
-      const lg = lastGoals.get(f.id);
-
-      for (const s of scored) {
-        // Require a CONFIRMED goal ACTION for this team — not just a bumped score
-        // count. A bare count blip (bad-feed flicker to 0–1, or a goal later
-        // disallowed) has no backing goal action, so lg won't match → we skip it
-        // instead of firing a phantom "Goal" (see Brazil 0–0 Norway incident).
-        if (!lg || lg.team !== s.side) continue;
-        const scorer = lg.scorer;
-        const title = scorer ? `Goal — ${scorer}` : `Goal — ${s.name}`;
-        const body = scorer
-          ? `${scorer} scores for ${s.name}! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`
-          : `${s.name} scored! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`;
+      for (const goal of goalsByFixture.get(f.id) ?? []) {
+        // Only alert on RECENT goals — skip the match's whole back-catalogue so a
+        // deploy / sync-gap doesn't re-blast every earlier goal. At a 15s sync a
+        // real goal is seconds old; 5 min is generous headroom.
+        if (Date.now() - goal.ts > 5 * 60 * 1000) continue;
+        const teamName = goal.side === "A" ? f.teamA.name : f.teamB.name;
+        const title = goal.scorer ? `Goal — ${goal.scorer}` : `Goal — ${teamName}`;
+        const body = goal.scorer
+          ? `${goal.scorer} scores for ${teamName}! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`
+          : `${teamName} scored! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`;
+        const key = String(goal.seq); // stable per-goal identity
         const goalRows = (await sql`
-          insert into notifications (user_address, type, title, body, icon, fixture_id)
-          select p.user_address, 'goal', ${title}, ${body}, '⚽', ${f.id}
+          insert into notifications (user_address, type, title, body, icon, fixture_id, dedup_key)
+          select p.user_address, 'goal', ${title}, ${body}, '⚽', ${f.id}, ${key}
           from picks p
           join users u on u.wallet_address = p.user_address
           where p.fixture_id = ${f.id}
             and coalesce(u.notification_prefs->>'goal', '') <> 'false'
-            -- Idempotency: never re-announce the same goal. A transient score
-            -- regression in the derivation would otherwise re-fire it; the body
-            -- carries the exact scoreline, so an identical body = same goal.
             and not exists (
               select 1 from notifications n
               where n.user_address = p.user_address and n.fixture_id = ${f.id}
-                and n.type = 'goal' and n.body = ${body}
+                and n.type = 'goal' and n.dedup_key = ${key}
             )
           on conflict do nothing
           returning user_address
         `) as { user_address: string }[];
         await pushToUsers(goalRows, {
-          title, body, icon: "⚽", url: "/play", tag: `${f.id}-goal-${na}-${nb}`,
+          title, body, icon: "⚽", url: "/play", tag: `${f.id}-goal-${key}`,
         });
       }
 
@@ -102,7 +95,7 @@ export async function notifyLiveEvents(
       // Fire ONLY on upcoming→live (not halftime→live for the 2nd half, and not
       // a finished→"live" mis-derivation blip), and dedupe so it can never
       // repeat for a user+match.
-      if (old.status === "upcoming") {
+      if (old?.status === "upcoming") {
         const startBody = `${f.teamA.name} vs ${f.teamB.name} is underway.`;
         const startRows = (await sql`
           insert into notifications (user_address, type, title, body, icon, fixture_id)

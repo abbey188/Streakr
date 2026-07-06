@@ -247,7 +247,7 @@ export function deriveLiveScore(fixtureId: string, entries: RawScoreEntry[]): Li
 
 // ─── Scorer resolution (goal events → player name via lineups) ────────────────
 
-export interface LastGoal { team: "A" | "B"; scorer: string | null; minute: number }
+export interface DerivedGoal { side: "A" | "B"; scorer: string | null; minute: number; seq: number; ts: number }
 
 /** "Ronaldo, Cristiano" → "Ronaldo" (TxLINE names are "Surname, First"). */
 function formatPlayerName(raw: string): string {
@@ -276,26 +276,34 @@ function buildPlayerNames(entries: RawScoreEntry[]): Map<number, string> {
   return names;
 }
 
-export function deriveLastGoal(entries: RawScoreEntry[]): LastGoal | null {
+/**
+ * ALL confirmed goals in the snapshot, each with a STABLE identity (the action's
+ * Seq — the feed retransmits an action with the same Seq). Notifications key off
+ * this instead of score-count diffs, which fixes two real bugs: rapid doubles
+ * (two goals in one sync interval) each surface as distinct actions, and a score
+ * flicker (regress→re-rise) can't produce a duplicate because the Seq is stable.
+ * Disallowed/unconfirmed goals (Confirmed === false) are skipped entirely.
+ */
+export function deriveGoals(entries: RawScoreEntry[]): DerivedGoal[] {
   const names = buildPlayerNames(entries);
-  let best: RawScoreEntry | null = null;
+  const bySeq = new Map<number, DerivedGoal>();
   for (const e of entries) {
     if (e.Confirmed === false) continue;
     const scored =
       e.Action === "goal" ||
       (e.Action === "penalty_outcome" && (e.Data as { Outcome?: string })?.Outcome === "Scored");
     if (!scored) continue;
-    if (!best || e.Ts > best.Ts) best = e;
+    const side = e.Participant === 1 ? "A" : e.Participant === 2 ? "B" : null;
+    if (!side) continue;
+    const pid = (e.Data as { PlayerId?: number })?.PlayerId;
+    const scorer = pid ? names.get(pid) ?? null : null;
+    const existing = bySeq.get(e.Seq);
+    // Keep the named version if a later retransmit of the same goal resolves it.
+    if (!existing || (!existing.scorer && scorer)) {
+      bySeq.set(e.Seq, { side, scorer, minute: Math.floor((e.Clock?.Seconds ?? 0) / 60), seq: e.Seq, ts: e.Ts });
+    }
   }
-  if (!best) return null;
-  const team = best.Participant === 1 ? "A" : best.Participant === 2 ? "B" : null;
-  if (!team) return null;
-  const pid = (best.Data as { PlayerId?: number })?.PlayerId;
-  return {
-    team,
-    scorer: pid ? names.get(pid) ?? null : null,
-    minute: Math.floor((best.Clock?.Seconds ?? 0) / 60),
-  };
+  return [...bySeq.values()].sort((a, b) => a.seq - b.seq);
 }
 
 // ─── Stats (corners + cards from the Score object — reliable) ─────────────────
