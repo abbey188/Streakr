@@ -204,6 +204,26 @@ export async function deleteAccount(): Promise<void> {
   await jsonOrThrow<{ ok: true }>(res);
 }
 
+/** Register a Web Push subscription for the signed-in user. */
+export async function apiSubscribePush(subscription: unknown): Promise<void> {
+  const res = await apiFetch("/api/push/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ subscription }),
+  });
+  await jsonOrThrow<{ ok: true }>(res);
+}
+
+/** Remove a Web Push subscription by endpoint. */
+export async function apiUnsubscribePush(endpoint: string): Promise<void> {
+  const res = await apiFetch("/api/push/unsubscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint }),
+  });
+  await jsonOrThrow<{ ok: true }>(res);
+}
+
 /** The badge ids the user has earned (profile marks only these). */
 export async function fetchUserBadges(walletAddress: string): Promise<string[]> {
   const res = await apiFetch(`/api/me/badges?wallet=${encodeURIComponent(walletAddress)}`);
