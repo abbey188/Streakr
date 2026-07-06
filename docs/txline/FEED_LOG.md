@@ -30,6 +30,12 @@ don't attach the settlement StatusId to transport/coverage actions like `disconn
 `connected`, heartbeat, etc. If 100 can legitimately appear on non-terminal actions,
 document exactly which, so consumers can distinguish "settled" from "marker present."
 
+**Confirmed context (TxLINE release, 3 Jul 2026):** "all `action=game_finalised` in
+Scores will have `statusId`/period 100." So 100 as a property of `game_finalised` is
+**intended** — this report is specifically that 100 **leaked onto a `disconnected`
+action**, which the release does not sanction. Our fix aligns with the intended
+semantics: finalisation is keyed off the `game_finalised` **action**, never a bare 100.
+
 ---
 
 ### A2 — Aggregate `Score.Total.Goals` increments with no corresponding confirmed `goal` action, then reverts  ⚠️ MED
