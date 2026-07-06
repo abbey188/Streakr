@@ -207,3 +207,18 @@ create table if not exists announcements (
   created_at timestamptz not null default now()
 );
 create index if not exists announcements_live_idx on announcements (active, starts_at);
+
+-- ─── push subscriptions (Web Push / PWA) ──────────────────────────────────
+-- One row per browser/device push subscription. `endpoint` is the push
+-- service URL and uniquely identifies a subscription (upsert on re-subscribe).
+-- A user can have several (phone + desktop). Pruned when the push service
+-- returns 404/410 (subscription gone).
+create table if not exists push_subscriptions (
+  id            uuid primary key default gen_random_uuid(),
+  user_address  text not null references users(wallet_address) on delete cascade,
+  endpoint      text unique not null,
+  p256dh        text not null,   -- client public key (for encryption)
+  auth          text not null,   -- client auth secret
+  created_at    timestamptz not null default now()
+);
+create index if not exists push_subscriptions_user_idx on push_subscriptions (user_address);
