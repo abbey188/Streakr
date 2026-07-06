@@ -1,6 +1,7 @@
 import { sql } from "./client";
 import { BADGES } from "@/src/data/fixtures";
 import { prefAllows } from "./notify-prefs";
+import { sendPush } from "@/lib/push/server";
 
 /**
  * Resolution engine: turns finished match results into resolved picks, updated
@@ -65,6 +66,12 @@ async function createNotification(
     insert into notifications (user_address, type, title, body, icon)
     values (${address}, ${type}, ${title}, ${body}, ${icon})
   `;
+  // Mirror to Web Push (best-effort; sendPush never throws). Badges deep-link to
+  // the profile; everything else to Play.
+  await sendPush(address, {
+    title, body, icon: icon || undefined,
+    url: type === "badge" ? "/profile" : "/play",
+  });
 }
 
 /** Grant a badge; returns true iff it was newly awarded (fires no notification). */
@@ -292,19 +299,22 @@ async function crown(
     try {
       const champRow = (await sql`select username from users where wallet_address = ${address}`) as { username: string }[];
       const champName = champRow[0]?.username ?? "A player";
-      await sql`
+      const bTitle = `${round} Champion crowned 🏆`;
+      const bBody = `@${champName} topped the ${round} with ${count} correct picks — see where you ranked.`;
+      const bRows = (await sql`
         insert into notifications (user_address, type, title, body, icon)
-        select distinct p.user_address, 'round_champion',
-               ${`${round} Champion crowned 🏆`},
-               ${`@${champName} topped the ${round} with ${count} correct picks — see where you ranked.`},
-               '🏆'
+        select distinct p.user_address, 'round_champion', ${bTitle}, ${bBody}, '🏆'
         from picks p
         join fixtures f on f.id = p.fixture_id
         join users u on u.wallet_address = p.user_address
         where f.round = ${round} and p.resolved = true
           and p.user_address <> ${address}
           and coalesce(u.notification_prefs->>'round_champion', '') <> 'false'
-      `;
+        returning user_address
+      `) as { user_address: string }[];
+      await Promise.all(
+        bRows.map((r) => sendPush(r.user_address, { title: bTitle, body: bBody, icon: "🏆", url: "/play" }))
+      );
     } catch (err) {
       console.error(`[resolution] champion broadcast failed for ${round}:`, err);
     }
