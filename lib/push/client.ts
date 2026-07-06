@@ -65,7 +65,7 @@ async function registerSW(): Promise<ServiceWorkerRegistration> {
  */
 export async function enablePush(): Promise<NotificationPermission | "unsupported"> {
   if (!isPushSupported()) return "unsupported";
-  if (!VAPID_PUBLIC) throw new Error("Push not configured (missing VAPID key)");
+  if (!VAPID_PUBLIC) throw new Error("no VAPID key");
 
   // Request permission FIRST, synchronously within the click. Safari drops the
   // user-gesture context across a long await (e.g. registering the SW), which
@@ -73,16 +73,42 @@ export async function enablePush(): Promise<NotificationPermission | "unsupporte
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission;
 
-  const reg = await registerSW();
-  let sub = await reg.pushManager.getSubscription();
-  if (!sub) {
-    sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
-    });
-  }
-  await apiSubscribePush(sub.toJSON());
+  await subscribeAndSave(); // throws a step-tagged error on failure
   return "granted";
+}
+
+/** Register the SW, obtain a push subscription, and persist it. Throws an error
+ *  tagged with the failing step so the UI can surface exactly what went wrong. */
+export async function subscribeAndSave(): Promise<void> {
+  let reg: ServiceWorkerRegistration;
+  try {
+    reg = await registerSW();
+  } catch (e) {
+    throw new Error(`sw: ${errMsg(e)}`);
+  }
+
+  let sub: PushSubscription | null;
+  try {
+    sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+      });
+    }
+  } catch (e) {
+    throw new Error(`subscribe: ${errMsg(e)}`);
+  }
+
+  try {
+    await apiSubscribePush(sub.toJSON());
+  } catch (e) {
+    throw new Error(`save: ${errMsg(e)}`);
+  }
+}
+
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
 }
 
 /** Unsubscribe locally and remove the subscription server-side. */
