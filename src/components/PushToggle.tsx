@@ -33,8 +33,9 @@ export default function PushToggle() {
       const p = await enablePush();
       setPerm(p);
       if (p === "denied") setError("You blocked notifications — enable them in your browser settings.");
-    } catch {
-      setError("Couldn't enable notifications. Please try again.");
+    } catch (e) {
+      // Surface the real reason so failures are diagnosable (esp. on iOS).
+      setError(e instanceof Error ? e.message : "Couldn't enable notifications. Please try again.");
     } finally {
       setBusy(false);
     }
