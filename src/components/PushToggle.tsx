@@ -3,27 +3,44 @@
 import { useEffect, useState } from "react";
 import { Bell, Check, Share } from "lucide-react";
 import {
-  isPushSupported, isIos, isStandalone, pushPermission, enablePush, disablePush,
+  isPushSupported, isIos, isStandalone, pushPermission,
+  enablePush, disablePush, subscribeAndSave,
 } from "@/lib/push/client";
 
+type Status = "loading" | "on" | "off" | "denied" | "unsupported";
+
 /**
- * Master push-notification opt-in. Handles every state:
- *  - iOS + not installed → "Add to Home Screen" first (iOS only pushes from a PWA)
- *  - unsupported browser → explain
- *  - default → an Enable button (requests permission from this user gesture)
- *  - granted → enabled, with a Turn off option
- *  - denied → tell them to re-enable in browser settings
- * Sits above the per-type toggles in Settings — those refine what's sent once on.
+ * Master push-notification opt-in. "On" reflects an ACTUAL saved subscription,
+ * not just the OS permission — so a granted-permission-but-failed-save state
+ * shows as off (with the reason), and re-opening Settings self-heals by
+ * re-sending any existing subscription to the server.
  */
 export default function PushToggle() {
-  const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
+  const [status, setStatus] = useState<Status>("loading");
   const [needsInstall, setNeedsInstall] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setPerm(pushPermission());
-    setNeedsInstall(isIos() && !isStandalone());
+    (async () => {
+      setNeedsInstall(isIos() && !isStandalone());
+      const perm = pushPermission();
+      if (perm === "unsupported") return setStatus("unsupported");
+      if (perm === "denied") return setStatus("denied");
+      if (perm === "granted") {
+        // Self-heal: re-send the current subscription to the server. Confirms
+        // the save actually works and surfaces the failing step if it doesn't.
+        try {
+          await subscribeAndSave();
+          setStatus("on");
+        } catch (e) {
+          setStatus("off");
+          setError(e instanceof Error ? e.message : "sync failed");
+        }
+        return;
+      }
+      setStatus("off");
+    })();
   }, []);
 
   const enable = async () => {
@@ -31,11 +48,12 @@ export default function PushToggle() {
     setError("");
     try {
       const p = await enablePush();
-      setPerm(p);
-      if (p === "denied") setError("You blocked notifications — enable them in your browser settings.");
+      if (p === "granted") setStatus("on");
+      else if (p === "denied") { setStatus("denied"); }
+      else setStatus("off");
     } catch (e) {
-      // Surface the real reason so failures are diagnosable (esp. on iOS).
-      setError(e instanceof Error ? e.message : "Couldn't enable notifications. Please try again.");
+      setStatus("off");
+      setError(e instanceof Error ? e.message : "Couldn't enable notifications.");
     } finally {
       setBusy(false);
     }
@@ -45,13 +63,13 @@ export default function PushToggle() {
     setBusy(true);
     try {
       await disablePush();
-      setPerm("default");
+      setStatus("off");
+      setError("");
     } finally {
       setBusy(false);
     }
   };
 
-  // iOS Safari tab — push only works once installed to the Home Screen.
   if (needsInstall) {
     return (
       <div className="bg-[#0A0E1A] border border-[#FF4E00]/20 rounded-2xl p-3.5 space-y-2">
@@ -71,33 +89,31 @@ export default function PushToggle() {
     );
   }
 
-  const enabled = perm === "granted";
+  const on = status === "on";
+  const subtitle =
+    status === "unsupported" ? "Not supported on this browser."
+    : status === "denied" ? "Blocked — re-enable in browser settings."
+    : status === "loading" ? "Checking…"
+    : on ? "Goals, results & reminders on this device."
+    : "Get alerts even when Streakr is closed.";
 
   return (
     <div className="bg-[#0A0E1A] border border-white/5 rounded-2xl p-3.5 flex items-center justify-between gap-3">
       <div className="flex items-center gap-2.5 min-w-0">
-        <span className={`flex-shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center ${enabled ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-[#151B2E] border-white/5 text-[#FF4E00]"}`}>
-          {enabled ? <Check className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+        <span className={`flex-shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center ${on ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-[#151B2E] border-white/5 text-[#FF4E00]"}`}>
+          {on ? <Check className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
         </span>
         <div className="min-w-0">
           <span className="text-xs font-bold text-slate-200 block">
-            {enabled ? "Push notifications on" : "Push notifications"}
+            {on ? "Push notifications on" : "Push notifications"}
           </span>
-          <span className="text-[9px] text-[#8E9299] block mt-0.5 leading-tight">
-            {perm === "unsupported"
-              ? "Not supported on this browser."
-              : perm === "denied"
-              ? "Blocked — re-enable in browser settings."
-              : enabled
-              ? "Goals, results & reminders on this device."
-              : "Get alerts even when Streakr is closed."}
-          </span>
-          {error && <span className="text-[9px] text-red-400 block mt-1 leading-tight">{error}</span>}
+          <span className="text-[9px] text-[#8E9299] block mt-0.5 leading-tight">{subtitle}</span>
+          {error && <span className="text-[9px] text-red-400 block mt-1 leading-tight break-all">⚠ {error}</span>}
         </div>
       </div>
 
-      {perm !== "unsupported" && perm !== "denied" && (
-        enabled ? (
+      {status !== "unsupported" && status !== "denied" && status !== "loading" && (
+        on ? (
           <button
             onClick={disable}
             disabled={busy}
@@ -111,7 +127,7 @@ export default function PushToggle() {
             disabled={busy}
             className="text-[10px] font-black italic text-white bg-[#FF4E00] hover:bg-orange-600 px-3 py-1.5 rounded-lg transition flex-shrink-0 cursor-pointer disabled:opacity-60 shadow"
           >
-            {busy ? "Enabling…" : "Enable"}
+            {busy ? "Enabling…" : error ? "Retry" : "Enable"}
           </button>
         )
       )}
