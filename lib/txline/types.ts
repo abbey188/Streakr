@@ -44,6 +44,8 @@ export interface MatchStats {
   shotsB?: number;
   shotsOnTargetA?: number;
   shotsOnTargetB?: number;
+  offsidesA?: number;
+  offsidesB?: number;
   cornersA?: number;
   cornersB?: number;
   yellowA?: number;

@@ -323,6 +323,45 @@ export function deriveStats(entries: RawScoreEntry[]): MatchStats {
   };
 }
 
+const POSSESSION_ACTIONS = new Set([
+  "possession", "attack_possession", "danger_possession",
+  "high_danger_possession", "safe_possession",
+]);
+
+/**
+ * Advanced stats from the ACTION LOG (updates stream) — these aren't in the
+ * on-chain Stats map. Possession = share of possession events per team; shots =
+ * confirmed `shot` actions (on target = Outcome "OnTarget"); offsides =
+ * `free_kick` with FreeKickType "Offside" (TxLINE feed spec, 6 Jul 2026).
+ */
+export function deriveAdvancedStats(updates: RawScoreEntry[]): Partial<MatchStats> {
+  let posA = 0, posB = 0, shotsA = 0, shotsB = 0, sotA = 0, sotB = 0, offA = 0, offB = 0;
+  for (const e of updates) {
+    const p = e.Participant;
+    if (p !== 1 && p !== 2) continue;
+    if (POSSESSION_ACTIONS.has(e.Action)) {
+      if (p === 1) posA++; else posB++;
+      continue;
+    }
+    if (e.Confirmed === false) continue;
+    if (e.Action === "shot") {
+      const outcome = (e.Data as { Outcome?: string })?.Outcome;
+      if (!outcome) continue; // unclassified attempt — not a counted shot
+      if (p === 1) { shotsA++; if (outcome === "OnTarget") sotA++; }
+      else { shotsB++; if (outcome === "OnTarget") sotB++; }
+    } else if (e.Action === "free_kick" && (e.Data as { FreeKickType?: string })?.FreeKickType === "Offside") {
+      if (p === 1) offA++; else offB++;
+    }
+  }
+  const posTotal = posA + posB;
+  return {
+    possessionA: posTotal ? Math.round((posA / posTotal) * 100) : undefined,
+    possessionB: posTotal ? Math.round((posB / posTotal) * 100) : undefined,
+    shotsA, shotsB, shotsOnTargetA: sotA, shotsOnTargetB: sotB,
+    offsidesA: offA, offsidesB: offB,
+  };
+}
+
 // ─── Event timeline (from chronological update entries) ──────────────────────
 
 const partOf = (data?: Record<string, unknown>): "A" | "B" | undefined =>
