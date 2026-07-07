@@ -1,6 +1,6 @@
 import type { TxlineProvider, MatchDetail } from "./types";
 import { txlineClient, type RawFixture } from "./client";
-import { normalizeFixture, deriveLiveScore, deriveStats, buildEvents } from "./normalize";
+import { normalizeFixture, deriveLiveScore, deriveStats, deriveAdvancedStats, buildEvents } from "./normalize";
 
 /**
  * Real TxLINE provider — pulls live World Cup data server-side and normalizes it.
@@ -37,14 +37,16 @@ export const realTxlineProvider: TxlineProvider = {
 
     const snapshot = await txlineClient.getScoresSnapshot(fixtureId);
     const score = deriveLiveScore(String(fixtureId), snapshot);
-    const stats = deriveStats(snapshot);
+    const stats = deriveStats(snapshot); // corners/cards from the on-chain Stats map
     const base = normalizeFixture(rf, score);
 
-    // Timeline from the full chronological update sequence; fall back to snapshot.
+    // Timeline + advanced stats (possession/shots/offsides) from the full action
+    // log; fall back to the snapshot for the timeline if the stream is empty.
     let events;
     try {
       const updates = await txlineClient.getScoresUpdates(fixtureId);
       events = buildEvents(updates.length ? updates : snapshot);
+      if (updates.length) Object.assign(stats, deriveAdvancedStats(updates));
     } catch {
       events = buildEvents(snapshot);
     }

@@ -265,7 +265,13 @@ export default function ScreenMatchDetail({ fixtureId, onBack }: ScreenMatchDeta
                     <span className="text-[#8E9299]">Match Stats</span>
                     <span className="text-indigo-400 font-black">{detail.teamB.code}</span>
                   </div>
+                  {detail.stats.possessionA != null && (
+                    <StatRow label="Possession %" a={detail.stats.possessionA} b={detail.stats.possessionB ?? 0} />
+                  )}
+                  <StatRow label="Shots" a={detail.stats.shotsA ?? 0} b={detail.stats.shotsB ?? 0} />
+                  <StatRow label="Shots on Target" a={detail.stats.shotsOnTargetA ?? 0} b={detail.stats.shotsOnTargetB ?? 0} />
                   <StatRow label="Corners" a={detail.stats.cornersA ?? 0} b={detail.stats.cornersB ?? 0} />
+                  <StatRow label="Offsides" a={detail.stats.offsidesA ?? 0} b={detail.stats.offsidesB ?? 0} />
                   <StatRow label="Yellow Cards" a={detail.stats.yellowA ?? 0} b={detail.stats.yellowB ?? 0} />
                   <StatRow label="Red Cards" a={detail.stats.redA ?? 0} b={detail.stats.redB ?? 0} />
                   <p className="text-[8px] font-mono text-slate-600 text-center pt-1 uppercase tracking-wider">
