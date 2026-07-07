@@ -100,6 +100,7 @@ export function normalizeFixture(
     scoreA: live?.homeScore,
     scoreB: live?.awayScore,
     minute: fixtureStatus === "live" ? live?.minute : undefined,
+    period: fixtureStatus === "live" ? live?.period : undefined,
     kickoffTime,
     kickoffAt: kickoff.toISOString(),
     actualWinner: live?.advanced,
@@ -464,10 +465,38 @@ export function buildEvents(entries: RawScoreEntry[]): MatchEvent[] {
         break;
       }
       case "var": {
+        const t = String(d.Type ?? "").toLowerCase();
         cands.push({
-          bucket: `var-${min}`, who: undefined,
+          bucket: `varstart-${min}`, who: undefined,
           ev: { id, minute: min, team: team ?? "A", type: "var",
-                detail: (String(d.Type ?? "").toLowerCase() || "review") + " check" },
+                detail: t ? `checking ${t}` : "under review" },
+        });
+        break;
+      }
+      case "var_end": {
+        // The resolution — Stands / Overturned (the confirmed, meaningful beat).
+        const outcome = String(d.Outcome ?? "").toLowerCase();
+        cands.push({
+          bucket: `varend-${min}`, who: undefined,
+          ev: { id, minute: min, team: team ?? "A", type: "var",
+                detail: outcome === "overturned" ? "decision overturned"
+                  : outcome === "stands" ? "decision stands" : "review complete" },
+        });
+        break;
+      }
+      case "shot": {
+        // Only the notable shots — a full log of every off-target / blocked
+        // attempt would drown the timeline. On target + woodwork are the drama.
+        if (!team) break;
+        const outcome = String(d.Outcome ?? "");
+        if (outcome !== "OnTarget" && outcome !== "Woodwork") break;
+        const player = nameOf(d.PlayerId);
+        cands.push({
+          bucket: `shot-${team}-${min}`, who: player,
+          ev: { id, minute: min, team, type: "shot",
+                detail: outcome === "Woodwork"
+                  ? (player ? `${player} — off the woodwork` : "off the woodwork")
+                  : (player ? `${player} — shot on target` : "shot on target") },
         });
         break;
       }

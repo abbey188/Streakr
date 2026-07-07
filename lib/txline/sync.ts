@@ -134,21 +134,22 @@ async function upsertFixtures(fixtures: Fixture[]): Promise<void> {
   await upsertTeams(fixtures);
   await sql`
     insert into fixtures (id, txline_id, round, team_a_id, team_b_id, status,
-                          score_a, score_b, minute, kickoff_time, kickoff_at, actual_winner,
+                          score_a, score_b, minute, period, kickoff_time, kickoff_at, actual_winner,
                           pick_open, pick_close_reason)
-    select id, id, round, a, b, status, sa, sb, minute, kt, ka, winner, po, pcr
+    select id, id, round, a, b, status, sa, sb, minute, prd, kt, ka, winner, po, pcr
     from unnest(
       ${fixtures.map((f) => f.id)}::text[], ${fixtures.map((f) => f.round)}::text[],
       ${fixtures.map((f) => f.teamA.id)}::text[], ${fixtures.map((f) => f.teamB.id)}::text[],
       ${fixtures.map((f) => f.status)}::text[],
       ${fixtures.map((f) => f.scoreA ?? null)}::int[], ${fixtures.map((f) => f.scoreB ?? null)}::int[],
       ${fixtures.map((f) => f.minute ?? null)}::int[],
+      ${fixtures.map((f) => f.period ?? null)}::text[],
       ${fixtures.map((f) => f.kickoffTime)}::text[],
       ${fixtures.map((f) => f.kickoffAt ?? null)}::timestamptz[],
       ${fixtures.map((f) => f.actualWinner ?? null)}::text[],
       ${fixtures.map((f) => f.pickOpen ?? null)}::boolean[],
       ${fixtures.map((f) => f.pickCloseReason ?? null)}::text[]
-    ) as t(id, round, a, b, status, sa, sb, minute, kt, ka, winner, po, pcr)
+    ) as t(id, round, a, b, status, sa, sb, minute, prd, kt, ka, winner, po, pcr)
     on conflict (id) do update set
       round = excluded.round,
       -- 'finished' is TERMINAL: once a match is settled, a later sync can never
@@ -158,6 +159,7 @@ async function upsertFixtures(fixtures: Fixture[]): Promise<void> {
       score_a       = case when fixtures.status = 'finished' then fixtures.score_a    else excluded.score_a       end,
       score_b       = case when fixtures.status = 'finished' then fixtures.score_b    else excluded.score_b       end,
       minute        = case when fixtures.status = 'finished' then fixtures.minute     else excluded.minute        end,
+      period        = case when fixtures.status = 'finished' then fixtures.period     else excluded.period        end,
       actual_winner = case when fixtures.status = 'finished' then fixtures.actual_winner else excluded.actual_winner end,
       pick_open         = excluded.pick_open,
       pick_close_reason = excluded.pick_close_reason,

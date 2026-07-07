@@ -16,14 +16,29 @@ export function useNow(intervalMs = 20000): number {
 }
 
 /**
+ * Format a match minute + game phase into a display label: first/second-half
+ * stoppage as `45+X` / `90+X`, `HT` and `PENS` breaks, real extra-time minutes,
+ * and a `120+` cap so a stuck-live match can't run the clock away. Shared by the
+ * card (ticked) and the detail view (live).
+ */
+export function formatMinute(minute: number | null | undefined, period?: string): string {
+  if (minute == null) return period === "PENS" ? "PENS" : "HT";
+  if (period === "HT" || period === "ET HT") return "HT";
+  if (period === "PENS") return "PENS";
+  if (period === "1H" && minute > 45) return `45+${minute - 45}'`;
+  if (period === "2H" && minute > 90) return `90+${minute - 90}'`;
+  return minute > 120 ? "120+'" : `${minute}'`;
+}
+
+/**
  * The live match-minute label, ticked forward client-side from the last synced
  * value (anchored to when the row was last updated). Stays current between syncs
  * and resilient if a sync is briefly delayed. A null minute on a live match means
  * the clock is paused — i.e. halftime.
  */
 export function liveMinuteLabel(match: Fixture, nowMs: number): string {
-  if (match.minute == null) return "HT";
   const anchor = match.updatedAt ? Date.parse(match.updatedAt) : nowMs;
-  const ticked = match.minute + Math.max(0, Math.floor((nowMs - anchor) / 60_000));
-  return ticked >= 90 ? "90+'" : `${ticked}'`;
+  const ticked =
+    match.minute == null ? null : match.minute + Math.max(0, Math.floor((nowMs - anchor) / 60_000));
+  return formatMinute(ticked, match.period);
 }

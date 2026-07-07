@@ -25,6 +25,7 @@ export interface Fixture {
   scoreA?: number;
   scoreB?: number;
   minute?: number; // only if live
+  period?: string; // "1H" | "HT" | "2H" | "ET1" | "ET2" | "PENS" | … — for ET/stoppage display
   kickoffTime: string; // e.g. "20:00" (display fallback)
   kickoffAt?: string; // ISO timestamp — used for accurate local time + day grouping
   updatedAt?: string; // ISO timestamp of last sync — anchors the live-minute tick

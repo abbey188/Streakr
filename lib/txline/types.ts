@@ -25,7 +25,7 @@ export interface LiveScore {
 }
 
 export type MatchEventType =
-  | "goal" | "yellow" | "red" | "corner" | "penalty" | "var" | "sub" | "freekick";
+  | "goal" | "yellow" | "red" | "corner" | "penalty" | "var" | "sub" | "freekick" | "shot";
 
 /** A single timeline action (goal, card, corner, sub, …). */
 export interface MatchEvent {
