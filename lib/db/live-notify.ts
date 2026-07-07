@@ -70,7 +70,7 @@ export async function notifyLiveEvents(
         const body = goal.scorer
           ? `${goal.scorer} scores for ${teamName}! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`
           : `${teamName} scored! ${f.teamA.code} ${na}–${nb} ${f.teamB.code}`;
-        const key = String(goal.seq); // stable per-goal identity
+        const key = goal.key; // stable per-goal identity (side + running score)
         const goalRows = (await sql`
           insert into notifications (user_address, type, title, body, icon, fixture_id, dedup_key)
           select p.user_address, 'goal', ${title}, ${body}, '⚽', ${f.id}, ${key}

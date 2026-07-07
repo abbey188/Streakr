@@ -248,7 +248,7 @@ export function deriveLiveScore(fixtureId: string, entries: RawScoreEntry[]): Li
 
 // ─── Scorer resolution (goal events → player name via lineups) ────────────────
 
-export interface DerivedGoal { side: "A" | "B"; scorer: string | null; minute: number; seq: number; ts: number }
+export interface DerivedGoal { side: "A" | "B"; scorer: string | null; minute: number; seq: number; ts: number; key: string }
 
 /** "Ronaldo, Cristiano" → "Ronaldo" (TxLINE names are "Surname, First"). */
 function formatPlayerName(raw: string): string {
@@ -287,7 +287,7 @@ function buildPlayerNames(entries: RawScoreEntry[]): Map<number, string> {
  */
 export function deriveGoals(entries: RawScoreEntry[]): DerivedGoal[] {
   const names = buildPlayerNames(entries);
-  const bySeq = new Map<number, DerivedGoal>();
+  const byGoal = new Map<string, DerivedGoal>();
   for (const e of entries) {
     if (e.Confirmed === false) continue;
     const scored =
@@ -296,15 +296,28 @@ export function deriveGoals(entries: RawScoreEntry[]): DerivedGoal[] {
     if (!scored) continue;
     const side = e.Participant === 1 ? "A" : e.Participant === 2 ? "B" : null;
     if (!side) continue;
+    const minute = Math.floor((e.Clock?.Seconds ?? 0) / 60);
+    // Stable per-goal identity = the scoring side's cumulative goal count AFTER
+    // this goal. The feed emits each goal as several entries (unnamed, then named,
+    // same score) — this collapses them into one, and still distinguishes
+    // different goals (incl. same-minute doubles) since each has a distinct
+    // running total. Falls back to (side, minute) if the score field is absent.
+    const sideGoals = side === "A"
+      ? e.Score?.Participant1?.Total?.Goals
+      : e.Score?.Participant2?.Total?.Goals;
+    const key = sideGoals != null ? `${side}:${sideGoals}` : `${side}:m${minute}`;
     const pid = (e.Data as { PlayerId?: number })?.PlayerId;
     const scorer = pid ? names.get(pid) ?? null : null;
-    const existing = bySeq.get(e.Seq);
-    // Keep the named version if a later retransmit of the same goal resolves it.
-    if (!existing || (!existing.scorer && scorer)) {
-      bySeq.set(e.Seq, { side, scorer, minute: Math.floor((e.Clock?.Seconds ?? 0) / 60), seq: e.Seq, ts: e.Ts });
+    const existing = byGoal.get(key);
+    if (!existing) {
+      byGoal.set(key, { side, scorer, minute, seq: e.Seq, ts: e.Ts, key });
+    } else {
+      if (!existing.scorer && scorer) existing.scorer = scorer; // upgrade to the named version
+      if (e.Seq < existing.seq) existing.seq = e.Seq;
+      if (e.Ts < existing.ts) existing.ts = e.Ts;
     }
   }
-  return [...bySeq.values()].sort((a, b) => a.seq - b.seq);
+  return [...byGoal.values()].sort((a, b) => a.seq - b.seq);
 }
 
 // ─── Stats (corners + cards from the Score object — reliable) ─────────────────
