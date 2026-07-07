@@ -79,6 +79,7 @@ create table if not exists fixtures (
 -- Computed during sync from the live snapshot; drives the live-card pick states.
 alter table fixtures add column if not exists pick_open boolean;
 alter table fixtures add column if not exists pick_close_reason text;
+alter table fixtures add column if not exists period text; -- live game phase for ET/stoppage display
 create index if not exists fixtures_status_idx on fixtures (status);
 create index if not exists fixtures_kickoff_idx on fixtures (kickoff_at);
 

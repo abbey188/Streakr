@@ -112,6 +112,7 @@ interface FixtureRow {
   score_a: number | null;
   score_b: number | null;
   minute: number | null;
+  period: string | null;
   kickoff_time: string;
   actual_winner: "A" | "B" | null;
   team_a_id: string;
@@ -141,6 +142,7 @@ function mapFixture(r: FixtureRow): Fixture {
     scoreA: r.score_a ?? undefined,
     scoreB: r.score_b ?? undefined,
     minute: r.minute ?? undefined,
+    period: r.period ?? undefined,
     kickoffTime: r.kickoff_time,
     kickoffAt: r.kickoff_at ?? undefined,
     updatedAt: r.updated_at ?? undefined,
@@ -159,7 +161,7 @@ function mapFixture(r: FixtureRow): Fixture {
 export async function getFixtures(walletAddress?: string): Promise<Fixture[]> {
   const rows = (await sql`
     select
-      f.id, f.round, f.status, f.score_a, f.score_b, f.minute,
+      f.id, f.round, f.status, f.score_a, f.score_b, f.minute, f.period,
       f.kickoff_time, f.kickoff_at, f.updated_at, f.actual_winner,
       f.pick_open, f.pick_close_reason,
       ta.id as team_a_id, ta.name as team_a_name, ta.flag as team_a_flag, ta.code as team_a_code,

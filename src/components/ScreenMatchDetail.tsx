@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import type { MatchEvent, FormEntry } from "@/lib/txline/types";
 import { fetchMatchDetail, type MatchDetailResponse } from "@/lib/api/client";
 import { useAppState } from "@/lib/state/app-state";
+import { formatMinute } from "@/lib/live-clock";
 import CountryFlag from "./CountryFlag";
 
 interface ScreenMatchDetailProps {
@@ -14,10 +15,10 @@ interface ScreenMatchDetailProps {
 }
 
 const EVENT_ICON: Record<string, string> = {
-  goal: "⚽", penalty: "🥅", yellow: "🟨", red: "🟥", sub: "🔁", var: "📺", corner: "🚩", freekick: "🎯",
+  goal: "⚽", penalty: "🥅", yellow: "🟨", red: "🟥", sub: "🔁", var: "📺", corner: "🚩", freekick: "🎯", shot: "💥",
 };
 const EVENT_LABEL: Record<string, string> = {
-  goal: "Goal", penalty: "Penalty", yellow: "Yellow card", red: "Red card", sub: "Substitution", var: "VAR", corner: "Corner", freekick: "Free kick",
+  goal: "Goal", penalty: "Penalty", yellow: "Yellow card", red: "Red card", sub: "Substitution", var: "VAR", corner: "Corner", freekick: "Free kick", shot: "Shot",
 };
 
 function TeamFormRow({ code, name, form }: { code: string; name: string; form: FormEntry[] }) {
@@ -138,7 +139,7 @@ export default function ScreenMatchDetail({ fixtureId, onBack }: ScreenMatchDeta
             <div className="flex justify-center mb-3">
               {isLive ? (
                 <span className="inline-flex items-center gap-1.5 text-[9px] font-bold bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-0.5 rounded-full animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> LIVE • {s.minute}' {s.period && s.period !== "1H" && s.period !== "2H" ? `· ${s.period}` : ""}
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> LIVE • {formatMinute(s.minute, s.period)}{s.period?.startsWith("ET") ? ` · ${s.period}` : ""}
                 </span>
               ) : isHalftime ? (
                 <span className="inline-flex items-center gap-1.5 text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
