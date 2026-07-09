@@ -171,9 +171,18 @@ export default function ScreenMatchDetail({ fixtureId, onBack }: ScreenMatchDeta
                   <span className="text-lg font-mono font-bold text-[#8E9299]">{detail.kickoffTime}</span>
                 )}
                 {showPens && (
-                  <span className="text-[10px] font-mono font-bold text-[#FF4E00] mt-1 bg-[#FF4E00]/10 px-2 py-0.5 rounded-full border border-[#FF4E00]/20">
-                    Penalties {s.homePenalties} - {s.awayPenalties}
-                  </span>
+                  // Secondary scoreline: numbers stacked under the main score (never
+                  // wraps in the narrow centre column), with a small label beneath.
+                  <div className="mt-1.5 flex flex-col items-center">
+                    <span className="text-sm font-mono font-black text-[#FF4E00] tracking-wider whitespace-nowrap">
+                      {s.homePenalties}
+                      <span className="text-[#FF4E00]/50 mx-1.5">-</span>
+                      {s.awayPenalties}
+                    </span>
+                    <span className="text-[8px] font-mono font-bold text-[#8E9299] uppercase tracking-widest mt-0.5 leading-none">
+                      Penalties
+                    </span>
+                  </div>
                 )}
               </div>
 

@@ -11,6 +11,9 @@ interface ScreenInboxProps {
 }
 
 const DISMISS_ACTIVITY_KEY = "streakr_dismissed_activity";
+// Group activity has no server-side read state (it's a shared feed), so "seen"
+// is tracked per-device by id — same pattern as dismissals. Powers the tab badge.
+const SEEN_ACTIVITY_KEY = "streakr_seen_activity";
 
 export default function ScreenInbox({
   activityList,
@@ -26,6 +29,7 @@ export default function ScreenInbox({
   // Group activity is a shared milestone feed (not per-user rows), so "clearing"
   // it is a local hide (per device), mirroring the results strip.
   const [dismissedActivity, setDismissedActivity] = useState<Set<string>>(new Set());
+  const [seenActivity, setSeenActivity] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) {
@@ -37,6 +41,8 @@ export default function ScreenInbox({
       if (localStorage.getItem("streakr_notif_dismissed") === "1") setDismissed(true);
       const raw = localStorage.getItem(DISMISS_ACTIVITY_KEY);
       if (raw) setDismissedActivity(new Set(JSON.parse(raw)));
+      const seen = localStorage.getItem(SEEN_ACTIVITY_KEY);
+      if (seen) setSeenActivity(new Set(JSON.parse(seen)));
     } catch { /* ignore */ }
   }, []);
 
@@ -62,6 +68,20 @@ export default function ScreenInbox({
   const showOptIn = permission === "default" && !dismissed;
 
   const visibleActivity = activityList.filter((a) => !dismissedActivity.has(a.id));
+
+  // Badge count for the Group tab: items you haven't looked at yet.
+  const unseenGroupCount = visibleActivity.filter((a) => !seenActivity.has(a.id)).length;
+
+  // Viewing the Group tab marks everything currently there as seen (badge clears).
+  useEffect(() => {
+    if (tab !== "group") return;
+    const unseen = visibleActivity.filter((a) => !seenActivity.has(a.id));
+    if (unseen.length === 0) return;
+    const next = new Set(seenActivity);
+    unseen.forEach((a) => next.add(a.id));
+    setSeenActivity(next);
+    try { localStorage.setItem(SEEN_ACTIVITY_KEY, JSON.stringify([...next])); } catch { /* ignore */ }
+  }, [tab, visibleActivity, seenActivity]);
 
   const clearGroupLocally = () => {
     const next = new Set(dismissedActivity);
@@ -130,17 +150,32 @@ export default function ScreenInbox({
             <Trash2 className="w-3.5 h-3.5" /> Clear
           </button>
           <div className="flex-1 flex gap-1.5 bg-[#151B2E] border border-white/5 p-1 rounded-2xl">
-            {(["general", "group"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`flex-1 py-1.5 rounded-xl text-[10px] font-black italic uppercase tracking-wider transition cursor-pointer ${
-                  tab === t ? "bg-[#FF4E00] text-white shadow" : "text-[#8E9299] hover:text-white"
-                }`}
-              >
-                {t === "general" ? "General" : "Group"}
-              </button>
-            ))}
+            {(["general", "group"] as const).map((t) => {
+              const active = tab === t;
+              const badge = t === "group" ? unseenGroupCount : 0;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`flex-1 py-1.5 rounded-xl text-[10px] font-black italic uppercase tracking-wider transition cursor-pointer ${
+                    active ? "bg-[#FF4E00] text-white shadow" : "text-[#8E9299] hover:text-white"
+                  }`}
+                >
+                  <span className="inline-flex items-center justify-center gap-1.5">
+                    {t === "general" ? "General" : "Group"}
+                    {badge > 0 && (
+                      <span
+                        className={`min-w-[15px] h-[15px] px-1 rounded-full text-[8px] font-black not-italic inline-flex items-center justify-center leading-none ${
+                          active ? "bg-white text-[#FF4E00]" : "bg-[#FF4E00] text-white"
+                        }`}
+                      >
+                        {badge > 9 ? "9+" : badge}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -178,7 +213,9 @@ export default function ScreenInbox({
                       <p className="text-xs text-slate-300 leading-relaxed">{n.body}</p>
                     </div>
                     {!n.read && (
-                      <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-[#FF4E00] shadow-[0_0_8px_rgba(255,78,0,0.7)]" />
+                      // Left edge, vertically centred — reads as an "unread" row marker
+                      // and keeps the top-right corner free for the timestamp.
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#FF4E00] shadow-[0_0_6px_rgba(255,78,0,0.7)]" />
                     )}
                   </div>
                 );
