@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Fixture, AvatarConfig, Team } from "../types";
-import type { GlobalLeaderboardEntry, RoundRace, TournamentRace } from "@/lib/api/client";
+import type { GlobalLeaderboardEntry, RoundRace, TournamentRace, TournamentRacer } from "@/lib/api/client";
 import { fetchRoundRace, fetchTournamentRace } from "@/lib/api/client";
 import { groupByDay, kickoffLabel } from "@/lib/match-groups";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
@@ -68,6 +68,44 @@ function roundStatus(fixtures: Fixture[], round: string): { status: RoundStatus;
   if (total > 0 && done === total) status = "done";
   else if (anyLive || (done > 0 && done < total)) status = "live";
   return { status, total, done };
+}
+
+/** One row in the compact race for The Streakr (points-led). */
+function ChampionRow({ r, rank }: { r: TournamentRacer; rank: number }) {
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-2xl p-3 border transition ${
+        r.isCurrentUser ? "bg-[#FF4E00]/10 border-[#FF4E00]/30" : "bg-[#0A0E1A] border-white/5"
+      }`}
+    >
+      <span className={`w-6 text-center text-sm font-black italic ${rank === 1 ? "text-amber-300" : "text-[#8E9299]"}`}>
+        {rank === 1 ? "👑" : rank}
+      </span>
+      <div className="w-9 h-9 rounded-xl bg-[#151B2E] border border-white/5 p-0.5 flex items-center justify-center flex-shrink-0">
+        <AvatarRenderer
+          skinTone={r.avatar?.skinTone}
+          kitPrimary={r.avatar?.kitPrimary}
+          kitSecondary={r.avatar?.kitSecondary}
+          expression={r.avatar?.expression}
+          size="sm"
+          isAnimated={false}
+          upperBodyOnly={true}
+        />
+      </div>
+      <div className="flex-grow min-w-0">
+        <span className="text-xs font-black italic text-white truncate block">
+          @{r.username}{r.isCurrentUser && <span className="text-[#FF4E00]"> (you)</span>}
+        </span>
+        <span className="text-[9px] font-mono text-[#8E9299]">
+          {r.personalBest}🔥 best · {r.correctCount} correct
+        </span>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <span className="text-sm font-black text-amber-300 block leading-none">{r.points}</span>
+        <span className="text-[8px] font-mono text-[#8E9299] uppercase tracking-wide">points</span>
+      </div>
+    </div>
+  );
 }
 
 export default function ScreenHome({
@@ -610,9 +648,6 @@ export default function ScreenHome({
               <div className="mt-4 flex items-center z-10 relative">
                 {koStages.map((s, i) => {
                   const isCurrent = s.round === currentStage.round;
-                  // The Final node is the crown: it opens the overall title race
-                  // (and the crowned Streakr once the Final is settled).
-                  const isFinalNode = i === koStages.length - 1;
                   // Inner sphere = status (green when done, orange when live, faint
                   // when upcoming). The orange RING around it is a constant
                   // "tappable" affordance on every round (added below).
@@ -628,16 +663,12 @@ export default function ScreenHome({
                     <React.Fragment key={s.round}>
                       <button
                         type="button"
-                        onClick={() => (isFinalNode ? setChampionOpen(true) : setRaceRound(s.round))}
-                        aria-label={isFinalNode ? "View the race for The Streakr" : `View ${s.round} standings`}
+                        onClick={() => setRaceRound(s.round)}
+                        aria-label={`View ${s.round} standings`}
                         className="flex flex-col items-center gap-1.5 flex-shrink-0 group/step cursor-pointer"
                       >
-                        {isFinalNode && finalDone ? (
-                          <Crown className="w-3.5 h-3.5 -m-[3px] text-amber-300 drop-shadow-[0_0_6px_rgba(252,211,77,0.8)] transition group-hover/step:scale-125" />
-                        ) : (
-                          <div className={`w-2.5 h-2.5 rounded-full ${dot} ring-2 ${isFinalNode ? "ring-amber-300/60" : "ring-[#FF4E00]/55"} ring-offset-[3px] ring-offset-[#151B2E] transition group-hover/step:ring-[#FF4E00] group-hover/step:scale-125`} />
-                        )}
-                        <span className={`text-[9px] font-mono font-black uppercase tracking-wide ${isFinalNode && finalDone ? "text-amber-300" : label} group-hover/step:text-white transition`}>
+                        <div className={`w-2.5 h-2.5 rounded-full ${dot} ring-2 ring-[#FF4E00]/55 ring-offset-[3px] ring-offset-[#151B2E] transition group-hover/step:ring-[#FF4E00] group-hover/step:scale-125`} />
+                        <span className={`text-[9px] font-mono font-black uppercase tracking-wide ${label} group-hover/step:text-white transition`}>
                           {KO_SHORT[s.round]}
                         </span>
                       </button>
@@ -647,9 +678,28 @@ export default function ScreenHome({
                     </React.Fragment>
                   );
                 })}
+
+                {/* The road's destination: a 6th golden node — The Streakr. Not a
+                    round, so its state is crowned / undecided, not done/live. */}
+                <div className={`flex-grow h-0.5 mx-1 -mt-4 rounded-full ${finalDone ? "bg-amber-300/50" : "bg-white/10"}`} />
+                <button
+                  type="button"
+                  onClick={() => setChampionOpen(true)}
+                  aria-label="View The Streakr — the tournament crown"
+                  className="flex flex-col items-center gap-1.5 flex-shrink-0 group/step cursor-pointer"
+                >
+                  {finalDone ? (
+                    <Crown className="w-3.5 h-3.5 -m-[3px] text-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.85)] transition group-hover/step:scale-125" />
+                  ) : (
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-300/15 ring-2 ring-amber-300/60 ring-offset-[3px] ring-offset-[#151B2E] transition group-hover/step:ring-amber-300 group-hover/step:scale-125" />
+                  )}
+                  <span className={`text-[9px] font-mono font-black uppercase tracking-wide ${finalDone ? "text-amber-300" : "text-amber-300/60"} group-hover/step:text-white transition`}>
+                    Streakr
+                  </span>
+                </button>
               </div>
               <p className="mt-2 text-[8px] font-mono text-[#8E9299]/70 uppercase tracking-wider text-center z-10 relative">
-                Tap a round for its champion · tap <span className="text-amber-300/80">F</span> for The Streakr
+                Tap a round for its champion · tap the <span className="text-amber-300/80">crown</span> for The Streakr
               </p>
 
               {/* Current round + CTA */}
@@ -1350,41 +1400,27 @@ export default function ScreenHome({
                   </div>
                 )}
 
-                {!championLoading && championData && championData.racers.map((r, i) => (
-                  <div
-                    key={`${r.username}-${i}`}
-                    className={`flex items-center gap-3 rounded-2xl p-3 border transition ${
-                      r.isCurrentUser ? "bg-[#FF4E00]/10 border-[#FF4E00]/30" : "bg-[#0A0E1A] border-white/5"
-                    }`}
-                  >
-                    <span className={`w-6 text-center text-sm font-black italic ${i === 0 ? "text-amber-300" : "text-[#8E9299]"}`}>
-                      {i === 0 ? "👑" : i + 1}
-                    </span>
-                    <div className="w-9 h-9 rounded-xl bg-[#151B2E] border border-white/5 p-0.5 flex items-center justify-center flex-shrink-0">
-                      <AvatarRenderer
-                        skinTone={r.avatar?.skinTone}
-                        kitPrimary={r.avatar?.kitPrimary}
-                        kitSecondary={r.avatar?.kitSecondary}
-                        expression={r.avatar?.expression}
-                        size="sm"
-                        isAnimated={false}
-                        upperBodyOnly={true}
-                      />
-                    </div>
-                    <div className="flex-grow min-w-0">
-                      <span className="text-xs font-black italic text-white truncate block">
-                        @{r.username}{r.isCurrentUser && <span className="text-[#FF4E00]"> (you)</span>}
-                      </span>
-                      <span className="text-[9px] font-mono text-[#8E9299]">
-                        {r.personalBest}🔥 best · {r.correctCount} correct
-                      </span>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <span className="text-sm font-black text-amber-300 block leading-none">{r.points}</span>
-                      <span className="text-[8px] font-mono text-[#8E9299] uppercase tracking-wide">points</span>
-                    </div>
-                  </div>
-                ))}
+                {/* Compact race — the top 3 and where YOU stand. Deliberately not a
+                    second leaderboard; the full board lives on the Arena widget. */}
+                {!championLoading && championData && championData.racers.length > 0 && (() => {
+                  const meIdx = championData.racers.findIndex((r) => r.isCurrentUser);
+                  return (
+                    <>
+                      <p className="text-[9px] font-mono text-[#8E9299] uppercase tracking-widest pt-1">
+                        {championData.crowned ? "Final standings" : "Leading the race"}
+                      </p>
+                      {championData.racers.slice(0, 3).map((r, i) => (
+                        <ChampionRow key={r.username} r={r} rank={i + 1} />
+                      ))}
+                      {meIdx >= 3 && (
+                        <>
+                          <p className="text-center text-[#8E9299]/40 text-sm leading-none">···</p>
+                          <ChampionRow r={championData.racers[meIdx]} rank={meIdx + 1} />
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </motion.div>
           </motion.div>
