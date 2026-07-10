@@ -22,6 +22,15 @@ import {
  * Rendered through a portal to <body>: the animated ancestors on Play create
  * stacking contexts that were painting the nav and FAB over this sheet.
  */
+
+/** Only alerts we actually send. `match_start` covers both the kickoff whistle
+ *  and the "your pick is still open" reminder; group activity is NOT pushed
+ *  today (it only lands in the in-app feed), so we don't promise it here. */
+const BENEFITS = [
+  "A reminder while your pick is still open",
+  "Goals the second they go in",
+  "Your result — and who takes the crown",
+];
 export default function PushPrompt({
   open,
   onClose,
@@ -100,7 +109,7 @@ export default function PushPrompt({
                     Never miss a goal
                   </h3>
                   <p className="text-[9px] font-mono text-[#8E9299] uppercase tracking-wider mt-1">
-                    Goals · results · the crown
+                    Picks · goals · the crown
                   </p>
                 </div>
               </div>
@@ -117,17 +126,29 @@ export default function PushPrompt({
                 <p className="py-6 text-center text-[11px] font-mono text-[#8E9299] uppercase tracking-widest">Checking…</p>
               )}
 
-              {/* iOS: push only exists inside the installed app. Teach the install. */}
+              {/* No native install prompt here — teach the manual add. Sell the
+                  upgrade; never apologise for the platform. */}
               {state === "needs-install" && (
                 <>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    iPhone only sends alerts from the <strong className="text-white">home-screen app</strong>. Add Streakr — it takes two taps:
+                    Streakr is better from your home screen — it opens instantly, full
+                    screen, and can reach you when it counts:
+                  </p>
+                  <ul className="space-y-1.5">
+                    {BENEFITS.map((b) => (
+                      <li key={b} className="flex items-start gap-2">
+                        <span className="text-[#FF4E00] text-[11px] leading-relaxed">•</span>
+                        <span className="text-[11px] text-slate-300 leading-relaxed">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[10px] font-mono text-[#8E9299] uppercase tracking-wider pt-1">
+                    Add it in two taps
                   </p>
                   <ol className="space-y-2.5">
                     {[
-                      { icon: <Share className="w-3.5 h-3.5" />, text: <>Tap the <strong className="text-white">Share</strong> button in your browser</> },
-                      { icon: <Plus className="w-3.5 h-3.5" />, text: <>Scroll and choose <strong className="text-white">Add to Home Screen</strong></> },
-                      { icon: <Sparkles className="w-3.5 h-3.5" />, text: <>Open Streakr from your home screen, then turn alerts on</> },
+                      { icon: <Share className="w-3.5 h-3.5" />, text: <>Tap <strong className="text-white">Share</strong> in your browser</> },
+                      { icon: <Plus className="w-3.5 h-3.5" />, text: <>Choose <strong className="text-white">Add to Home Screen</strong></> },
                     ].map((s, i) => (
                       <li key={i} className="flex items-start gap-3">
                         <span className="w-7 h-7 rounded-lg bg-[#0A0E1A] border border-white/5 flex items-center justify-center text-[#FF4E00] flex-shrink-0">
@@ -137,6 +158,10 @@ export default function PushPrompt({
                       </li>
                     ))}
                   </ol>
+                  <p className="text-[10px] text-[#8E9299] leading-relaxed flex items-start gap-1.5">
+                    <Sparkles className="w-3 h-3 text-[#FF4E00] flex-shrink-0 mt-0.5" />
+                    Then open Streakr from your home screen and switch alerts on.
+                  </p>
                   <button
                     onClick={onClose}
                     className="w-full bg-[#FF4E00] hover:bg-orange-600 text-white font-black italic text-xs py-3 rounded-2xl transition cursor-pointer shadow"
@@ -149,9 +174,16 @@ export default function PushPrompt({
               {state === "ready" && (
                 <>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Get pinged the second your team scores, when your pick lands, and when
-                    <span className="text-amber-300 font-bold"> The Streakr</span> is crowned — even with the app closed.
+                    Let Streakr reach you when it counts — even with the app closed:
                   </p>
+                  <ul className="space-y-1.5">
+                    {BENEFITS.map((b) => (
+                      <li key={b} className="flex items-start gap-2">
+                        <span className="text-[#FF4E00] text-[11px] leading-relaxed">•</span>
+                        <span className="text-[11px] text-slate-300 leading-relaxed">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
                   {error && <p className="text-[10px] text-red-400 leading-snug break-all">⚠ {error}</p>}
                   <button
                     onClick={enable}
@@ -161,13 +193,18 @@ export default function PushPrompt({
                     {busy ? "Enabling…" : "Enable alerts"}
                   </button>
                   {canInstall() && (
-                    <button
-                      onClick={install}
-                      className="w-full bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-200 font-black italic text-[11px] py-3 rounded-2xl transition cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <Smartphone className="w-3.5 h-3.5 text-[#FF4E00]" />
-                      Add to home screen
-                    </button>
+                    <div className="space-y-1.5">
+                      <button
+                        onClick={install}
+                        className="w-full bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-200 font-black italic text-[11px] py-3 rounded-2xl transition cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <Smartphone className="w-3.5 h-3.5 text-[#FF4E00]" />
+                        Add to home screen
+                      </button>
+                      <p className="text-[10px] text-[#8E9299] text-center leading-relaxed">
+                        Opens instantly, full screen — one tap from your phone.
+                      </p>
+                    </div>
                   )}
                 </>
               )}
@@ -197,7 +234,8 @@ export default function PushPrompt({
               {state === "unsupported" && (
                 <>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    This browser doesn&apos;t support push notifications. Try adding Streakr to your home screen, or open it in Chrome.
+                    This browser doesn&apos;t support alerts yet. Add Streakr to your home
+                    screen, or open it in a different browser, to get them.
                   </p>
                   <button onClick={onClose} className="w-full bg-[#0A0E1A] border border-white/10 text-slate-300 font-bold text-[10px] uppercase tracking-wider py-2.5 rounded-2xl cursor-pointer">
                     Close
