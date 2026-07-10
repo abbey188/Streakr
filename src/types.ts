@@ -66,10 +66,13 @@ export interface ActivityItem {
 }
 
 /** A personal, addressed-to-you notification (pick result, badge, round champion,
- *  or a milestone from someone in one of your groups). */
+ *  a milestone from someone in one of your groups, or an app-wide announcement).
+ *  Must match the `type` values actually inserted into `notifications`. */
 export interface Notification {
   id: string;
-  type: "pick_result" | "badge" | "round_champion" | "streak" | "goal" | "match_start" | "group";
+  type:
+    | "pick_result" | "badge" | "round_champion" | "goal" | "match_start"
+    | "group" | "announcement";
   title: string;
   body: string;
   icon: string;

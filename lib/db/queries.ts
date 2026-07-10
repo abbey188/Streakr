@@ -319,17 +319,32 @@ interface GlobalRow {
 }
 
 /**
- * Global leaderboard — every signed-up user ranked by streak (then points). No
+ * Global leaderboard — every signed-up user, ranked by streak (then points). No
  * group membership required (everyone is implicitly on it).
+ *
+ * The client offers a streak/points toggle and re-sorts these rows in place, so
+ * a single `order by current_streak limit 100` would hand it a streak-biased
+ * sample: a high-points player on a broken streak would be cut before the
+ * "Points" view could ever surface them. Fetching the top of BOTH orderings
+ * means nobody who could lead either view is missing. Rows are returned in
+ * streak order, so `rank` keeps its original meaning.
  */
 export async function getGlobalLeaderboard(
   currentUserAddress?: string
 ): Promise<GlobalLeaderboardEntry[]> {
   const rows = (await sql`
-    select u.wallet_address as user_address, u.username, u.avatar, u.current_streak, u.points
-    from users u
-    order by u.current_streak desc, u.points desc, u.username asc
-    limit 100
+    with by_streak as (
+      select u.wallet_address, u.username, u.avatar, u.current_streak, u.points
+      from users u order by u.current_streak desc, u.points desc, u.username asc limit 100
+    ), by_points as (
+      select u.wallet_address, u.username, u.avatar, u.current_streak, u.points
+      from users u order by u.points desc, u.current_streak desc, u.username asc limit 100
+    ), merged as (
+      select * from by_streak union select * from by_points
+    )
+    select wallet_address as user_address, username, avatar, current_streak, points
+    from merged
+    order by current_streak desc, points desc, username asc
   `) as GlobalRow[];
   return rows.map((r, i) => ({
     id: r.user_address,
