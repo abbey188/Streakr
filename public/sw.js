@@ -1,9 +1,10 @@
-/* Streakr service worker — PUSH + notification-click ONLY.
+/* Streakr service worker — PUSH + notification-click, and NO caching.
  *
- * Deliberately has NO fetch/caching handler: a caching SW is the classic way to
- * brick a web app by serving stale JS/CSS after a deploy. This one only receives
- * push messages and handles taps, so the app itself always loads fresh from the
- * network. Registered by lib/push/client.ts.
+ * A caching SW is the classic way to brick a web app by serving stale JS/CSS
+ * after a deploy, so nothing here ever answers a request: the app always loads
+ * fresh from the network. The fetch listener below exists purely to satisfy
+ * Chrome's installability check — see the note above it before touching it.
+ * Registered by lib/push/client.ts.
  */
 
 // Activate a new version immediately (so SW updates roll out without a stale
