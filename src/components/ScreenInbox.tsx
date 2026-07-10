@@ -129,7 +129,7 @@ export default function ScreenInbox({
             <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-6 text-center space-y-1">
               <p className="text-xs font-black italic text-slate-300">You&apos;re all caught up</p>
               <p className="text-[10px] text-[#8E9299] leading-relaxed max-w-[260px] mx-auto">
-                Goals, pick results, crowns, and updates will show up here.
+                Goals, pick results, crowns, and your group&apos;s milestones will show up here.
               </p>
             </div>
           ) : (
@@ -141,6 +141,7 @@ export default function ScreenInbox({
                 else if (n.type === "goal") accent = "border-emerald-500/30 bg-emerald-500/5";
                 else if (n.type === "match_start") accent = "border-sky-500/30 bg-sky-500/5";
                 else if (n.type === "pick_result") accent = "border-[#FF4E00]/25 bg-[#FF4E00]/5";
+                else if (n.type === "group") accent = "border-indigo-500/30 bg-indigo-500/5";
                 return (
                   <div
                     key={n.id}

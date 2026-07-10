@@ -65,10 +65,11 @@ export interface ActivityItem {
   reactions: { [emoji: string]: number };
 }
 
-/** A personal, addressed-to-you notification (pick result, badge, round champion). */
+/** A personal, addressed-to-you notification (pick result, badge, round champion,
+ *  or a milestone from someone in one of your groups). */
 export interface Notification {
   id: string;
-  type: "pick_result" | "badge" | "round_champion" | "streak" | "goal" | "match_start";
+  type: "pick_result" | "badge" | "round_champion" | "streak" | "goal" | "match_start" | "group";
   title: string;
   body: string;
   icon: string;
