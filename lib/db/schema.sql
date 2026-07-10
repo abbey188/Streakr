@@ -184,15 +184,19 @@ create unique index if not exists notifications_goal_dedup
   on notifications (user_address, fixture_id, dedup_key)
   where type = 'goal' and dedup_key is not null;
 
--- ─── round champions (R32/R16/QF, global + per-group; idempotent) ─────────
+-- ─── champions (R32/R16/QF rounds + the 'Tournament' sentinel; idempotent) ─
+-- round = 'Tournament' is the overall "The Streakr" crown, awarded when the
+-- Final completes. group_id null = global; set = that group's champion.
 create table if not exists round_champions (
   id            uuid primary key default gen_random_uuid(),
   round         text not null,
   group_id      uuid references groups(id) on delete cascade,  -- null = global
   user_address  text not null references users(wallet_address) on delete cascade,
   correct_count integer not null,
+  points        integer,  -- winning score; the deciding metric for the Tournament crown
   crowned_at    timestamptz not null default now()
 );
+alter table round_champions add column if not exists points integer;
 -- One champion per (round, scope). Coalesce null group_id so global is unique too.
 create unique index if not exists round_champions_uniq
   on round_champions (round, coalesce(group_id, '00000000-0000-0000-0000-000000000000'::uuid));

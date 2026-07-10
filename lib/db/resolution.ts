@@ -34,6 +34,9 @@ const THRESHOLD_BADGES: { id: string; metric: "best" | "points"; value: number }
 // get per-pick prestige badges instead).
 const CHAMPION_ROUNDS = ["Round of 32", "Round of 16", "Quarterfinals"];
 
+// Sentinel "round" for the overall tournament crown in round_champions.
+const TOURNAMENT_ROUND = "Tournament";
+
 // Active-streak lengths worth announcing to a user's groups (no spam on every win).
 const NOTABLE_STREAKS = new Set([3, 5, 7, 10, 15, 20]);
 
@@ -198,6 +201,14 @@ export async function resolveFinishedFixtures(): Promise<{ resolvedFixtures: num
   // Crown Round Champions for any newly-completed knockout round.
   await crownRoundChampions();
 
+  // The overall "The Streakr" crown, once the Final is settled. Failure-isolated:
+  // a crowning error must never break pick resolution.
+  try {
+    await crownTournamentChampion();
+  } catch (err) {
+    console.error("[resolution] tournament crowning failed:", err);
+  }
+
   return { resolvedFixtures: fixtures.length, affectedUsers: affected.size };
 }
 
@@ -318,5 +329,128 @@ async function crown(
     } catch (err) {
       console.error(`[resolution] champion broadcast failed for ${round}:`, err);
     }
+  }
+}
+
+// ─── The Streakr — overall tournament champion ────────────────────────────────
+
+interface ChampionRow {
+  user_address: string;
+  username: string;
+  points: number;
+  personal_best: number;
+  correct_count: number;
+}
+
+/**
+ * Rank users by the champion metric, optionally scoped to one group.
+ *
+ * Order: points → personal best → correct picks → earliest to lock it in.
+ * Points LEAD because they already fuse correctness × streak length (each correct
+ * pick banks 10 × the streak position), so a long run outscores the same number
+ * of scattered hits. The rest only break ties. `current_streak` is deliberately
+ * NOT used — one wrong pick would erase a whole tournament.
+ */
+async function topByChampionMetric(groupId: string | null): Promise<ChampionRow | null> {
+  const rows = (groupId
+    ? await sql`
+        select u.wallet_address as user_address, u.username, u.points, u.personal_best,
+               count(*) filter (where p.correct)::int as correct_count
+        from users u
+        join group_members gm on gm.user_address = u.wallet_address and gm.group_id = ${groupId}
+        join picks p on p.user_address = u.wallet_address and p.resolved = true
+        group by u.wallet_address, u.username, u.points, u.personal_best
+        having count(*) filter (where p.correct) > 0
+        order by u.points desc, u.personal_best desc, correct_count desc,
+                 max(p.resolved_at) filter (where p.correct) asc
+        limit 1`
+    : await sql`
+        select u.wallet_address as user_address, u.username, u.points, u.personal_best,
+               count(*) filter (where p.correct)::int as correct_count
+        from users u
+        join picks p on p.user_address = u.wallet_address and p.resolved = true
+        group by u.wallet_address, u.username, u.points, u.personal_best
+        having count(*) filter (where p.correct) > 0
+        order by u.points desc, u.personal_best desc, correct_count desc,
+                 max(p.resolved_at) filter (where p.correct) asc
+        limit 1`) as ChampionRow[];
+  return rows[0] ?? null;
+}
+
+/**
+ * Crown the overall champion once the Final is settled — globally AND once per
+ * group, so every squad gets its own Streakr. Idempotent via the
+ * round_champions unique index on (round, scope): safe to re-run every sync.
+ */
+async function crownTournamentChampion() {
+  const [tally] = (await sql`
+    select count(*)::int as total,
+           count(*) filter (where status = 'finished')::int as done
+    from fixtures where round = 'Final'
+  `) as { total: number; done: number }[];
+  if (!tally || tally.total === 0 || tally.done < tally.total) return; // Final not settled
+
+  const global = await topByChampionMetric(null);
+  if (global) await crownTournament(null, global, "the world");
+
+  const groups = (await sql`select id, name from groups`) as { id: string; name: string }[];
+  for (const g of groups) {
+    const champ = await topByChampionMetric(g.id);
+    if (champ) await crownTournament(g.id, champ, g.name);
+  }
+}
+
+/** Record + announce one tournament crown (global when groupId is null). */
+async function crownTournament(groupId: string | null, champ: ChampionRow, scopeLabel: string) {
+  const res = (await sql`
+    insert into round_champions (round, group_id, user_address, correct_count, points)
+    values (${TOURNAMENT_ROUND}, ${groupId}, ${champ.user_address}, ${champ.correct_count}, ${champ.points})
+    on conflict do nothing returning id
+  `) as { id: string }[];
+  if (!res.length) return; // already crowned for this scope
+
+  if (groupId) {
+    // Group crown — every squad gets its own champion.
+    await grantBadge(champ.user_address, "b12"); // Group Champion
+    await createNotification(champ.user_address, "round_champion",
+      "Your squad's Streakr 🥇",
+      `You topped ${scopeLabel} — ${champ.points} points, a ${champ.personal_best}-match best streak.`, "🥇");
+    await sql`
+      insert into group_activity_events (group_id, actor_address, type, message)
+      values (${groupId}, ${champ.user_address}, 'win',
+              ${`was crowned your group's Streakr with ${champ.points} points! 🥇`})
+    `;
+    return;
+  }
+
+  // The global crown — the ultimate badge, a personal moment, and a broadcast.
+  await grantBadge(champ.user_address, "b17"); // The Streakr
+  await createNotification(champ.user_address, "round_champion",
+    "👑 You are THE STREAKR",
+    `Champion of the whole tournament — ${champ.points} points, a ${champ.personal_best}-match best streak, ${champ.correct_count} correct picks. Take a bow.`,
+    "👑");
+  await emitGroupEvent(champ.user_address, "win",
+    `was crowned THE STREAKR — champion of the tournament with ${champ.points} points! 👑`);
+
+  // Tell everyone who played. Prefs-respected; wrapped so a broadcast failure
+  // can never undo the crown.
+  try {
+    const bTitle = "👑 THE STREAKR crowned";
+    const bBody = `@${champ.username} is champion of the tournament — ${champ.points} points and a ${champ.personal_best}-match streak. See the final standings.`;
+    const bRows = (await sql`
+      insert into notifications (user_address, type, title, body, icon)
+      select distinct p.user_address, 'round_champion', ${bTitle}, ${bBody}, '👑'
+      from picks p
+      join users u on u.wallet_address = p.user_address
+      where p.resolved = true
+        and p.user_address <> ${champ.user_address}
+        and coalesce(u.notification_prefs->>'round_champion', '') <> 'false'
+      returning user_address
+    `) as { user_address: string }[];
+    await Promise.all(
+      bRows.map((r) => sendPush(r.user_address, { title: bTitle, body: bBody, icon: "👑", url: "/play" }))
+    );
+  } catch (err) {
+    console.error("[resolution] Streakr broadcast failed:", err);
   }
 }
