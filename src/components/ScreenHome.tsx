@@ -8,6 +8,7 @@ import AvatarRenderer from "./AvatarRenderer";
 import CountryFlag from "./CountryFlag";
 import ScreenMatchDetail from "./ScreenMatchDetail";
 import AnnouncementBanner from "./AnnouncementBanner";
+import PushNudge from "./PushNudge";
 import { motion, AnimatePresence } from "motion/react";
 import { Flame, Zap, Award, ChevronRight, X, Sparkles, Trophy, CheckCircle2, Globe, Search, Maximize2, Crown } from "lucide-react";
 
@@ -318,6 +319,10 @@ export default function ScreenHome({
 
             {/* Backend-drivable announcement strip (tips / updates), dismissible */}
             <AnnouncementBanner />
+
+            {/* Gentle push invitation — renders nothing once alerts are on,
+                blocked, unsupported, opted out, or dismissed. */}
+            <PushNudge />
 
             {/* 0. Your latest results — proactive win/loss surfacing */}
             {myResults.length > 0 && (

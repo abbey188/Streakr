@@ -5,17 +5,10 @@ import { Bell, Check, Share } from "lucide-react";
 import {
   isPushSupported, isIos, isStandalone, pushPermission,
   enablePush, disablePush, subscribeAndSave,
+  isPushOptedOut as isOptedOut, setPushOptedOut as setOptedOut,
 } from "@/lib/push/client";
 
 type Status = "loading" | "on" | "off" | "denied" | "unsupported";
-
-const OPTOUT_KEY = "streakr_push_off";
-function isOptedOut(): boolean {
-  try { return localStorage.getItem(OPTOUT_KEY) === "1"; } catch { return false; }
-}
-function setOptedOut(v: boolean): void {
-  try { v ? localStorage.setItem(OPTOUT_KEY, "1") : localStorage.removeItem(OPTOUT_KEY); } catch { /* no storage */ }
-}
 
 /**
  * Master push-notification opt-in. "On" reflects an ACTUAL saved subscription,

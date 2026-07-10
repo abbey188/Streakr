@@ -43,6 +43,74 @@ export function pushPermission(): NotificationPermission | "unsupported" {
   return Notification.permission;
 }
 
+// ─── Explicit opt-out (survives the "permission is still granted" problem) ────
+const OPTOUT_KEY = "streakr_push_off";
+
+/** The user explicitly turned push off — don't nag them to turn it back on. */
+export function isPushOptedOut(): boolean {
+  try { return localStorage.getItem(OPTOUT_KEY) === "1"; } catch { return false; }
+}
+export function setPushOptedOut(v: boolean): void {
+  try { v ? localStorage.setItem(OPTOUT_KEY, "1") : localStorage.removeItem(OPTOUT_KEY); } catch { /* no storage */ }
+}
+
+// ─── Native install prompt (Android / desktop Chrome) ─────────────────────────
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
+let deferredInstall: InstallPromptEvent | null = null;
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // suppress Chrome's mini-infobar; we drive it ourselves
+    deferredInstall = e as InstallPromptEvent;
+  });
+  window.addEventListener("appinstalled", () => { deferredInstall = null; });
+}
+
+/** True when the browser has offered us a native install prompt to fire. */
+export function canInstall(): boolean {
+  return deferredInstall !== null;
+}
+
+/** Fire the native install prompt. iOS never provides one (manual Share flow). */
+export async function promptInstall(): Promise<"accepted" | "dismissed" | "unavailable"> {
+  if (!deferredInstall) return "unavailable";
+  await deferredInstall.prompt();
+  const { outcome } = await deferredInstall.userChoice;
+  deferredInstall = null;
+  return outcome;
+}
+
+// ─── The one state every surface asks about ──────────────────────────────────
+export type PushState =
+  | "unsupported"    // browser can't do Web Push at all
+  | "denied"         // OS-blocked — not recoverable in-app
+  | "enabled"        // permission granted AND a live subscription
+  | "needs-install"  // iOS Safari tab: push is impossible until added to Home Screen
+  | "ready";         // can be enabled right now, in one tap
+
+/**
+ * Resolve the push state. iOS is checked FIRST because Safari doesn't even expose
+ * PushManager outside the installed PWA — it would otherwise look "unsupported"
+ * when it's really just "not installed yet".
+ */
+export async function pushStatus(): Promise<PushState> {
+  if (typeof window === "undefined") return "unsupported";
+  if (isIos() && !isStandalone()) return "needs-install";
+  if (!isPushSupported()) return "unsupported";
+  if (Notification.permission === "denied") return "denied";
+  if (Notification.permission === "granted") {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = await reg?.pushManager.getSubscription();
+      if (sub) return "enabled";
+    } catch { /* fall through to "ready" */ }
+  }
+  return "ready";
+}
+
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");

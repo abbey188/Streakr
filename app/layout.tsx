@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import Providers from "./providers";
 
@@ -41,6 +42,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-[#0A0E1A] antialiased">
         <Providers>{children}</Providers>
+        {/* Cookieless analytics — no consent banner required (see docs/legal). */}
+        <Analytics />
       </body>
     </html>
   );
