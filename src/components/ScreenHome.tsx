@@ -1400,19 +1400,20 @@ export default function ScreenHome({
                   </div>
                 )}
 
-                {/* Compact race — the top 3 and where YOU stand. Deliberately not a
-                    second leaderboard; the full board lives on the Arena widget. */}
+                {/* The race for the crown: top 10, plus your row if you're outside it.
+                    Points-led — a different order to the streak-sorted Arena board. */}
                 {!championLoading && championData && championData.racers.length > 0 && (() => {
+                  const TOP_N = 10;
                   const meIdx = championData.racers.findIndex((r) => r.isCurrentUser);
                   return (
                     <>
                       <p className="text-[9px] font-mono text-[#8E9299] uppercase tracking-widest pt-1">
                         {championData.crowned ? "Final standings" : "Leading the race"}
                       </p>
-                      {championData.racers.slice(0, 3).map((r, i) => (
+                      {championData.racers.slice(0, TOP_N).map((r, i) => (
                         <ChampionRow key={r.username} r={r} rank={i + 1} />
                       ))}
-                      {meIdx >= 3 && (
+                      {meIdx >= TOP_N && (
                         <>
                           <p className="text-center text-[#8E9299]/40 text-sm leading-none">···</p>
                           <ChampionRow r={championData.racers[meIdx]} rank={meIdx + 1} />
