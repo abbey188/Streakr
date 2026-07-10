@@ -31,15 +31,25 @@ function roundForDate(startMs: number): string {
   return "Final";
 }
 
-const KNOCKOUT_ORDER = ["Round of 32", "Round of 16", "Quarterfinals", "Semifinals", "Final"];
+/** Knockout round by match count. A round halves the field, so the size is the
+ *  round: 16 matches = Round of 32, 8 = Round of 16, and so on. */
+const ROUND_BY_SIZE: Record<number, string> = {
+  16: "Round of 32", 8: "Round of 16", 4: "Quarterfinals", 2: "Semifinals",
+};
 
 /**
  * Derives each fixture's real round from TxLINE's FixtureGroupId clustering
  * (TxLINE gives no round name). The group stage is one big cluster (round-robin,
- * far more matches); each knockout round is its own cluster. So: the largest
- * cluster = Group Stage, and the rest — ordered by earliest kickoff — are
- * R32 → R16 → QF → SF → Final. Tournament-agnostic (no hardcoded IDs), and
- * robust to partially-scheduled later rounds.
+ * far more matches); each knockout round is its own cluster.
+ *
+ * Rounds are identified by CLUSTER SIZE, not by position. Position looks right
+ * until the third-place play-off shows up: it is its own single-match cluster
+ * that kicks off BEFORE the Final, so an index-based map slides everything down
+ * one and labels both it and the Final "Final". Size is unambiguous, and it
+ * survives formats that skip rounds — which a domestic cup will.
+ *
+ * That leaves the two single-match clusters. They can only be the third-place
+ * play-off and the Final, and the Final is always last.
  */
 export function buildRoundMap(raw: RawFixture[]): Map<number, string> {
   const byGroup = new Map<number, RawFixture[]>();
@@ -58,12 +68,21 @@ export function buildRoundMap(raw: RawFixture[]): Map<number, string> {
 
   const knockouts = [...byGroup.entries()]
     .filter(([g]) => g !== groupStageId)
-    .map(([g, list]) => ({ g, start: Math.min(...list.map((f) => f.StartTime)) }))
+    .map(([g, list]) => ({ g, size: list.length, start: Math.min(...list.map((f) => f.StartTime)) }))
     .sort((a, b) => a.start - b.start);
 
   const map = new Map<number, string>();
   if (groupStageId !== null) map.set(groupStageId, "Group Stage");
-  knockouts.forEach((k, i) => map.set(k.g, KNOCKOUT_ORDER[i] ?? "Final"));
+
+  const singles = knockouts.filter((k) => k.size === 1); // 3rd place + Final
+  for (const k of knockouts) {
+    if (k.size === 1) {
+      // Last single-match cluster is the Final; an earlier one is the play-off.
+      map.set(k.g, k === singles[singles.length - 1] ? "Final" : "Third Place");
+    } else {
+      map.set(k.g, ROUND_BY_SIZE[k.size] ?? "Knockout");
+    }
+  }
   return map;
 }
 

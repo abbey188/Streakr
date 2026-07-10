@@ -18,7 +18,7 @@ export interface Team {
 
 export interface Fixture {
   id: string;
-  round: string; // "Round of 16" | "Quarterfinals" | "Semifinals" | "Final"
+  round: string; // "Round of 16" | "Quarterfinals" | "Semifinals" | "Third Place" | "Final"
   teamA: Team;
   teamB: Team;
   status: "live" | "upcoming" | "finished";

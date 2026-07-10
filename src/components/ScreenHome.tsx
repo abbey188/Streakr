@@ -59,7 +59,8 @@ const KO_SHORT: Record<string, string> = {
 // falls back to the raw round, so a Group Stage fixture says so instead of
 // claiming to be a knockout.
 const CARD_ROUND: Record<string, string> = {
-  "Quarterfinals": "Quarter-final", "Semifinals": "Semi-final", "Final": "Final",
+  "Quarterfinals": "Quarter-final", "Semifinals": "Semi-final",
+  "Third Place": "Third place", "Final": "Final",
 };
 const cardRound = (round: string) => CARD_ROUND[round] ?? round;
 // Only these rounds crown a Round Champion (SF/Final too few matches).
