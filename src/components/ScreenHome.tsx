@@ -55,6 +55,13 @@ const KO_SHORT: Record<string, string> = {
   "Round of 32": "R32", "Round of 16": "R16", "Quarterfinals": "QF",
   "Semifinals": "SF", "Final": "F",
 };
+// Stage shown on a match card. Singular, because a card is one match — and it
+// falls back to the raw round, so a Group Stage fixture says so instead of
+// claiming to be a knockout.
+const CARD_ROUND: Record<string, string> = {
+  "Quarterfinals": "Quarter-final", "Semifinals": "Semi-final", "Final": "Final",
+};
+const cardRound = (round: string) => CARD_ROUND[round] ?? round;
 // Only these rounds crown a Round Champion (SF/Final too few matches).
 const CHAMPION_ROUNDS = new Set(["Round of 32", "Round of 16", "Quarterfinals"]);
 
@@ -559,10 +566,7 @@ export default function ScreenHome({
                         {/* Header Row */}
                         <div className="flex justify-between items-center mb-3">
                           <span className="text-[9px] font-mono text-[#8E9299] font-bold uppercase tracking-wider">
-                            KO Stage • {kickoffLabel(match)}
-                          </span>
-                          <span className="text-[9px] font-mono text-[#8E9299] font-bold uppercase">
-                            {match.round}
+                            {cardRound(match.round)} • {kickoffLabel(match)}
                           </span>
                         </div>
 
