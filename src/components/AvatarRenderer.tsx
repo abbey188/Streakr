@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from "motion/react";
+import { motion, type Variants } from "motion/react";
 
 interface AvatarRendererProps {
   skinTone: string;
@@ -214,8 +214,11 @@ export default function AvatarRenderer({
 
   const renderFace = EXPRESSIONS_MAP[expression]?.render || EXPRESSIONS_MAP["happy"].render;
 
-  // Animation values using framer-motion variants
-  const containerVariants = {
+  // Animation values using framer-motion variants. The `: Variants` annotations
+  // are load-bearing: without them TS widens `ease: "easeInOut"` to `string`,
+  // which isn't a valid Easing, and every `variants={...}` below fails to
+  // typecheck. Annotating types `ease` contextually — no values change.
+  const containerVariants: Variants = {
     breathe: {
       y: [0, -3, 0],
       transition: {
@@ -227,7 +230,7 @@ export default function AvatarRenderer({
     static: { y: 0 },
   };
 
-  const headVariants = {
+  const headVariants: Variants = {
     breathe: {
       y: [0, -1.5, 0],
       rotate: [0, 1, -1, 0],
@@ -240,7 +243,7 @@ export default function AvatarRenderer({
     static: { y: 0, rotate: 0 },
   };
 
-  const armLeftVariants = {
+  const armLeftVariants: Variants = {
     breathe: {
       rotate: [0, 8, 0],
       originX: 1,
@@ -254,7 +257,7 @@ export default function AvatarRenderer({
     static: { rotate: 0 },
   };
 
-  const armRightVariants = {
+  const armRightVariants: Variants = {
     breathe: {
       rotate: [0, -8, 0],
       originX: 0,
