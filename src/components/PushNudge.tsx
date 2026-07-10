@@ -42,21 +42,20 @@ export default function PushNudge() {
         <div className="w-10 h-10 rounded-xl bg-[#0A0E1A] border border-[#FF4E00]/20 flex items-center justify-center flex-shrink-0 z-10">
           <Bell className="w-4.5 h-4.5 text-[#FF4E00]" />
         </div>
+        {/* One message on every platform: Streakr on your home screen is simply
+            the better way to play. The install/enable mechanics differ inside
+            the modal; the promise does not. */}
         <div className="flex-grow min-w-0 z-10">
-          <p className="text-xs font-black italic text-white leading-tight">
-            {state === "needs-install" ? "Streakr, on your home screen" : "Never miss a goal"}
-          </p>
+          <p className="text-xs font-black italic text-white leading-tight">Never miss a Streak</p>
           <p className="text-[10px] text-[#8E9299] leading-snug mt-0.5">
-            {state === "needs-install"
-              ? "Opens instantly, and pings you on picks and goals."
-              : "Pick reminders, live goals, and the crown — straight to your phone."}
+            Pick reminders, live goals and group alerts — Streakr, one tap from your home screen.
           </p>
         </div>
         <button
           onClick={() => setPromptOpen(true)}
           className="z-10 flex-shrink-0 bg-[#FF4E00] hover:bg-orange-600 text-white font-black italic text-[10px] px-3 py-2 rounded-xl transition cursor-pointer shadow"
         >
-          {state === "needs-install" ? "Add it" : "Turn on"}
+          Add it
         </button>
         <button
           onClick={dismiss}

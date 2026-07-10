@@ -40,10 +40,18 @@ const TOURNAMENT_ROUND = "Tournament";
 // Active-streak lengths worth announcing to a user's groups (no spam on every win).
 const NOTABLE_STREAKS = new Set([3, 5, 7, 10, 15, 20]);
 
+const GROUP_EVENT_ICON: Record<string, string> = {
+  milestone: "🔥", win: "🏆", badge: "🎖️",
+};
+
 /**
- * Fan a milestone event out to every group the user belongs to. Read-only
- * feed (no reactions) — powers the Inbox "From your groups" section. Emits
- * nothing if the user isn't in any group.
+ * Fan a milestone event out to every group the user belongs to: into the group
+ * feed, and as a notification (+ push) to their fellow members. Emits nothing if
+ * the user isn't in any group.
+ *
+ * The actor is excluded — they already get a personal notification for the same
+ * milestone, and being told about yourself is noise. `distinct` matters: someone
+ * who shares two groups with the actor must not be pinged twice.
  */
 async function emitGroupEvent(
   address: string, type: "milestone" | "win" | "badge", message: string
@@ -54,6 +62,43 @@ async function emitGroupEvent(
     from group_members gm
     where gm.user_address = ${address}
   `;
+
+  const who = (await sql`
+    select username from users where wallet_address = ${address}
+  `) as { username: string }[];
+  const username = who[0]?.username;
+  if (!username) return;
+
+  const title = "From your group";
+  const body = `@${username} ${message}`;
+  const icon = GROUP_EVENT_ICON[type] ?? "👥";
+  // Stable per-event key so a resolution re-run can't re-notify. No unique index
+  // backs this (unlike goals) — the `not exists` guard below is the dedupe, which
+  // is sound because resolution never runs concurrently with itself.
+  const dedupKey = `${address}:${type}:${message}`;
+
+  const rows = (await sql`
+    insert into notifications (user_address, type, title, body, icon, dedup_key)
+    select distinct peer.user_address, 'group', ${title}, ${body}, ${icon}, ${dedupKey}
+    from group_members mine
+    join group_members peer on peer.group_id = mine.group_id
+    join users u on u.wallet_address = peer.user_address
+    where mine.user_address = ${address}
+      and peer.user_address <> ${address}
+      and coalesce(u.notification_prefs->>'group', '') <> 'false'
+      and not exists (
+        select 1 from notifications n
+        where n.user_address = peer.user_address
+          and n.type = 'group' and n.dedup_key = ${dedupKey}
+      )
+    on conflict do nothing
+    returning user_address
+  `) as { user_address: string }[];
+
+  // Mirror to Web Push (best-effort; sendPush never throws).
+  await Promise.all(
+    rows.map((r) => sendPush(r.user_address, { title, body, icon, url: "/inbox" }))
+  );
 }
 
 async function createNotification(
