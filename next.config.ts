@@ -6,15 +6,14 @@ const nextConfig: NextConfig = {
   // tracing on build/deploy.
   outputFileTracingRoot: __dirname,
 
-  // The frontend was built in AI Studio on Vite, which does not type-check or
-  // lint at build time. The `motion` package ships stricter Variants/Transition
-  // types than the prototype's animation props satisfy (e.g. `ease: "easeOut"`
-  // as a plain string). These are type-only mismatches — the app runs correctly.
-  // We preserve the prototype's animation code verbatim and don't let these
-  // block the build. Type safety is still checked on demand via `npm run typecheck`.
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // Type errors FAIL the build. This was previously disabled to tolerate the
+  // prototype's `motion` variants (inferred `ease: string`, which is not a valid
+  // Easing). Those are annotated now and the repo typechecks clean, so the check
+  // is worth enforcing: it already caught a dead `n.type === "group"` branch that
+  // could never be true. Left off, an always-red typecheck is one nobody reads.
+  //
+  // ESLint stays off at build — it isn't configured in this repo yet, so it would
+  // fail for an unrelated reason.
   eslint: {
     ignoreDuringBuilds: true,
   },
