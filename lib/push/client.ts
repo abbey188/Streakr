@@ -69,6 +69,18 @@ if (typeof window !== "undefined") {
   window.addEventListener("appinstalled", () => { deferredInstall = null; });
 }
 
+/**
+ * Register the push service worker early. Chrome only fires `beforeinstallprompt`
+ * once a service worker (with a fetch handler) is registered — so without this,
+ * the "Install app" prompt can never appear. Idempotent; safe on every load.
+ */
+export async function ensureServiceWorker(): Promise<void> {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+  try {
+    await navigator.serviceWorker.register("/sw.js");
+  } catch { /* non-fatal — push flow re-registers on demand */ }
+}
+
 /** True when the browser has offered us a native install prompt to fire. */
 export function canInstall(): boolean {
   return deferredInstall !== null;
