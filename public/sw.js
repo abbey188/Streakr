@@ -11,6 +11,13 @@
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
+// PASS-THROUGH fetch handler. Chrome's install criteria require a registered
+// service worker WITH a fetch handler before it will offer "Install app". This
+// listener deliberately never calls event.respondWith(), so every request falls
+// through to the normal network — nothing is cached, and the stale-asset failure
+// mode a caching SW would introduce stays impossible.
+self.addEventListener("fetch", () => {});
+
 self.addEventListener("push", (event) => {
   let data = {};
   try {

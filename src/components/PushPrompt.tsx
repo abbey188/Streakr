@@ -1,19 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Bell, X, Share, Plus, Check, Sparkles } from "lucide-react";
+import { Bell, X, Share, Plus, Check, Sparkles, Smartphone } from "lucide-react";
 import {
   pushStatus, enablePush, canInstall, promptInstall, setPushOptedOut,
   type PushState,
 } from "@/lib/push/client";
 
 /**
- * The one place we ask for notifications. Adapts to the platform:
- *   • iOS Safari tab  → push is impossible; teach Add to Home Screen
- *   • installed / Android / desktop → one-tap enable
+ * The one place we ask for notifications — and for a home-screen install, which
+ * we want on BOTH platforms (installed apps get opened far more).
+ *
+ * Adapts to the platform:
+ *   • iOS browser tab → push is impossible until installed; teach the manual add
+ *   • Android/desktop → one-tap enable, plus a native "Add to home screen"
  *   • denied / unsupported → say so honestly, don't pretend
  * Never shown when already enabled.
+ *
+ * Rendered through a portal to <body>: the animated ancestors on Play create
+ * stacking contexts that were painting the nav and FAB over this sheet.
  */
 export default function PushPrompt({
   open,
@@ -27,6 +34,9 @@ export default function PushPrompt({
   const [state, setState] = useState<PushState | "loading">("loading");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;
@@ -60,7 +70,9 @@ export default function PushPrompt({
     if (outcome === "accepted") setState(await pushStatus());
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -68,19 +80,19 @@ export default function PushPrompt({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-[#0A0E1A]/90 backdrop-blur-md z-[60] flex items-end sm:items-center justify-center p-0 sm:p-6"
+          className="fixed inset-0 bg-[#0A0E1A]/92 backdrop-blur-md z-[100] flex items-center justify-center p-4"
         >
           <motion.div
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 40, opacity: 0 }}
+            initial={{ scale: 0.96, y: 12, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.96, y: 12, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#151B2E] border-t sm:border border-white/10 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+            className="bg-[#151B2E] border border-white/10 w-full max-w-md rounded-3xl shadow-2xl overflow-y-auto max-h-[85vh]"
           >
             {/* Header */}
-            <div className="relative p-5 pb-0 flex items-start justify-between">
+            <div className="p-5 pb-0 flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-[#FF4E00]/10 border border-[#FF4E00]/25 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-[#FF4E00]/10 border border-[#FF4E00]/25 flex items-center justify-center flex-shrink-0">
                   <Bell className="w-5 h-5 text-[#FF4E00]" />
                 </div>
                 <div>
@@ -94,7 +106,7 @@ export default function PushPrompt({
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 bg-[#0A0E1A] hover:bg-white/5 border border-white/5 rounded-full text-slate-400 hover:text-white transition cursor-pointer"
+                className="p-1.5 bg-[#0A0E1A] hover:bg-white/5 border border-white/5 rounded-full text-slate-400 hover:text-white transition cursor-pointer flex-shrink-0"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -113,7 +125,7 @@ export default function PushPrompt({
                   </p>
                   <ol className="space-y-2.5">
                     {[
-                      { icon: <Share className="w-3.5 h-3.5" />, text: <>Tap the <strong className="text-white">Share</strong> button in Safari&apos;s toolbar</> },
+                      { icon: <Share className="w-3.5 h-3.5" />, text: <>Tap the <strong className="text-white">Share</strong> button in your browser</> },
                       { icon: <Plus className="w-3.5 h-3.5" />, text: <>Scroll and choose <strong className="text-white">Add to Home Screen</strong></> },
                       { icon: <Sparkles className="w-3.5 h-3.5" />, text: <>Open Streakr from your home screen, then turn alerts on</> },
                     ].map((s, i) => (
@@ -151,9 +163,10 @@ export default function PushPrompt({
                   {canInstall() && (
                     <button
                       onClick={install}
-                      className="w-full bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-300 font-bold text-[10px] uppercase tracking-wider py-2.5 rounded-2xl transition cursor-pointer"
+                      className="w-full bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-200 font-black italic text-[11px] py-3 rounded-2xl transition cursor-pointer flex items-center justify-center gap-2"
                     >
-                      Also add to home screen
+                      <Smartphone className="w-3.5 h-3.5 text-[#FF4E00]" />
+                      Add to home screen
                     </button>
                   )}
                 </>
@@ -184,7 +197,7 @@ export default function PushPrompt({
               {state === "unsupported" && (
                 <>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    This browser doesn&apos;t support push notifications. Try Streakr in Chrome, or add it to your home screen on iPhone.
+                    This browser doesn&apos;t support push notifications. Try adding Streakr to your home screen, or open it in Chrome.
                   </p>
                   <button onClick={onClose} className="w-full bg-[#0A0E1A] border border-white/10 text-slate-300 font-bold text-[10px] uppercase tracking-wider py-2.5 rounded-2xl cursor-pointer">
                     Close
@@ -195,6 +208,7 @@ export default function PushPrompt({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
