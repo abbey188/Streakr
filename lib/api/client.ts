@@ -295,6 +295,28 @@ export async function fetchRoundRace(
   return race;
 }
 
+/** The race for "The Streakr" — overall standings, plus the crown once settled. */
+export interface TournamentRacer {
+  username: string;
+  avatar: AvatarConfig;
+  points: number;
+  personalBest: number;
+  correctCount: number;
+  isCurrentUser: boolean;
+}
+
+export interface TournamentRace {
+  crowned: { username: string; points: number; personalBest: number; correctCount: number } | null;
+  racers: TournamentRacer[];
+}
+
+export async function fetchTournamentRace(walletAddress?: string): Promise<TournamentRace> {
+  const qs = walletAddress ? `?wallet=${encodeURIComponent(walletAddress)}` : "";
+  const res = await apiFetch(`/api/champion${qs}`);
+  const { race } = await jsonOrThrow<{ race: TournamentRace }>(res);
+  return race;
+}
+
 // ─── Leaderboards & friend groups ──────────────────────────────────────────
 
 export type LeaderboardType = "streak" | "points" | "both";

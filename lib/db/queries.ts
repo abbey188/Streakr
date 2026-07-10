@@ -630,6 +630,22 @@ export interface RoundRace {
   racers: RoundRacer[];
 }
 
+/** The race for the overall "The Streakr" crown (points-led champion metric). */
+export interface TournamentRacer {
+  username: string;
+  avatar: AvatarConfig;
+  points: number;
+  personalBest: number;
+  correctCount: number;
+  isCurrentUser: boolean;
+}
+
+export interface TournamentRace {
+  /** Set once the Final is settled and the crown is awarded. */
+  crowned: { username: string; points: number; personalBest: number; correctCount: number } | null;
+  racers: TournamentRacer[];
+}
+
 interface RoundRacerRow {
   user_address: string;
   username: string;
@@ -681,6 +697,62 @@ export async function getRoundRace(
       correctCount: r.correct_count,
       picksMade: r.picks_made,
       streak: r.current_streak,
+      isCurrentUser: !!walletAddress && r.user_address === walletAddress,
+    })),
+  };
+}
+
+interface TournamentRacerRow {
+  user_address: string;
+  username: string;
+  avatar: AvatarConfig;
+  points: number;
+  personal_best: number;
+  correct_count: number;
+}
+
+/**
+ * The race for "The Streakr" — everyone ranked by the champion metric
+ * (points → personal best → correct picks → earliest to lock it in), plus the
+ * crowned champion once the Final has settled. Powers the Final node of the
+ * knockout stepper: a live title race before the Final, the crown after.
+ */
+export async function getTournamentRace(walletAddress?: string): Promise<TournamentRace> {
+  const rows = (await sql`
+    select u.wallet_address as user_address, u.username, u.avatar, u.points,
+           u.personal_best, count(*) filter (where p.correct)::int as correct_count
+    from users u
+    join picks p on p.user_address = u.wallet_address and p.resolved = true
+    group by u.wallet_address, u.username, u.avatar, u.points, u.personal_best
+    having count(*) filter (where p.correct) > 0
+    order by u.points desc, u.personal_best desc, correct_count desc,
+             max(p.resolved_at) filter (where p.correct) asc
+    limit 50
+  `) as TournamentRacerRow[];
+
+  const crownRow = (await sql`
+    select u.username, rc.points, rc.correct_count, u.personal_best
+    from round_champions rc
+    join users u on u.wallet_address = rc.user_address
+    where rc.round = 'Tournament' and rc.group_id is null
+    limit 1
+  `) as { username: string; points: number | null; correct_count: number; personal_best: number }[];
+
+  return {
+    crowned: crownRow.length
+      ? {
+          username: crownRow[0].username,
+          points: crownRow[0].points ?? 0,
+          personalBest: crownRow[0].personal_best,
+          correctCount: crownRow[0].correct_count,
+        }
+      : null,
+    racers: rows.map((r) => ({
+      username: r.username,
+      avatar: r.avatar,
+      points: r.points,
+      personalBest: r.personal_best,
+      correctCount: r.correct_count,
       isCurrentUser: !!walletAddress && r.user_address === walletAddress,
     })),
   };

@@ -96,6 +96,8 @@ export const BADGES: Badge[] = [
   { id: "b14", name: "Perfect Round", icon: "💯", description: "Called every match right in a knockout round.", color: "from-emerald-400 to-green-600" },
   { id: "b15", name: "Semifinal Seer", icon: "🧿", description: "Correctly called a World Cup semifinal.", color: "from-violet-400 to-purple-600" },
   { id: "b16", name: "Grand Finalist", icon: "🏅", description: "Correctly called the World Cup final.", color: "from-rose-400 to-red-600" },
+  // The ultimate crown — one per tournament, decided when the Final whistle blows.
+  { id: "b17", name: "The Streakr", icon: "👑", description: "Champion of the entire tournament — the highest score of them all.", color: "from-amber-300 to-orange-600" },
 ];
 
 export const INITIAL_LEADERBOARD: GroupMember[] = [
