@@ -23,14 +23,9 @@ import {
  * stacking contexts that were painting the nav and FAB over this sheet.
  */
 
-/** Only alerts we actually send. `match_start` covers both the kickoff whistle
- *  and the "your pick is still open" reminder; group activity is NOT pushed
- *  today (it only lands in the in-app feed), so we don't promise it here. */
-const BENEFITS = [
-  "A reminder while your pick is still open",
-  "Goals the second they go in",
-  "Your result — and who takes the crown",
-];
+/** The whole pitch. Same line on every platform — the card already sold it, so
+ *  the modal states it once and gets out of the way. */
+const PITCH = "Streakr on your home screen. One tap, and you never miss a pick.";
 export default function PushPrompt({
   open,
   onClose,
@@ -106,10 +101,10 @@ export default function PushPrompt({
                 </div>
                 <div>
                   <h3 className="text-base font-black italic text-white uppercase tracking-tight leading-none">
-                    Never miss a goal
+                    Never miss a Streak
                   </h3>
                   <p className="text-[9px] font-mono text-[#8E9299] uppercase tracking-wider mt-1">
-                    Picks · goals · the crown
+                    Picks · goals · groups
                   </p>
                 </div>
               </div>
@@ -126,22 +121,15 @@ export default function PushPrompt({
                 <p className="py-6 text-center text-[11px] font-mono text-[#8E9299] uppercase tracking-widest">Checking…</p>
               )}
 
-              {/* No native install prompt here — teach the manual add. Sell the
-                  upgrade; never apologise for the platform. */}
+              {/* Shared pitch — identical on every platform. Only the mechanics
+                  below differ: iOS has no native install prompt, so we teach the
+                  manual add. Sell the upgrade; never apologise for the platform. */}
+              {(state === "needs-install" || state === "ready") && (
+                <p className="text-xs text-slate-300 leading-relaxed">{PITCH}</p>
+              )}
+
               {state === "needs-install" && (
                 <>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Streakr is better from your home screen — it opens instantly, full
-                    screen, and can reach you when it counts:
-                  </p>
-                  <ul className="space-y-1.5">
-                    {BENEFITS.map((b) => (
-                      <li key={b} className="flex items-start gap-2">
-                        <span className="text-[#FF4E00] text-[11px] leading-relaxed">•</span>
-                        <span className="text-[11px] text-slate-300 leading-relaxed">{b}</span>
-                      </li>
-                    ))}
-                  </ul>
                   <p className="text-[10px] font-mono text-[#8E9299] uppercase tracking-wider pt-1">
                     Add it in two taps
                   </p>
@@ -173,17 +161,6 @@ export default function PushPrompt({
 
               {state === "ready" && (
                 <>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Let Streakr reach you when it counts — even with the app closed:
-                  </p>
-                  <ul className="space-y-1.5">
-                    {BENEFITS.map((b) => (
-                      <li key={b} className="flex items-start gap-2">
-                        <span className="text-[#FF4E00] text-[11px] leading-relaxed">•</span>
-                        <span className="text-[11px] text-slate-300 leading-relaxed">{b}</span>
-                      </li>
-                    ))}
-                  </ul>
                   {error && <p className="text-[10px] text-red-400 leading-snug break-all">⚠ {error}</p>}
                   <button
                     onClick={enable}
@@ -193,18 +170,13 @@ export default function PushPrompt({
                     {busy ? "Enabling…" : "Enable alerts"}
                   </button>
                   {canInstall() && (
-                    <div className="space-y-1.5">
-                      <button
-                        onClick={install}
-                        className="w-full bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-200 font-black italic text-[11px] py-3 rounded-2xl transition cursor-pointer flex items-center justify-center gap-2"
-                      >
-                        <Smartphone className="w-3.5 h-3.5 text-[#FF4E00]" />
-                        Add to home screen
-                      </button>
-                      <p className="text-[10px] text-[#8E9299] text-center leading-relaxed">
-                        Opens instantly, full screen — one tap from your phone.
-                      </p>
-                    </div>
+                    <button
+                      onClick={install}
+                      className="w-full bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-200 font-black italic text-[11px] py-3 rounded-2xl transition cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 text-[#FF4E00]" />
+                      Add to home screen
+                    </button>
                   )}
                 </>
               )}

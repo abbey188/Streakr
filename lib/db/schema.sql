@@ -161,12 +161,12 @@ create table if not exists user_badges (
 create table if not exists notifications (
   id            uuid primary key default gen_random_uuid(),
   user_address  text not null references users(wallet_address) on delete cascade,
-  type          text not null,   -- 'pick_result'|'badge'|'round_champion'|'goal'|'match_start'
+  type          text not null,   -- 'pick_result'|'badge'|'round_champion'|'goal'|'match_start'|'group'|'announcement'
   title         text not null,
   body          text not null,
   icon          text,            -- emoji
   fixture_id    text,            -- optional link + dedupe key for live events
-  dedup_key     text,            -- stable per-event key for goal dedup (goal action Seq)
+  dedup_key     text,            -- stable per-event key: goal (running score), group (actor:type:message)
   read          boolean not null default false,
   created_at    timestamptz not null default now()
 );
