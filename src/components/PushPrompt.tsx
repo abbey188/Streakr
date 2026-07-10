@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { track } from "@vercel/analytics";
 import { Bell, X, Share, Plus, Check, Sparkles } from "lucide-react";
 import {
   pushStatus, enablePush, canInstall, promptInstall, setPushOptedOut,
@@ -33,14 +32,7 @@ export default function PushPrompt({
     if (!open) return;
     setError("");
     setState("loading");
-    pushStatus()
-      .then((s) => {
-        setState(s);
-        // The funnel: which state did people actually land in? iOS install-first
-        // is the bottleneck, so we need to see it rather than guess.
-        track("push_prompt_shown", { state: s });
-      })
-      .catch(() => setState("unsupported"));
+    pushStatus().then(setState).catch(() => setState("unsupported"));
   }, [open]);
 
   const enable = async () => {
@@ -51,16 +43,13 @@ export default function PushPrompt({
       const p = await enablePush();
       if (p === "granted") {
         setState("enabled");
-        track("push_enabled");
         onEnabled?.();
         setTimeout(onClose, 1200); // let them see the confirmation
       } else if (p === "denied") {
         setState("denied");
-        track("push_denied");
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't enable alerts.");
-      track("push_enable_failed");
     } finally {
       setBusy(false);
     }
@@ -68,7 +57,6 @@ export default function PushPrompt({
 
   const install = async () => {
     const outcome = await promptInstall();
-    track("push_install_prompt", { outcome });
     if (outcome === "accepted") setState(await pushStatus());
   };
 
