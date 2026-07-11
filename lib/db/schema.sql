@@ -139,6 +139,38 @@ create table if not exists group_activity_events (
 );
 create index if not exists activity_group_idx on group_activity_events (group_id, created_at desc);
 
+-- ─── squad room: member messages + normalized reactions ───────────────
+-- Member-authored messages and one-level replies. System events stay in
+-- group_activity_events; the squad feed (getSquadFeed) merges both into one
+-- timeline. A reply sets exactly ONE parent — a message OR an event; a root
+-- message sets neither. See docs/social/SQUAD_ROOM.md.
+create table if not exists group_messages (
+  id                uuid primary key default gen_random_uuid(),
+  group_id          uuid not null references groups(id) on delete cascade,
+  author_address    text not null references users(wallet_address) on delete cascade,
+  body              text not null,
+  parent_message_id uuid references group_messages(id) on delete cascade,
+  parent_event_id   uuid references group_activity_events(id) on delete cascade,
+  created_at        timestamptz not null default now()
+);
+create index if not exists group_messages_group_idx on group_messages (group_id, created_at);
+
+-- Normalized reactions — the source of truth for who reacted with what, on a
+-- message OR a system event. Counts are DERIVED (group by), so a tap toggles
+-- idempotently and can never double-count. One row per (target, user, emoji);
+-- the denormalised json on group_activity_events is no longer authoritative.
+create table if not exists group_reactions (
+  id            uuid primary key default gen_random_uuid(),
+  group_id      uuid not null references groups(id) on delete cascade,
+  user_address  text not null references users(wallet_address) on delete cascade,
+  target_type   text not null check (target_type in ('message','event')),
+  target_id     uuid not null,
+  emoji         text not null,
+  created_at    timestamptz not null default now(),
+  unique (target_type, target_id, user_address, emoji)
+);
+create index if not exists group_reactions_target_idx on group_reactions (target_type, target_id);
+
 -- ─── badges ───────────────────────────────────────────────────────────
 -- Off-chain achievement catalog (NFT version is a future, separate
 -- feature — handoff §3.3 / §10). Composes into the `Badge` shape.
