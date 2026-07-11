@@ -75,6 +75,7 @@ export default function GroupsPage() {
         isCurrentUser: true,
       }}
       myGroups={myGroups}
+      walletAddress={wallet ?? undefined}
       onCreateGroup={handleCreateGroup}
       onJoinGroup={handleJoinGroup}
       loadGroupMembers={loadGroupMembers}

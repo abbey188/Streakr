@@ -627,6 +627,69 @@ export async function getSquadFeed(
   return roots;
 }
 
+/** Is this wallet a member of the group? Gates every squad WRITE. */
+export async function isGroupMember(groupId: string, wallet: string): Promise<boolean> {
+  const rows = (await sql`
+    select 1 from group_members
+    where group_id = ${groupId} and user_address = ${wallet}
+    limit 1
+  `) as unknown[];
+  return rows.length > 0;
+}
+
+/**
+ * Toggle one reaction on a squad target (a message or a system event): remove it
+ * if the user already reacted with that emoji, otherwise add it. Returns the
+ * target's FRESH reaction summary so the client can reconcile its optimistic
+ * update against the authoritative counts.
+ *
+ * Verifies the target actually belongs to `groupId` first — so a caller can't
+ * inject a reaction onto another group's item by passing a foreign id.
+ */
+export async function toggleGroupReaction(
+  groupId: string,
+  wallet: string,
+  targetType: "message" | "event",
+  targetId: string,
+  emoji: string
+): Promise<{ ok: boolean; added: boolean; reactions: SquadReaction[] }> {
+  const belongs =
+    targetType === "event"
+      ? ((await sql`select 1 from group_activity_events where id = ${targetId} and group_id = ${groupId} limit 1`) as unknown[])
+      : ((await sql`select 1 from group_messages where id = ${targetId} and group_id = ${groupId} limit 1`) as unknown[]);
+  if (belongs.length === 0) return { ok: false, added: false, reactions: [] };
+
+  const removed = (await sql`
+    delete from group_reactions
+    where group_id = ${groupId} and user_address = ${wallet}
+      and target_type = ${targetType} and target_id = ${targetId} and emoji = ${emoji}
+    returning id
+  `) as { id: string }[];
+  const added = removed.length === 0;
+  if (added) {
+    await sql`
+      insert into group_reactions (group_id, user_address, target_type, target_id, emoji)
+      values (${groupId}, ${wallet}, ${targetType}, ${targetId}, ${emoji})
+      on conflict (target_type, target_id, user_address, emoji) do nothing
+    `;
+  }
+
+  const rows = (await sql`
+    select emoji, count(*)::int as count,
+           coalesce(bool_or(user_address = ${wallet}), false) as mine
+    from group_reactions
+    where target_type = ${targetType} and target_id = ${targetId}
+    group by emoji
+    order by count desc, emoji
+  `) as { emoji: string; count: number; mine: boolean }[];
+
+  return {
+    ok: true,
+    added,
+    reactions: rows.map((r) => ({ emoji: r.emoji, count: r.count, mine: r.mine })),
+  };
+}
+
 // ─── Notifications (personal Inbox feed) ─────────────────────────────────
 
 /** Compact relative-time label for the Inbox ("just now", "2h ago", "3d ago"). */
