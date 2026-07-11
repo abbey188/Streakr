@@ -576,24 +576,27 @@ export async function getSquadFeed(
   }
   const rx = (type: "message" | "event", id: string) => rxByTarget.get(`${type}:${id}`) ?? [];
 
-  // Replies grouped by parent id (a message id OR an event id).
-  const repliesByParent = new Map<string, SquadReply[]>();
+  const mine = (addr: string) => !!viewer && addr === viewer;
+  const msgById = new Map(messages.map((m) => [m.id, m]));
+
+  // Replies to EVENTS nest into that event's thread (Slack-style). Replies to
+  // MESSAGES do NOT nest — they surface as their own root carrying a quote.
+  const eventReplies = new Map<string, SquadReply[]>();
   for (const m of messages) {
-    const parent = m.parent_message_id ?? m.parent_event_id;
-    if (!parent) continue;
-    const list = repliesByParent.get(parent) ?? [];
+    if (!m.parent_event_id) continue;
+    const list = eventReplies.get(m.parent_event_id) ?? [];
     list.push({
       id: m.id,
       username: m.username,
       avatar: m.avatar,
       body: m.body,
       timestamp: m.created_at,
-      isMine: !!viewer && m.author_address === viewer,
+      isMine: mine(m.author_address),
     });
-    repliesByParent.set(parent, list);
+    eventReplies.set(m.parent_event_id, list);
   }
 
-  // Roots: every system event + every top-level message.
+  // Roots: every system event + every message that isn't an event-thread reply.
   const roots: SquadItem[] = [];
   for (const e of events) {
     roots.push({
@@ -606,11 +609,17 @@ export async function getSquadFeed(
       timestamp: e.created_at,
       isMine: false,
       reactions: rx("event", e.id),
-      replies: repliesByParent.get(e.id) ?? [],
+      replies: eventReplies.get(e.id) ?? [],
     });
   }
   for (const m of messages) {
-    if (m.parent_message_id || m.parent_event_id) continue; // replies handled above
+    if (m.parent_event_id) continue; // nested in an event thread, handled above
+    // A reply to a message carries a quoted snippet of the original (Telegram).
+    let quoted: SquadItem["quoted"] = null;
+    if (m.parent_message_id) {
+      const p = msgById.get(m.parent_message_id);
+      if (p) quoted = { username: p.username, body: p.body, isMine: mine(p.author_address) };
+    }
     roots.push({
       id: m.id,
       kind: "message",
@@ -618,9 +627,10 @@ export async function getSquadFeed(
       avatar: m.avatar,
       body: m.body,
       timestamp: m.created_at,
-      isMine: !!viewer && m.author_address === viewer,
+      isMine: mine(m.author_address),
       reactions: rx("message", m.id),
-      replies: repliesByParent.get(m.id) ?? [],
+      replies: [],
+      quoted,
     });
   }
   roots.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());

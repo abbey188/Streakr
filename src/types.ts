@@ -101,7 +101,10 @@ export interface SquadItem {
   timestamp: string;
   isMine: boolean;     // authored by the viewer (events are always false)
   reactions: SquadReaction[];
+  // Event threads nest here (Slack-style). Messages never nest — a reply to a
+  // message is its own root carrying `quoted` (Telegram-style).
   replies: SquadReply[];
+  quoted?: { username: string; body: string; isMine: boolean } | null;
 }
 
 /** A personal, addressed-to-you notification (pick result, badge, round champion,
