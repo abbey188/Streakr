@@ -1,0 +1,699 @@
+<title>Squad Room — Visual Design</title>
+<style>
+  :root {
+    --ground: #0A0E1A;
+    --panel: #151B2E;
+    --sub: #2D364F;
+    --accent: #FF4E00;
+    --muted: #8E9299;
+    --line: rgba(255,255,255,0.06);
+    --line-2: rgba(255,255,255,0.10);
+    --text: #EEF1F6;
+    --amber: #F5B301;
+    --red: #EF4444;
+    --purple: #A855F7;
+    --font-display: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 500px at 12% -8%, rgba(255,78,0,0.10), transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, rgba(80,110,220,0.08), transparent 55%),
+      var(--ground);
+    color: var(--text);
+    font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 40px 22px 100px; }
+
+  /* ---- page head ---- */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--accent); display: inline-block; }
+  h1 {
+    font-size: clamp(30px, 5vw, 48px); font-weight: 900; font-style: italic;
+    letter-spacing: -0.02em; text-transform: uppercase; margin: 16px 0 10px;
+    text-wrap: balance; line-height: 0.98;
+  }
+  .lede { color: var(--muted); max-width: 60ch; font-size: 15.5px; }
+  .lede b { color: var(--text); font-weight: 700; }
+  .note {
+    margin-top: 18px; font-family: var(--font-mono); font-size: 11.5px;
+    color: var(--muted); border-left: 2px solid var(--line-2); padding: 6px 0 6px 12px;
+  }
+
+  /* ---- section framing ---- */
+  .band { margin-top: 64px; }
+  .band-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+  .band-num {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+    color: var(--accent); letter-spacing: 0.1em;
+  }
+  .band-title { font-size: 20px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -0.01em; }
+  .band-sub { color: var(--muted); font-size: 13.5px; margin-left: auto; max-width: 46ch; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-phone { display: grid; grid-template-columns: 360px 1fr; gap: 40px; align-items: start; }
+  @media (max-width: 860px) { .grid-phone { grid-template-columns: 1fr; } .grid2 { grid-template-columns: 1fr; } }
+
+  /* ---- annotation cards ---- */
+  .anno { background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; }
+  .anno h3 { margin: 0 0 8px; font-size: 14px; font-weight: 800; letter-spacing: 0.01em; }
+  .anno p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+  .anno p:last-child { margin-bottom: 0; }
+  .anno .why { color: var(--accent); font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; }
+  .spec-label {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 12px; font-weight: 700;
+  }
+
+  /* =====================================================
+     STREAKR UI PRIMITIVES — faithful to the app
+     ===================================================== */
+  .phone {
+    background: var(--ground);
+    border: 1px solid var(--line-2);
+    border-radius: 34px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,0.9), 0 0 0 8px rgba(255,255,255,0.02);
+  }
+  .app-head {
+    position: sticky; top: 0; z-index: 3;
+    background: rgba(10,14,26,0.85); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    padding: 15px 16px 0;
+  }
+  .app-head-row { display: flex; align-items: center; gap: 10px; }
+  .iconbtn { width: 30px; height: 30px; border-radius: 10px; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+  .iconbtn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .grp-emoji { font-size: 19px; }
+  .grp-name { font-size: 14px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -0.02em; }
+  .grp-meta { font-family: var(--font-mono); font-size: 9.5px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-left: auto; }
+
+  /* tabs — the entry point */
+  .tabs { display: flex; gap: 4px; margin-top: 14px; }
+  .tab {
+    flex: 1; text-align: center; padding: 10px 0 12px; cursor: pointer;
+    font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 2px solid transparent;
+  }
+  .tab.active { color: #fff; border-bottom-color: var(--accent); }
+  .tab .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-left: 6px; vertical-align: middle; }
+
+  .stream { padding: 16px 14px 14px; display: flex; flex-direction: column; gap: 14px; }
+  .daychip { align-self: center; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); background: rgba(255,255,255,0.03); border: 1px solid var(--line); padding: 3px 10px; border-radius: 20px; }
+
+  /* SYSTEM EVENT — quiet: a coloured edge in the margin, no fill */
+  .event {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--ev-edge, var(--line-2));
+    background: transparent;
+    border-radius: 5px 16px 16px 5px; padding: 11px 14px;
+    display: flex; gap: 11px; align-items: flex-start;
+  }
+  .event.milestone { --ev-edge: #FF4E00; }
+  .event.win { --ev-edge: #F5B301; }
+  .event.break { --ev-edge: #EF4444; }
+
+  /* ---- event-card exploration variants ---- */
+  .varcard { display: flex; flex-direction: column; gap: 10px; }
+  .varlabel { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; }
+  .varlabel span { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 7px; }
+
+  /* B · type chip */
+  .tchip { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 7px; border-radius: 6px; margin-bottom: 5px; }
+  .tchip.milestone { color: #FF8A54; background: rgba(255,78,0,0.13); }
+  .tchip.win { color: #F5C543; background: rgba(245,179,1,0.13); }
+  .tchip.break { color: #F87171; background: rgba(239,68,68,0.13); }
+
+  /* C · header ribbon */
+  .event.v-ribbon { flex-direction: column; gap: 0; padding: 0; align-items: stretch; }
+  .event.v-ribbon .ribbon { display: flex; align-items: center; gap: 7px; padding: 7px 13px; font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+  .event.v-ribbon.milestone .ribbon { background: rgba(255,78,0,0.12); color: #FF8A54; }
+  .event.v-ribbon.win .ribbon { background: rgba(245,179,1,0.12); color: #F5C543; }
+  .event.v-ribbon.break .ribbon { background: rgba(239,68,68,0.12); color: #F87171; }
+  .event.v-ribbon .ribbon-body { display: flex; gap: 11px; padding: 12px 13px; align-items: flex-start; }
+
+  /* D · emotional — wins glow, breaks dim */
+  .event.v-emotion.win { background: linear-gradient(115deg, rgba(245,179,1,0.13), transparent 62%); border-color: rgba(245,179,1,0.30); box-shadow: 0 8px 30px -12px rgba(245,179,1,0.35); }
+  .event.v-emotion.break { opacity: 0.62; }
+  .ev-body { min-width: 0; flex: 1; }
+  .ev-text { font-size: 13px; color: #dfe4ec; }
+  .ev-text b { color: #fff; font-weight: 800; font-style: italic; }
+  .ev-ico-inline { font-size: 13px; margin-right: 2px; }
+  .ev-time { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 0.06em; margin-top: 3px; }
+
+  /* MEMBER MESSAGE — people talk calm */
+  .msg { display: flex; gap: 10px; align-items: flex-start; }
+
+  /* mascot avatar tile — the SAME renderer as leaderboard / inbox (upper-body) */
+  .av {
+    width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0;
+    background: var(--ground); border: 1px solid var(--line);
+    overflow: hidden; padding: 2px;
+  }
+  .av.sm { width: 27px; height: 27px; border-radius: 8px; padding: 1.5px; }
+  .av svg { width: 100%; height: 100%; display: block; }
+  .mascot-head { fill: var(--skin); }
+  .mascot-kit { fill: var(--kit); }
+  .mascot-kit2 { fill: var(--kit2); }
+  .msg-body { min-width: 0; flex: 1; }
+  .msg-head { display: flex; align-items: baseline; gap: 8px; }
+  .msg-name { font-size: 12.5px; font-weight: 800; font-style: italic; color: #fff; }
+  .msg-name.me { color: var(--accent); }
+  .msg-time { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+  .bubble {
+    margin-top: 4px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 4px 14px 14px 14px; padding: 8px 11px; font-size: 13px; color: #dfe4ec;
+    display: inline-block; max-width: 100%;
+  }
+
+  /* REACTION BAR */
+  .rx { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--ground); border: 1px solid var(--line);
+    border-radius: 20px; padding: 3px 9px; cursor: pointer; font-size: 12px;
+  }
+  .chip .n { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chip.on { border-color: rgba(255,78,0,0.45); background: rgba(255,78,0,0.12); }
+  .chip.on .n { color: var(--accent); }
+  .chip.add { color: var(--muted); font-weight: 700; padding: 3px 8px; }
+  .chip.add:hover { color: #fff; border-color: var(--line-2); }
+
+  /* reply thread — one level */
+  .thread { margin-top: 10px; margin-left: 17px; padding-left: 15px; border-left: 1.5px solid var(--line-2); display: flex; flex-direction: column; gap: 10px; }
+
+  /* composer */
+  .composer {
+    position: sticky; bottom: 0; background: rgba(10,14,26,0.92); backdrop-filter: blur(8px);
+    border-top: 1px solid var(--line); padding: 11px 13px;
+    display: flex; gap: 9px; align-items: center;
+  }
+  .composer input {
+    flex: 1; background: var(--panel); border: 1px solid var(--line); color: #fff;
+    border-radius: 22px; padding: 11px 15px; font-family: var(--font-display); font-size: 13px; outline: none;
+  }
+  .composer input::placeholder { color: var(--muted); }
+  .composer input:focus { border-color: rgba(255,78,0,0.4); }
+  .send { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+
+  /* reaction palette popover */
+  .palette {
+    display: inline-flex; gap: 4px; background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 24px; padding: 6px 8px; box-shadow: 0 12px 30px -12px rgba(0,0,0,0.8);
+  }
+  .palette span { font-size: 19px; cursor: pointer; padding: 2px 4px; border-radius: 8px; transition: transform .1s; }
+  .palette span:hover { transform: scale(1.25) translateY(-1px); background: rgba(255,255,255,0.05); }
+
+  /* empty state */
+  .empty { text-align: center; padding: 40px 20px; }
+  .empty .big { font-size: 34px; }
+  .empty h4 { margin: 12px 0 6px; font-size: 15px; font-weight: 900; font-style: italic; text-transform: uppercase; }
+  .empty p { margin: 0 auto; color: var(--muted); font-size: 12.5px; max-width: 30ch; }
+
+  /* inbox + push specimens */
+  .push {
+    background: #22252b; border-radius: 16px; padding: 12px 13px; display: flex; gap: 11px; align-items: flex-start;
+    box-shadow: 0 16px 40px -18px rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.08);
+    font-family: -apple-system, system-ui, sans-serif;
+  }
+  .push .logo { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; font-size: 17px; flex-shrink: 0; }
+  .push .t { font-size: 13px; font-weight: 700; color: #fff; }
+  .push .b { font-size: 12.5px; color: #c9cdd4; }
+  .push .app { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #9aa; margin-top: 2px; }
+
+  .inbox-row {
+    border: 1.5px solid rgba(99,102,241,0.30); background: rgba(99,102,241,0.05);
+    border-radius: 18px; padding: 12px 13px; display: flex; gap: 10px; align-items: flex-start;
+  }
+  .divider { height: 1px; background: var(--line); margin: 14px 0; }
+
+  /* groups list with unread */
+  .glist { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--ground); }
+  .grow { display: flex; align-items: center; gap: 11px; padding: 12px 13px; border-top: 1px solid var(--line); }
+  .grow:first-child { border-top: 0; }
+  .grow.live { background: rgba(255,78,0,0.04); }
+  .grow .ge { font-size: 18px; }
+  .grow .gn { font-weight: 800; font-style: italic; font-size: 13px; }
+  .grow .un { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+  .grow .un .d { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px rgba(255,78,0,0.6); }
+  .grow .gd { margin-left: auto; color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+
+  .callout {
+    margin-top: 26px; border: 1px solid rgba(255,78,0,0.25); background: rgba(255,78,0,0.04);
+    border-radius: 18px; padding: 18px 20px;
+  }
+  .callout h3 { margin: 0 0 12px; font-size: 13px; font-family: var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+  .q { padding: 12px 0; border-top: 1px solid var(--line); }
+  .q:first-of-type { border-top: 0; }
+  .q .ql { font-weight: 800; font-size: 13.5px; margin-bottom: 4px; }
+  .q .qo { color: var(--muted); font-size: 12.5px; }
+  .q .qo b { color: var(--text); }
+  .fine { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); letter-spacing: 0.04em; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mascot" viewBox="0 0 40 40">
+    <path class="mascot-kit" d="M3 40 Q3 27 12 25 L28 25 Q37 27 37 40 Z"/>
+    <path class="mascot-kit2" d="M15 25 L20 31 L25 25 Z"/>
+    <rect class="mascot-head" x="17" y="21" width="6" height="5"/>
+    <rect class="mascot-head" x="10.5" y="5" width="19" height="17.5" rx="6.5"/>
+    <circle cx="16.3" cy="13.5" r="1.5" fill="#141414"/>
+    <circle cx="23.7" cy="13.5" r="1.5" fill="#141414"/>
+    <path d="M16.3 17.5 Q20 20.5 23.7 17.5" stroke="#141414" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+  <div class="eyebrow">Streakr · Social Layer</div>
+  <h1>The Squad Room</h1>
+  <p class="lede">A private conversation space per group. Match events and your squad's messages share one stream — <b>the game shouts in colour, people talk calm</b>. Every choice below is drawn from Streakr's own visual language, so it reads as if it was always here.</p>
+  <p class="note">Mockup renders with system fonts; production keeps Space&nbsp;Grotesk + JetBrains&nbsp;Mono. Colours, spacing, radii and treatments are the app's real tokens.</p>
+
+  <!-- ============ 0. EVENT CARD DIRECTIONS ============ -->
+  <div class="band">
+    <div class="band-head">
+      <span class="band-num">00</span>
+      <span class="band-title">Event cards — pick a direction</span>
+      <span class="band-sub">The same milestone, four ways. All stay quiet (no loud fill); they differ in how clearly an event announces itself as a moment worth reacting to.</span>
+    </div>
+
+    <div class="grid2">
+      <!-- A: edge only -->
+      <div class="varcard">
+        <div class="varlabel">A · Edge only <span>today's version — quietest</span></div>
+        <div class="event milestone">
+          <div class="av" style="--skin:#8B5A2B;--kit:#2563EB;--kit2:#FACC15"><svg><use href="#mascot"/></svg></div>
+          <div class="ev-body">
+            <div class="ev-text"><span class="ev-ico-inline">🔥</span><b>@Mobot</b> hit a 5-match streak</div>
+            <div class="ev-time">20:14</div>
+            <div class="rx"><span class="chip on">🔥 <span class="n">3</span></span><span class="chip add">＋</span></div>
+          </div>
+        </div>
+        <p class="fine">Risk: blends into messages, easy to skim past.</p>
+      </div>
+
+      <!-- B: type chip -->
+      <div class="varcard">
+        <div class="varlabel">B · Type chip <span>a scannable label, still no fill</span></div>
+        <div class="event milestone">
+          <div class="av" style="--skin:#8B5A2B;--kit:#2563EB;--kit2:#FACC15"><svg><use href="#mascot"/></svg></div>
+          <div class="ev-body">
+            <span class="tchip milestone">🔥 Streak</span>
+            <div class="ev-text"><b>@Mobot</b> hit a 5-match streak</div>
+            <div class="ev-time">20:14</div>
+            <div class="rx"><span class="chip on">🔥 <span class="n">3</span></span><span class="chip add">＋</span></div>
+          </div>
+        </div>
+        <p class="fine">Clear type at a glance; one extra element per row.</p>
+      </div>
+
+      <!-- C: header ribbon -->
+      <div class="varcard">
+        <div class="varlabel">C · Header ribbon <span>reads as a titled "moment"</span></div>
+        <div class="event v-ribbon milestone">
+          <div class="ribbon">🔥 Streak milestone</div>
+          <div class="ribbon-body">
+            <div class="av" style="--skin:#8B5A2B;--kit:#2563EB;--kit2:#FACC15"><svg><use href="#mascot"/></svg></div>
+            <div class="ev-body">
+              <div class="ev-text"><b>@Mobot</b> hit a 5-match streak</div>
+              <div class="ev-time">20:14</div>
+              <div class="rx"><span class="chip on">🔥 <span class="n">3</span></span><span class="chip add">＋</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="fine">Most distinct; tallest — heavier in a fast stream.</p>
+      </div>
+
+      <!-- D: emotional -->
+      <div class="varcard">
+        <div class="varlabel">D · Emotional <span>wins glow, breaks fade</span></div>
+        <div class="event v-emotion win" style="margin-bottom:10px;">
+          <div class="av" style="--skin:#8B5A2B;--kit:#2563EB;--kit2:#FACC15"><svg><use href="#mascot"/></svg></div>
+          <div class="ev-body">
+            <div class="ev-text"><span class="ev-ico-inline">👑</span><b>@Mobot</b> crowned QF Champion</div>
+            <div class="ev-time">22:02</div>
+            <div class="rx"><span class="chip on">👑 <span class="n">6</span></span><span class="chip add">＋</span></div>
+          </div>
+        </div>
+        <div class="event v-emotion break">
+          <div class="av" style="--skin:#E0A87E;--kit:#10B981;--kit2:#FFFFFF"><svg><use href="#mascot"/></svg></div>
+          <div class="ev-body">
+            <div class="ev-text"><span class="ev-ico-inline">💀</span><b>@CleanSheet99</b> lost a 4-streak</div>
+            <div class="ev-time">19:47</div>
+            <div class="rx"><span class="chip">💀 <span class="n">5</span></span><span class="chip add">＋</span></div>
+          </div>
+        </div>
+        <p class="fine">Feeling over labels: triumph shines, a break recedes.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:22px; padding:20px; border:1px solid rgba(255,78,0,0.25); background:rgba(255,78,0,0.03); border-radius:20px;">
+      <div class="varlabel" style="margin-bottom:14px;">✓ The mix · B + D <span>a type chip on every event · wins glow · breaks fade</span></div>
+      <div style="display:flex; flex-direction:column; gap:12px; max-width:440px;">
+        <!-- milestone: chip, neutral -->
+        <div class="event milestone">
+          <div class="av" style="--skin:#8B5A2B;--kit:#2563EB;--kit2:#FACC15"><svg><use href="#mascot"/></svg></div>
+          <div class="ev-body">
+            <span class="tchip milestone">🔥 Streak</span>
+            <div class="ev-text"><b>@Mobot</b> hit a 5-match streak</div>
+            <div class="ev-time">20:14</div>
+            <div class="rx"><span class="chip on">🔥 <span class="n">3</span></span><span class="chip">😮 <span class="n">1</span></span><span class="chip add">＋</span></div>
+          </div>
+        </div>
+        <!-- win: chip + glow -->
+        <div class="event v-emotion win">
+          <div class="av" style="--skin:#8B5A2B;--kit:#2563EB;--kit2:#FACC15"><svg><use href="#mascot"/></svg></div>
+          <div class="ev-body">
+            <span class="tchip win">👑 Crown</span>
+            <div class="ev-text"><b>@Mobot</b> crowned Quarter-final Champion</div>
+            <div class="ev-time">22:02</div>
+            <div class="rx"><span class="chip on">👑 <span class="n">6</span></span><span class="chip">👏 <span class="n">3</span></span><span class="chip add">＋</span></div>
+          </div>
+        </div>
+        <!-- break: chip + fade -->
+        <div class="event v-emotion break">
+          <div class="av" style="--skin:#E0A87E;--kit:#10B981;--kit2:#FFFFFF"><svg><use href="#mascot"/></svg></div>
+          <div class="ev-body">
+            <span class="tchip break">💀 Broken</span>
+            <div class="ev-text"><b>@CleanSheet99</b> lost a 4-streak on Portugal</div>
+            <div class="ev-time">19:47</div>
+            <div class="rx"><span class="chip">💀 <span class="n">5</span></span><span class="chip on">😂 <span class="n">4</span></span><span class="chip add">＋</span></div>
+          </div>
+        </div>
+      </div>
+      <p style="color:var(--muted); font-size:13px; margin:16px 0 0; max-width:52ch;">The chip names the type on every event so it's never mistaken for a message; the emotion is reserved for the extremes — a <b style="color:#F5C543;">crown glows</b>, a <b style="color:#F87171;">break recedes</b>, a streak sits neutral in between. Feeling where it earns it, clarity everywhere.</p>
+    </div>
+  </div>
+
+  <!-- ============ 1. IN CONTEXT ============ -->
+  <div class="band">
+    <div class="band-head">
+      <span class="band-num">01</span>
+      <span class="band-title">In context</span>
+      <span class="band-sub">The Squad Room living inside a group, exactly where a member would find it — a second tab beside the leaderboard.</span>
+    </div>
+
+    <div class="grid-phone">
+      <div class="phone">
+        <div class="app-head">
+          <div class="app-head-row">
+            <button class="iconbtn" aria-label="Back">&larr;</button>
+            <span class="grp-emoji">🦁</span>
+            <span class="grp-name">Lagos Boys</span>
+            <span class="grp-meta">7 members</span>
+          </div>
+          <div class="tabs">
+            <div class="tab">Leaderboard</div>
+            <div class="tab active">Squad Room<span class="dot"></span></div>
+          </div>
+        </div>
+
+        <div class="stream">
+          <span class="daychip">Yesterday</span>
+
+          <!-- system: milestone -->
+          <div class="event milestone">
+            <div class="av" style="--skin:#8B5A2B;--kit:#2563EB;--kit2:#FACC15"><svg><use href="#mascot"/></svg></div>
+            <div class="ev-body">
+              <span class="tchip milestone">🔥 Streak</span>
+              <div class="ev-text"><b>@Mobot</b> hit a 5-match streak</div>
+              <div class="ev-time">20:14</div>
+              <div class="rx">
+                <span class="chip on">🔥 <span class="n">3</span></span>
+                <span class="chip">😮 <span class="n">1</span></span>
+                <span class="chip add">＋</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- member message + reactions -->
+          <div class="msg">
+            <div class="av" style="--skin:#6B3E1E;--kit:#EF4444;--kit2:#FFFFFF"><svg><use href="#mascot"/></svg></div>
+            <div class="msg-body">
+              <div class="msg-head"><span class="msg-name">@Blaq</span><span class="msg-time">20:15</span></div>
+              <div class="bubble">no way that's lucky 😂 brazil carried him</div>
+              <div class="rx"><span class="chip">😂 <span class="n">2</span></span><span class="chip add">＋</span></div>
+            </div>
+          </div>
+
+          <!-- member message with a reply thread -->
+          <div class="msg">
+            <div class="av" style="--skin:#C68642;--kit:#FACC15;--kit2:#16A34A"><svg><use href="#mascot"/></svg></div>
+            <div class="msg-body">
+              <div class="msg-head"><span class="msg-name">@GoldenBoot</span><span class="msg-time">20:18</span></div>
+              <div class="bubble">skill &gt; luck, cope 🏆</div>
+              <div class="thread">
+                <div class="msg">
+                  <div class="av sm" style="--skin:#6B3E1E;--kit:#EF4444;--kit2:#FFFFFF"><svg><use href="#mascot"/></svg></div>
+                  <div class="msg-body">
+                    <div class="msg-head"><span class="msg-name">@Blaq</span><span class="msg-time">20:19</span></div>
+                    <div class="bubble">we'll see in the semis</div>
+                  </div>
+                </div>
+                <div class="msg">
+                  <div class="av sm" style="--skin:#A0673A;--kit:#FF4E00;--kit2:#0A0E1A"><svg><use href="#mascot"/></svg></div>
+                  <div class="msg-body">
+                    <div class="msg-head"><span class="msg-name me">@you</span><span class="msg-time">20:20</span></div>
+                    <div class="bubble">both of you are losing to me 💀</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <span class="daychip">Today</span>
+
+          <!-- system: streak break — chip + fade -->
+          <div class="event v-emotion break">
+            <div class="av" style="--skin:#E0A87E;--kit:#10B981;--kit2:#FFFFFF"><svg><use href="#mascot"/></svg></div>
+            <div class="ev-body">
+              <span class="tchip break">💀 Broken</span>
+              <div class="ev-text"><b>@CleanSheet99</b> lost a 4-streak on Portugal</div>
+              <div class="ev-time">19:47</div>
+              <div class="rx">
+                <span class="chip">💀 <span class="n">5</span></span>
+                <span class="chip on">😂 <span class="n">4</span></span>
+                <span class="chip add">＋</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- system: crown — chip + glow -->
+          <div class="event v-emotion win">
+            <div class="av" style="--skin:#8B5A2B;--kit:#2563EB;--kit2:#FACC15"><svg><use href="#mascot"/></svg></div>
+            <div class="ev-body">
+              <span class="tchip win">👑 Crown</span>
+              <div class="ev-text"><b>@Mobot</b> was crowned Quarter-final Champion</div>
+              <div class="ev-time">22:02</div>
+              <div class="rx"><span class="chip on">👑 <span class="n">6</span></span><span class="chip">👏 <span class="n">3</span></span><span class="chip add">＋</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer">
+          <input placeholder="Message your squad…" />
+          <button class="send" aria-label="Send">➤</button>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="anno">
+          <p class="spec-label">Groups list · the way in</p>
+          <div class="glist">
+            <div class="grow live">
+              <span class="ge">🦁</span><span class="gn">Lagos Boys</span>
+              <span class="un"><span class="d"></span>3 new</span>
+            </div>
+            <div class="grow">
+              <span class="ge">⚽</span><span class="gn">Work FC</span>
+              <span class="gd">—</span>
+            </div>
+            <div class="grow live">
+              <span class="ge">🎯</span><span class="gn">Uni Squad</span>
+              <span class="un"><span class="d"></span>1 new</span>
+            </div>
+          </div>
+          <h3 style="margin-top:14px;">See a live squad before you open it</h3>
+          <p>An unread count sits on each group in the main list, so a room that's buzzing pulls you in — you don't have to open every group to find where the talk is. Tapping through lands you on the Squad Room tab.</p>
+          <p class="why">Why · the pull-back only works if you can see it from outside</p>
+        </div>
+        <div class="anno">
+          <h3>One avatar everywhere: the mascot</h3>
+          <p>Every row — message <i>and</i> match event — is led by the member's <b>mascot, upper-body</b>: the exact same <span class="fine">AvatarRenderer</span> already used on the leaderboard and in the Inbox. No stray emoji tiles, no second avatar system. The Squad Room instantly belongs to Streakr.</p>
+          <p class="why">Why · uniformity with what exists &gt; a new look; reuses the pipeline</p>
+        </div>
+        <div class="anno">
+          <h3>The contrast: a coloured edge, not a loud card</h3>
+          <p>Since every row is mascot-led, event-vs-message rides on <b>a thin coloured edge in the margin</b> — no tinted fill. A match event gets a stripe (🔥 orange, 💀 red, 👑 amber) and the type emoji inline; a message is a plain bubble. The room reads as a <i>chat</i> with the game noted quietly at the edge, not a feed you talk over.</p>
+          <p class="why">Why · you chose calm — the game punctuates, it doesn't dominate</p>
+        </div>
+        <div class="anno">
+          <h3>Left-aligned, never "mine on the right"</h3>
+          <p>Everything is left-aligned, Discord-style — the stream isn't only <i>your</i> messages. A WhatsApp right/left split breaks the moment a system event, which belongs to no one, lands between two of your lines.</p>
+          <p class="why">Why · the room owns the timeline, not you</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. COMPONENTS ============ -->
+  <div class="band">
+    <div class="band-head">
+      <span class="band-num">02</span>
+      <span class="band-title">Each aspect, up close</span>
+      <span class="band-sub">The pieces isolated, with the design choice behind each.</span>
+    </div>
+
+    <div class="grid2">
+      <!-- reactions -->
+      <div class="anno">
+        <p class="spec-label">Reaction bar · resting → yours</p>
+        <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
+          <div class="rx" style="margin:0;">
+            <span class="chip">🔥 <span class="n">3</span></span>
+            <span class="chip">😂 <span class="n">1</span></span>
+            <span class="chip add">＋</span>
+          </div>
+          <span class="fine">→</span>
+          <div class="rx" style="margin:0;">
+            <span class="chip on">🔥 <span class="n">4</span></span>
+            <span class="chip">😂 <span class="n">1</span></span>
+            <span class="chip add">＋</span>
+          </div>
+        </div>
+        <p class="spec-label" style="margin-bottom:10px;">The palette · six, fixed</p>
+        <div class="palette" style="margin-bottom:14px;">
+          <span>🔥</span><span>👏</span><span>😂</span><span>💀</span><span>😮</span><span>👑</span>
+        </div>
+        <h3>Tap ＋ for six, not a keyboard</h3>
+        <p>A fixed set — fast to tap, on-brand, and every reaction already means something in Streakr's world (🔥 streak, 💀 break, 👑 crown). Your pick fills orange; tapping again removes it.</p>
+        <p class="why">Why · one row per item stays quiet; an emoji keyboard invites noise</p>
+      </div>
+
+      <!-- reply thread -->
+      <div class="anno">
+        <p class="spec-label">Reply · one level, connector rail</p>
+        <div class="msg" style="margin-bottom:14px;">
+          <div class="av" style="--skin:#C68642;--kit:#FACC15;--kit2:#16A34A"><svg><use href="#mascot"/></svg></div>
+          <div class="msg-body">
+            <div class="msg-head"><span class="msg-name">@GoldenBoot</span><span class="msg-time">20:18</span></div>
+            <div class="bubble">skill &gt; luck, cope 🏆</div>
+            <div class="thread">
+              <div class="msg">
+                <div class="av sm" style="--skin:#A0673A;--kit:#FF4E00;--kit2:#0A0E1A"><svg><use href="#mascot"/></svg></div>
+                <div class="msg-body">
+                  <div class="msg-head"><span class="msg-name me">@you</span><span class="msg-time">20:20</span></div>
+                  <div class="bubble">both of you are losing to me 💀</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h3>One level deep, and that's the rule</h3>
+        <p>Replies indent once under their parent with a thin rail and smaller avatars. No nesting past that — deeper threads are unreadable on a phone and turn a squad chat into a forum, which is the public feed's job, not this one.</p>
+        <p class="why">Why · light threading keeps banter legible; infinite nesting doesn't</p>
+      </div>
+
+      <!-- empty state -->
+      <div class="anno">
+        <p class="spec-label">Empty state</p>
+        <div style="background:var(--ground); border:1px solid var(--line); border-radius:18px;">
+          <div class="empty">
+            <div class="big">🦁</div>
+            <h4>Quiet in here</h4>
+            <p>Be the first to talk. Match results and streaks land here automatically too.</p>
+          </div>
+        </div>
+        <h3 style="margin-top:14px;">A prompt, not a void</h3>
+        <p>A new group has nothing to show. Rather than blank space, it names the two ways the room fills — you talk, or the game posts for you — so the value is obvious before anyone types.</p>
+        <p class="why">Why · the empty app is where most social features die</p>
+      </div>
+
+      <!-- composer -->
+      <div class="anno">
+        <p class="spec-label">Composer · pinned</p>
+        <div style="background:var(--ground); border:1px solid var(--line); border-radius:18px; padding:0;">
+          <div class="composer" style="position:static; border-top:0; border-radius:18px;">
+            <input placeholder="Message your squad…" />
+            <button class="send" aria-label="Send">➤</button>
+          </div>
+        </div>
+        <h3 style="margin-top:14px;">One line, always reachable</h3>
+        <p>Anchored to the bottom, panel-filled to match every other input in the app, orange send. No formatting bar, no attachments — a squad room is for quick lines, not composed posts. That restraint is the whole "not another posting app" stance, in one control.</p>
+        <p class="why">Why · the input's simplicity sets the tone for what gets written</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3. NOTIFICATION ============ -->
+  <div class="band">
+    <div class="band-head">
+      <span class="band-num">03</span>
+      <span class="band-title">When someone replies to you</span>
+      <span class="band-sub">The one thing that pulls people back — wired into the push + Inbox system already built.</span>
+    </div>
+    <div class="grid2">
+      <div>
+        <p class="spec-label">Lock screen / push</p>
+        <div class="push">
+          <div class="logo">🦁</div>
+          <div>
+            <div class="t">@Blaq replied to you · Lagos Boys</div>
+            <div class="b">we'll see in the semis</div>
+            <div class="app">Streakr · now</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <p class="spec-label">Inbox row · squad accent (indigo)</p>
+        <div class="inbox-row">
+          <div class="av" style="--skin:#6B3E1E;--kit:#EF4444;--kit2:#FFFFFF"><svg><use href="#mascot"/></svg></div>
+          <div class="msg-body">
+            <div class="msg-head"><span class="msg-name">@Blaq replied</span><span class="msg-time">2m</span></div>
+            <div class="ev-text" style="margin-top:2px;">💬 we'll see in the semis</div>
+          </div>
+        </div>
+      </div>
+      <div class="anno">
+        <h3>Replies ping. Reactions stay silent.</h3>
+        <p>A reply to your message earns a push and an Inbox row, deep-linking straight into the Squad Room — this is the return-visit engine. It reuses the exact push path shipped this week and a new <b>Squad</b> toggle in Settings, so anyone can mute it.</p>
+        <p>Reactions deliberately send nothing. A ping on every 🔥 is how you teach people to turn a group off.</p>
+        <p class="why">Why · "someone replied to you" is the most reliable reason anyone reopens an app</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <h3>Design decisions — locked</h3>
+      <div class="q">
+        <div class="ql">✓ Mascot avatars everywhere</div>
+        <div class="qo">The upper-body <b>AvatarRenderer</b> already used on the leaderboard and Inbox, on every row — message and event alike. No second avatar system.</div>
+      </div>
+      <div class="q">
+        <div class="ql">✓ Quiet events — coloured edge + type chip, wins glow / breaks fade</div>
+        <div class="qo">No filled cards. Every event carries a thin coloured stripe and a small type chip (🔥 Streak · 👑 Crown · 💀 Broken) so it's never mistaken for a message. Emotion is reserved for the extremes — a crown glows amber, a break recedes; a streak sits neutral between.</div>
+      </div>
+      <div class="q">
+        <div class="ql">✓ Message bubbles</div>
+        <div class="qo">Rounded panel bubbles for the warmer, more obviously-chat feel.</div>
+      </div>
+      <div class="q">
+        <div class="ql">✓ Entry: tab in a group + unread on the Groups list</div>
+        <div class="qo">A <b>Squad Room</b> tab beside Leaderboard, and an unread count on each group in the main list so a live squad pulls you in from outside.</div>
+      </div>
+      <div class="q">
+        <div class="ql">✓ Group-scoped · async threaded · reply pings, reactions silent</div>
+        <div class="qo">Private per group, polls like the app, one level of replies. A reply notifies you (new <b>Squad</b> pref); reactions never do.</div>
+      </div>
+    </div>
+  </div>
+</div>
