@@ -7,6 +7,9 @@ import type {
   GroupMember,
   ActivityItem,
   Notification,
+  SquadItem,
+  SquadReaction,
+  SquadReply,
 } from "../../src/types";
 import type { FormEntry } from "@/lib/txline/types";
 import { prefAllows } from "./notify-prefs";
@@ -485,6 +488,143 @@ export async function getGroupActivity(groupId: string): Promise<ActivityItem[]>
     timestamp: r.created_at,
     reactions: r.reactions ?? {},
   }));
+}
+
+// ─── Squad Room: merged read (system events + member messages) ───────────
+// See docs/social/SQUAD_ROOM.md. Phase 1 is read-only: no writes exist yet, so
+// a fresh group returns just its existing system events with zero reactions.
+
+interface SquadEventRow {
+  id: string;
+  type: ActivityItem["type"];
+  message: string;
+  created_at: string;
+  username: string;
+  avatar: AvatarConfig;
+}
+interface SquadMessageRow {
+  id: string;
+  body: string;
+  created_at: string;
+  parent_message_id: string | null;
+  parent_event_id: string | null;
+  author_address: string;
+  username: string;
+  avatar: AvatarConfig;
+}
+interface SquadReactionRow {
+  target_type: "message" | "event";
+  target_id: string;
+  emoji: string;
+  count: number;
+  mine: boolean;
+}
+
+/**
+ * The Squad Room timeline for a group: system match-events and member messages
+ * merged into one time-ordered stream (oldest first — newest sits at the bottom,
+ * chat-style), each root carrying its reactions and one level of replies.
+ *
+ * `viewer` (the caller's wallet) flags which reactions are "mine" and which
+ * messages the viewer authored. Reads are open, matching the other group routes.
+ */
+export async function getSquadFeed(
+  groupId: string,
+  viewer?: string
+): Promise<SquadItem[]> {
+  const me = viewer ?? "";
+  const [eventsRaw, messagesRaw, reactionsRaw] = await Promise.all([
+    sql`
+      select e.id, e.type, e.message, e.created_at,
+             coalesce(u.username, 'Someone') as username,
+             coalesce(u.avatar, '{}'::jsonb) as avatar
+      from group_activity_events e
+      left join users u on u.wallet_address = e.actor_address
+      where e.group_id = ${groupId}
+      order by e.created_at desc
+      limit 100
+    `,
+    sql`
+      select m.id, m.body, m.created_at, m.parent_message_id, m.parent_event_id,
+             m.author_address,
+             coalesce(u.username, 'Someone') as username,
+             coalesce(u.avatar, '{}'::jsonb) as avatar
+      from group_messages m
+      join users u on u.wallet_address = m.author_address
+      where m.group_id = ${groupId}
+      order by m.created_at asc
+    `,
+    sql`
+      select target_type, target_id, emoji, count(*)::int as count,
+             coalesce(bool_or(user_address = ${me}), false) as mine
+      from group_reactions
+      where group_id = ${groupId}
+      group by target_type, target_id, emoji
+    `,
+  ]);
+  const events = eventsRaw as SquadEventRow[];
+  const messages = messagesRaw as SquadMessageRow[];
+  const reactions = reactionsRaw as SquadReactionRow[];
+
+  // Reactions grouped by "<type>:<id>".
+  const rxByTarget = new Map<string, SquadReaction[]>();
+  for (const r of reactions) {
+    const key = `${r.target_type}:${r.target_id}`;
+    const list = rxByTarget.get(key) ?? [];
+    list.push({ emoji: r.emoji, count: r.count, mine: r.mine });
+    rxByTarget.set(key, list);
+  }
+  const rx = (type: "message" | "event", id: string) => rxByTarget.get(`${type}:${id}`) ?? [];
+
+  // Replies grouped by parent id (a message id OR an event id).
+  const repliesByParent = new Map<string, SquadReply[]>();
+  for (const m of messages) {
+    const parent = m.parent_message_id ?? m.parent_event_id;
+    if (!parent) continue;
+    const list = repliesByParent.get(parent) ?? [];
+    list.push({
+      id: m.id,
+      username: m.username,
+      avatar: m.avatar,
+      body: m.body,
+      timestamp: m.created_at,
+      isMine: !!viewer && m.author_address === viewer,
+    });
+    repliesByParent.set(parent, list);
+  }
+
+  // Roots: every system event + every top-level message.
+  const roots: SquadItem[] = [];
+  for (const e of events) {
+    roots.push({
+      id: e.id,
+      kind: "event",
+      eventType: e.type,
+      username: e.username,
+      avatar: e.avatar,
+      body: e.message,
+      timestamp: e.created_at,
+      isMine: false,
+      reactions: rx("event", e.id),
+      replies: repliesByParent.get(e.id) ?? [],
+    });
+  }
+  for (const m of messages) {
+    if (m.parent_message_id || m.parent_event_id) continue; // replies handled above
+    roots.push({
+      id: m.id,
+      kind: "message",
+      username: m.username,
+      avatar: m.avatar,
+      body: m.body,
+      timestamp: m.created_at,
+      isMine: !!viewer && m.author_address === viewer,
+      reactions: rx("message", m.id),
+      replies: repliesByParent.get(m.id) ?? [],
+    });
+  }
+  roots.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  return roots;
 }
 
 // ─── Notifications (personal Inbox feed) ─────────────────────────────────

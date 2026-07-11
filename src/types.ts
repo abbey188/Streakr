@@ -65,6 +65,45 @@ export interface ActivityItem {
   reactions: { [emoji: string]: number };
 }
 
+// ─── Squad Room (per-group social stream) — see docs/social/SQUAD_ROOM.md ────
+
+/** A reaction on a squad item, with the viewer's own state so the bar can
+ *  render "yours" (filled) vs others. */
+export interface SquadReaction {
+  emoji: string;
+  count: number;
+  mine: boolean;
+}
+
+/** A one-level reply under a squad item (a message or a system event). */
+export interface SquadReply {
+  id: string;
+  username: string;
+  avatar: AvatarConfig;
+  body: string;
+  timestamp: string;
+  isMine: boolean;
+}
+
+/**
+ * One root row in the Squad Room stream: either a system match-event or a
+ * member message. Both are mascot-led; `kind` (+ `eventType` for events) drives
+ * the visual treatment — coloured edge + type chip for events, bubble for
+ * messages. Events are never "mine".
+ */
+export interface SquadItem {
+  id: string;
+  kind: "event" | "message";
+  eventType?: "milestone" | "break" | "win" | "badge"; // set when kind === "event"
+  username: string;
+  avatar: AvatarConfig;
+  body: string;        // the event message OR the message text
+  timestamp: string;
+  isMine: boolean;     // authored by the viewer (events are always false)
+  reactions: SquadReaction[];
+  replies: SquadReply[];
+}
+
 /** A personal, addressed-to-you notification (pick result, badge, round champion,
  *  a milestone from someone in one of your groups, or an app-wide announcement).
  *  Must match the `type` values actually inserted into `notifications`. */

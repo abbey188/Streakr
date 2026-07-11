@@ -35,7 +35,8 @@ const runRaw = (stmt) => sql(Object.assign([stmt], { raw: [stmt] }));
 // --reset drops all tables first (safe: dev/demo DB, schema.sql is source of truth).
 if (process.argv.includes("--reset")) {
   const drops = [
-    "user_badges", "badges", "group_activity_reactions", "group_activity_events",
+    "user_badges", "badges", "group_reactions", "group_messages",
+    "group_activity_reactions", "group_activity_events",
     "group_members", "groups", "picks", "fixtures", "users", "teams",
   ];
   console.log("Resetting: dropping existing tables...");
