@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AvatarRenderer from "./AvatarRenderer";
-import { fetchSquadFeed, toggleSquadReaction } from "@/lib/api/client";
+import { fetchSquadFeed, toggleSquadReaction, sendSquadMessage } from "@/lib/api/client";
 import { SQUAD_REACTIONS } from "@/lib/social/reactions";
 import type { SquadItem, SquadReaction } from "../types";
-import { Plus } from "lucide-react";
+import { Plus, CornerDownRight, Send } from "lucide-react";
 
 /**
  * The Squad Room stream for one group — see docs/social/SQUAD_ROOM.md.
@@ -65,18 +65,61 @@ export default function SquadRoom({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [paletteFor, setPaletteFor] = useState<string | null>(null);
+
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyDraft, setReplyDraft] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+
+  const load = useCallback(async () => {
+    return fetchSquadFeed(groupId, walletAddress).then(setItems);
+  }, [groupId, walletAddress]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError("");
-    fetchSquadFeed(groupId, walletAddress)
-      .then((feed) => { if (!cancelled) setItems(feed); })
+    load()
       .catch(() => { if (!cancelled) setError("Couldn't load the squad room."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [groupId, walletAddress]);
+  }, [load]);
+
+  async function sendRoot() {
+    const text = draft.trim();
+    if (!text || !walletAddress || sending) return;
+    setSending(true);
+    try {
+      await sendSquadMessage(groupId, walletAddress, text);
+      setDraft("");
+      await load();
+      requestAnimationFrame(() => endRef.current?.scrollIntoView({ behavior: "smooth" }));
+    } catch {
+      /* keep the draft so nothing is lost */
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function sendReply(item: SquadItem) {
+    const text = replyDraft.trim();
+    if (!text || !walletAddress || sending) return;
+    setSending(true);
+    try {
+      await sendSquadMessage(groupId, walletAddress, text, {
+        type: item.kind === "event" ? "event" : "message",
+        id: item.id,
+      });
+      setReplyDraft("");
+      setReplyTo(null);
+      await load();
+    } catch {
+      /* keep the draft */
+    } finally {
+      setSending(false);
+    }
+  }
 
   // Optimistically apply a reaction toggle to one item's summary.
   function applyToggle(reactions: SquadReaction[], emoji: string): SquadReaction[] {
@@ -125,21 +168,18 @@ export default function SquadRoom({
       <div className="p-8 text-center text-[11px] text-red-400">{error}</div>
     );
   }
-  if (items.length === 0) {
-    return (
-      <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-10 text-center">
-        <p className="text-2xl mb-3">💬</p>
-        <p className="text-sm font-black italic uppercase text-white">Quiet in here</p>
-        <p className="text-[11px] text-[#8E9299] mt-1.5 max-w-[30ch] mx-auto leading-relaxed">
-          Streaks, results and crowns land here automatically. Messaging your squad arrives next.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-4 shadow-xl">
       <div className="flex flex-col gap-3.5">
+        {items.length === 0 && (
+          <div className="py-10 text-center">
+            <p className="text-2xl mb-3">💬</p>
+            <p className="text-sm font-black italic uppercase text-white">Quiet in here</p>
+            <p className="text-[11px] text-[#8E9299] mt-1.5 max-w-[30ch] mx-auto leading-relaxed">
+              Say something to your squad. Streaks, results and crowns land here automatically too.
+            </p>
+          </div>
+        )}
         {items.map((item) => {
           const meta = item.kind === "event" ? EVENT_META[item.eventType ?? "milestone"] : null;
           const isEvent = item.kind === "event";
@@ -232,6 +272,14 @@ export default function SquadRoom({
                         ))}
                       </div>
                     )}
+                    {walletAddress && (
+                      <button
+                        onClick={() => { setReplyTo(replyTo === item.id ? null : item.id); setReplyDraft(""); }}
+                        className="inline-flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[#8E9299] hover:text-white transition cursor-pointer ml-0.5"
+                      >
+                        <CornerDownRight className="w-3 h-3" /> Reply
+                      </button>
+                    )}
                   </div>
 
                   {/* replies — one level */}
@@ -257,6 +305,28 @@ export default function SquadRoom({
                       ))}
                     </div>
                   )}
+
+                  {/* inline reply composer */}
+                  {replyTo === item.id && walletAddress && (
+                    <div className="mt-2.5 ml-1.5 pl-3.5 border-l border-[#FF4E00]/30 flex items-center gap-2">
+                      <input
+                        autoFocus
+                        value={replyDraft}
+                        onChange={(e) => setReplyDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") sendReply(item); if (e.key === "Escape") setReplyTo(null); }}
+                        placeholder={`Reply to @${item.username}…`}
+                        className="flex-1 bg-[#0A0E1A] border border-white/10 focus:border-[#FF4E00]/50 rounded-xl px-3 py-2 text-[12px] text-white placeholder-[#8E9299]/70 outline-none"
+                      />
+                      <button
+                        onClick={() => sendReply(item)}
+                        disabled={!replyDraft.trim() || sending}
+                        className="w-8 h-8 rounded-lg bg-[#FF4E00] hover:bg-orange-600 text-white grid place-items-center flex-shrink-0 disabled:opacity-50 cursor-pointer"
+                        aria-label="Send reply"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -265,12 +335,30 @@ export default function SquadRoom({
         <div ref={endRef} />
       </div>
 
-      {/* composer placeholder — wired in Phase 3 */}
-      <div className="mt-4 flex items-center gap-2.5 border-t border-white/5 pt-3">
-        <div className="flex-1 bg-[#0A0E1A] border border-white/5 rounded-2xl px-3.5 py-2.5 text-[12px] text-[#8E9299]/70 select-none">
-          Messaging your squad arrives next…
+      {/* composer */}
+      {walletAddress ? (
+        <div className="mt-4 flex items-center gap-2.5 border-t border-white/5 pt-3">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") sendRoot(); }}
+            placeholder="Message your squad…"
+            className="flex-1 bg-[#0A0E1A] border border-white/10 focus:border-[#FF4E00]/50 rounded-2xl px-3.5 py-2.5 text-[13px] text-white placeholder-[#8E9299] outline-none"
+          />
+          <button
+            onClick={sendRoot}
+            disabled={!draft.trim() || sending}
+            className="w-10 h-10 rounded-full bg-[#FF4E00] hover:bg-orange-600 text-white grid place-items-center flex-shrink-0 disabled:opacity-50 cursor-pointer"
+            aria-label="Send"
+          >
+            <Send className="w-4 h-4" />
+          </button>
         </div>
-      </div>
+      ) : (
+        <div className="mt-4 border-t border-white/5 pt-3 text-center text-[11px] text-[#8E9299]">
+          Sign in to join the conversation.
+        </div>
+      )}
     </div>
   );
 }

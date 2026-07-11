@@ -690,6 +690,42 @@ export async function toggleGroupReaction(
   };
 }
 
+const SQUAD_MESSAGE_MAX = 500;
+
+/**
+ * Post a member message (a root, or a one-level reply to a message OR an event).
+ * Trims and length-caps the body; verifies any parent belongs to the group.
+ * Returns the new message id, or ok:false on empty body / bad parent.
+ */
+export async function createGroupMessage(
+  groupId: string,
+  author: string,
+  body: string,
+  parent?: { type: "message" | "event"; id: string }
+): Promise<{ ok: boolean; id?: string }> {
+  const text = body.trim().slice(0, SQUAD_MESSAGE_MAX);
+  if (!text) return { ok: false };
+
+  if (parent) {
+    const belongs =
+      parent.type === "event"
+        ? ((await sql`select 1 from group_activity_events where id = ${parent.id} and group_id = ${groupId} limit 1`) as unknown[])
+        : ((await sql`select 1 from group_messages where id = ${parent.id} and group_id = ${groupId} limit 1`) as unknown[]);
+    if (belongs.length === 0) return { ok: false };
+  }
+
+  const rows = (await sql`
+    insert into group_messages (group_id, author_address, body, parent_message_id, parent_event_id)
+    values (
+      ${groupId}, ${author}, ${text},
+      ${parent?.type === "message" ? parent.id : null},
+      ${parent?.type === "event" ? parent.id : null}
+    )
+    returning id
+  `) as { id: string }[];
+  return { ok: true, id: rows[0].id };
+}
+
 // ─── Notifications (personal Inbox feed) ─────────────────────────────────
 
 /** Compact relative-time label for the Inbox ("just now", "2h ago", "3d ago"). */

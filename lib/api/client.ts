@@ -181,6 +181,26 @@ export async function fetchSquadFeed(
   return feed;
 }
 
+/** Post a Squad Room message — a root, or a one-level reply to a message/event. */
+export async function sendSquadMessage(
+  groupId: string,
+  walletAddress: string,
+  body: string,
+  parent?: { type: "message" | "event"; id: string }
+): Promise<{ id: string }> {
+  const res = await apiFetch(`/api/groups/${groupId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      walletAddress,
+      body,
+      parentMessageId: parent?.type === "message" ? parent.id : undefined,
+      parentEventId: parent?.type === "event" ? parent.id : undefined,
+    }),
+  });
+  return jsonOrThrow<{ id: string }>(res);
+}
+
 /** Toggle a reaction; returns the target's authoritative fresh summary. */
 export async function toggleSquadReaction(
   groupId: string,
