@@ -5,6 +5,8 @@ import type {
   Badge,
   AvatarConfig,
   Notification,
+  SquadItem,
+  SquadReaction,
 } from "@/src/types";
 import type { MatchDetail, FormEntry } from "@/lib/txline/types";
 
@@ -166,6 +168,33 @@ export async function fetchActivity(groupId: string): Promise<ActivityItem[]> {
   const res = await apiFetch(`/api/groups/${groupId}/activity`);
   const { activity } = await jsonOrThrow<{ activity: ActivityItem[] }>(res);
   return activity;
+}
+
+/** The merged Squad Room timeline (events + messages, reactions, replies). */
+export async function fetchSquadFeed(
+  groupId: string,
+  walletAddress?: string
+): Promise<SquadItem[]> {
+  const qs = walletAddress ? `?wallet=${encodeURIComponent(walletAddress)}` : "";
+  const res = await apiFetch(`/api/groups/${groupId}/feed${qs}`);
+  const { feed } = await jsonOrThrow<{ feed: SquadItem[] }>(res);
+  return feed;
+}
+
+/** Toggle a reaction; returns the target's authoritative fresh summary. */
+export async function toggleSquadReaction(
+  groupId: string,
+  walletAddress: string,
+  targetType: "message" | "event",
+  targetId: string,
+  emoji: string
+): Promise<{ added: boolean; reactions: SquadReaction[] }> {
+  const res = await apiFetch(`/api/groups/${groupId}/reactions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ walletAddress, targetType, targetId, emoji }),
+  });
+  return jsonOrThrow<{ added: boolean; reactions: SquadReaction[] }>(res);
 }
 
 // ─── Notifications (personal Inbox feed) ─────────────────────────────────

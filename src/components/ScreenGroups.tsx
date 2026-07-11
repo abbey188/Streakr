@@ -3,12 +3,14 @@ import { GroupMember } from "../types";
 import type { GroupSummary, GlobalLeaderboardEntry, LeaderboardType } from "@/lib/api/client";
 import AvatarRenderer from "./AvatarRenderer";
 import CountryFlag from "./CountryFlag";
+import SquadRoom from "./SquadRoom";
 import { Users, Plus, ChevronUp, ChevronDown, Minus, Crown, Share2, Flame, ArrowLeft, Award } from "lucide-react";
 import { motion } from "motion/react";
 
 interface ScreenGroupsProps {
   currentUserMember: GroupMember;
   myGroups: GroupSummary[];
+  walletAddress?: string;
   onCreateGroup: (name: string, emoji: string, leaderboardType: LeaderboardType) => Promise<GroupSummary | null>;
   onJoinGroup: (code: string) => Promise<{ group: GroupSummary | null; error?: string }>;
   loadGroupMembers: (groupId: string) => Promise<GlobalLeaderboardEntry[]>;
@@ -84,6 +86,7 @@ function MemberRow({
 export default function ScreenGroups({
   currentUserMember,
   myGroups,
+  walletAddress,
   onCreateGroup,
   onJoinGroup,
   loadGroupMembers,
@@ -94,6 +97,8 @@ export default function ScreenGroups({
   const [loadingMembers, setLoadingMembers] = useState(false);
   // For a "both" group, which metric the detail view is currently ranked by.
   const [detailMetric, setDetailMetric] = useState<"streak" | "points">("streak");
+  // Which panel of the open group is showing.
+  const [detailTab, setDetailTab] = useState<"leaderboard" | "squad">("leaderboard");
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
@@ -110,6 +115,7 @@ export default function ScreenGroups({
   useEffect(() => {
     if (!selectedGroup) return;
     setDetailMetric(selectedGroup.leaderboardType === "points" ? "points" : "streak");
+    setDetailTab("leaderboard");
     let cancelled = false;
     setLoadingMembers(true);
     loadGroupMembers(selectedGroup.id)
@@ -201,12 +207,24 @@ export default function ScreenGroups({
             </div>
 
             <div className="space-y-2 lg:col-span-2">
+              {/* Panel switcher: leaderboard ↔ squad room */}
               <div className="flex items-center justify-between pl-1">
-                <h4 className="text-[10px] font-mono font-black text-[#8E9299] uppercase tracking-widest">
-                  Leaderboard Standings
-                </h4>
+                <div className="flex gap-1 bg-[#0A0E1A] p-1 rounded-xl border border-white/5">
+                  <button
+                    onClick={() => setDetailTab("leaderboard")}
+                    className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition cursor-pointer ${detailTab === "leaderboard" ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
+                  >
+                    Leaderboard
+                  </button>
+                  <button
+                    onClick={() => setDetailTab("squad")}
+                    className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition cursor-pointer ${detailTab === "squad" ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
+                  >
+                    Squad Room
+                  </button>
+                </div>
                 {/* "Both"-type groups let members toggle the ranking metric. */}
-                {selectedGroup.leaderboardType === "both" && (
+                {detailTab === "leaderboard" && selectedGroup.leaderboardType === "both" && (
                   <div className="flex gap-1 bg-[#0A0E1A] p-1 rounded-xl border border-white/5">
                     <button
                       onClick={() => setDetailMetric("streak")}
@@ -223,17 +241,22 @@ export default function ScreenGroups({
                   </div>
                 )}
               </div>
-              <div className="bg-[#151B2E] rounded-3xl border border-white/5 overflow-hidden divide-y divide-white/5 shadow-xl">
-                {loadingMembers ? (
-                  <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">Loading members…</div>
-                ) : rankedMembers.length === 0 ? (
-                  <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">No members yet — share the code!</div>
-                ) : (
-                  rankedMembers.map((m) => (
-                    <MemberRow key={m.id} member={m} currentUsername={currentUserMember.username} metric={detailMetric} />
-                  ))
-                )}
-              </div>
+
+              {detailTab === "leaderboard" ? (
+                <div className="bg-[#151B2E] rounded-3xl border border-white/5 overflow-hidden divide-y divide-white/5 shadow-xl">
+                  {loadingMembers ? (
+                    <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">Loading members…</div>
+                  ) : rankedMembers.length === 0 ? (
+                    <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">No members yet — share the code!</div>
+                  ) : (
+                    rankedMembers.map((m) => (
+                      <MemberRow key={m.id} member={m} currentUsername={currentUserMember.username} metric={detailMetric} />
+                    ))
+                  )}
+                </div>
+              ) : (
+                <SquadRoom groupId={selectedGroup.id} walletAddress={walletAddress} />
+              )}
             </div>
           </div>
         </div>
