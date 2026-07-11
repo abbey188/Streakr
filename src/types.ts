@@ -31,6 +31,9 @@ export interface Fixture {
   updatedAt?: string; // ISO timestamp of last sync — anchors the live-minute tick
   userPick?: "A" | "B";
   actualWinner?: "A" | "B"; // filled if finished
+  // Fan pick-consensus: how the app split on who advances. Counts, not %, so the
+  // UI can apply its own small-sample threshold and show the total honestly.
+  pickCounts?: { a: number; b: number };
   // Pick window (Issue 5): open until the first goal / red card / 2nd-half kickoff.
   // Computed server-side during sync. undefined ⇒ treat as open if upcoming.
   pickOpen?: boolean;

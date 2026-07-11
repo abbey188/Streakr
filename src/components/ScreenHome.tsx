@@ -6,6 +6,7 @@ import { groupByDay, kickoffLabel } from "@/lib/match-groups";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import AvatarRenderer from "./AvatarRenderer";
 import CountryFlag from "./CountryFlag";
+import PickConsensus from "./PickConsensus";
 import ScreenMatchDetail from "./ScreenMatchDetail";
 import AnnouncementBanner from "./AnnouncementBanner";
 import PushNudge from "./PushNudge";
@@ -594,6 +595,9 @@ export default function ScreenHome({
                             <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase">{match.teamB.code}</span>
                           </div>
                         </div>
+
+                        {/* Fan pick-consensus — the app's call */}
+                        <PickConsensus teamA={match.teamA} teamB={match.teamB} counts={match.pickCounts} />
                       </div>
 
                       {/* Tap affordance row */}

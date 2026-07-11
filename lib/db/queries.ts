@@ -129,6 +129,8 @@ interface FixtureRow {
   kickoff_at: string | null;
   updated_at: string | null;
   user_pick: "A" | "B" | null;
+  a_picks: number;
+  b_picks: number;
   pick_open: boolean | null;
   pick_close_reason: string | null;
 }
@@ -151,6 +153,7 @@ function mapFixture(r: FixtureRow): Fixture {
     updatedAt: r.updated_at ?? undefined,
     userPick: r.user_pick ?? undefined,
     actualWinner: r.actual_winner ?? undefined,
+    pickCounts: { a: r.a_picks ?? 0, b: r.b_picks ?? 0 },
     pickOpen: r.pick_open ?? undefined,
     pickCloseReason: (r.pick_close_reason as Fixture["pickCloseReason"]) ?? null,
   };
@@ -169,7 +172,9 @@ export async function getFixtures(walletAddress?: string): Promise<Fixture[]> {
       f.pick_open, f.pick_close_reason,
       ta.id as team_a_id, ta.name as team_a_name, ta.flag as team_a_flag, ta.code as team_a_code,
       tb.id as team_b_id, tb.name as team_b_name, tb.flag as team_b_flag, tb.code as team_b_code,
-      p.pick as user_pick
+      p.pick as user_pick,
+      (select count(*)::int from picks pk where pk.fixture_id = f.id and pk.pick = 'A') as a_picks,
+      (select count(*)::int from picks pk where pk.fixture_id = f.id and pk.pick = 'B') as b_picks
     from fixtures f
     join teams ta on ta.id = f.team_a_id
     join teams tb on tb.id = f.team_b_id

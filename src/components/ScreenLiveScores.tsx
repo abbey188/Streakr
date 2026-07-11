@@ -4,6 +4,7 @@ import { Tv, Clock } from "lucide-react";
 import { groupByDay, kickoffLabel } from "@/lib/match-groups";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import CountryFlag from "./CountryFlag";
+import PickConsensus from "./PickConsensus";
 
 interface ScreenLiveScoresProps {
   fixtures: Fixture[];
@@ -159,6 +160,13 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch }: ScreenLiveSc
             </span>
           </div>
         </div>
+
+        {/* Fan pick-consensus — how the app is calling it (not on finished cards) */}
+        {!isFinished && (
+          <div className="px-1 pb-1">
+            <PickConsensus teamA={match.teamA} teamB={match.teamB} counts={match.pickCounts} />
+          </div>
+        )}
       </div>
     );
   };
