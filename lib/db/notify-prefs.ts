@@ -9,7 +9,8 @@ export type NotifType =
   | "pick_result"
   | "badge"
   | "round_champion"
-  | "group";
+  | "group"
+  | "squad";
 
 export const NOTIF_TYPES: { key: NotifType; label: string; description: string }[] = [
   { key: "match_start", label: "Match reminders", description: "A match you haven't picked is about to kick off" },
@@ -18,6 +19,7 @@ export const NOTIF_TYPES: { key: NotifType; label: string; description: string }
   { key: "badge", label: "Badges", description: "New badges you unlock" },
   { key: "round_champion", label: "Round Champion", description: "When you're crowned champion of a round" },
   { key: "group", label: "Group updates", description: "Milestones from your groups (streaks, crowns)" },
+  { key: "squad", label: "Squad replies", description: "When someone replies to you in a Squad Room" },
 ];
 
 export function prefAllows(

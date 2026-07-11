@@ -170,6 +170,9 @@ create table if not exists group_reactions (
   unique (target_type, target_id, user_address, emoji)
 );
 create index if not exists group_reactions_target_idx on group_reactions (target_type, target_id);
+-- The squad feed aggregates a group's reactions by group_id — index it so that
+-- read isn't a full scan as reactions accumulate.
+create index if not exists group_reactions_group_idx on group_reactions (group_id);
 
 -- ─── badges ───────────────────────────────────────────────────────────
 -- Off-chain achievement catalog (NFT version is a future, separate
@@ -193,7 +196,7 @@ create table if not exists user_badges (
 create table if not exists notifications (
   id            uuid primary key default gen_random_uuid(),
   user_address  text not null references users(wallet_address) on delete cascade,
-  type          text not null,   -- 'pick_result'|'badge'|'round_champion'|'goal'|'match_start'|'group'|'announcement'
+  type          text not null,   -- 'pick_result'|'badge'|'round_champion'|'goal'|'match_start'|'group'|'squad'|'announcement'
   title         text not null,
   body          text not null,
   icon          text,            -- emoji

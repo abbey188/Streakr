@@ -54,15 +54,26 @@ under anything.
 | Reply notifications | Ping on reply (push + Inbox), gated by a new `squad` pref. Reactions stay silent. |
 | Branch | Feature branch, merge to `main` when tested (main auto-deploys to prod). |
 
-### Visual decisions (from the design review, 2026-07-11 — see the mockup)
+### Visual decisions (design review 2026-07-11; **v2 revised after live preview** — see mockup)
 
-| Aspect | Decision |
+The first build put messages and events in one uniform stream. Seeing it live,
+that flattened the experience — so v2 splits them:
+
+| Aspect | Decision (v2) |
 |---|---|
-| Avatars | Mascot **upper-body** on EVERY row (message + event) — reuse `AvatarRenderer` with `upperBodyOnly`, the same one on the leaderboard/Inbox. No second avatar system. |
-| Event vs message | **No tinted fill.** Thin **coloured left edge** + a small **type chip** (🔥 Streak / 👑 Crown / 💀 Broken) on every event so it's never mistaken for a message. **Emotion on the extremes only:** a crown *glows* amber, a streak-break *fades* (lower opacity), a milestone sits neutral. Messages are plain bubbles. |
-| Message style | Rounded panel **bubbles** (warmer, obviously chat), left-aligned Discord-style (never "mine on the right" — a system event belongs to no one). |
-| Reactions | Fixed 6-emoji palette behind a `＋`; your pick fills orange, tap again to remove. |
-| Entry point | A **Squad Room** tab beside Leaderboard inside a group, PLUS an **unread count on each group** in the main Groups list, so a live squad pulls you in from outside. |
+| **Model** | **Messages = chat; events = collapsible inline thread cards**, in ONE timeline. A message flows (grouped bubbles); an event is a bordered card you tap to expand. |
+| Message style | **Discord-style: all left-aligned, avatar-led, grouped** (consecutive messages from one author share an avatar). Bubbles. Own messages read **"You"**. |
+| Message reactions | **Hug the bubble** (small chips under it). No ＋ on messages. |
+| Message gestures | One gesture per action, **no long-press**. **Mobile:** swipe → reply (Telegram/WhatsApp); tap → react (six-emoji palette pops). **PC:** hover → floating toolbar (quick-react · ＋ · ↩ Reply). Swipe uses `motion/react` `drag` (already a dependency) — slide, elastic, spring-back and **direction-lock** (no scroll conflict) are built in. |
+| Message reply | **Telegram-style quote-reply, inline in the chat**: a reply bar (Reply to @X + ✕) shows over the composer; the sent reply is a normal chat message carrying a quoted snippet of the original. (Event replies go into the event's thread instead.) |
+| Event card | Collapsed: header + reaction summary + a **Slack-style thread affordance** (stacked replier avatars + "N replies" + chevron). Tap → expands to the reaction palette, replies (≤5, then "view all N"), and a reply box. |
+| Thread expansion | **No "Collapse" text** — the affordance IS the control: chevron flips up when open, tapping toggles. The replier avatars are the invitation. |
+| Event reactions | Live **inside the card**. Add via the **＋** or the palette when expanded. Tap is reserved for expand/collapse, so it can't double as react. |
+| Event look | Coloured **left edge** + **type chip** (🔥 Streak / 👑 Crown / 💀 Broken); **wins glow** amber, **breaks fade**, milestone neutral. |
+| Attribution | **"You"** for the viewer's own events/messages/replies; **"@username"** for everyone else. Feed AND push copy. |
+| Avatars | Real `AvatarRenderer` (`upperBodyOnly`) — but **sized to fit the tile**. The first build clipped it (fixed-px avatar in a too-small box, uncentred); render at a size that fits per row (message vs reply). |
+| Keyboard | Composer **rides above the on-screen keyboard** (visualViewport API); stream auto-scrolls to newest. iOS standalone PWA is the finicky case — its own build task. |
+| Entry point | **Squad Room** tab beside Leaderboard, PLUS an **unread count per group** on the Groups list. |
 
 ---
 

@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authWallet } from "@/lib/auth/server-auth";
-import { isGroupMember, createGroupMessage } from "@/lib/db/queries";
+import { isGroupMember, createGroupMessage, recentMessageCount } from "@/lib/db/queries";
+import { notifySquadReply } from "@/lib/db/squad-notify";
 
 export const dynamic = "force-dynamic";
+
+// Simple per-user flood guard: at most RATE_MAX messages per RATE_WINDOW seconds.
+const RATE_MAX = 20;
+const RATE_WINDOW = 60;
 
 /**
  * POST /api/groups/[id]/messages
@@ -45,6 +50,12 @@ export async function POST(
     if (!(await isGroupMember(id, auth.wallet))) {
       return NextResponse.json({ error: "not a member of this group" }, { status: 403 });
     }
+    if ((await recentMessageCount(auth.wallet, RATE_WINDOW)) >= RATE_MAX) {
+      return NextResponse.json(
+        { error: "You're sending messages too fast — give it a moment." },
+        { status: 429 }
+      );
+    }
 
     const parent = body.parentMessageId
       ? ({ type: "message", id: body.parentMessageId } as const)
@@ -55,6 +66,10 @@ export async function POST(
     const result = await createGroupMessage(id, auth.wallet, body.body, parent);
     if (!result.ok) {
       return NextResponse.json({ error: "empty message or invalid parent" }, { status: 400 });
+    }
+    // Phase 4: a reply pings whoever it's aimed at (best-effort, never throws).
+    if (parent && result.id) {
+      await notifySquadReply(auth.wallet, body.body, parent, result.id);
     }
     return NextResponse.json({ id: result.id });
   } catch (err) {

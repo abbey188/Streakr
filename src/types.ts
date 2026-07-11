@@ -114,7 +114,7 @@ export interface Notification {
   id: string;
   type:
     | "pick_result" | "badge" | "round_champion" | "goal" | "match_start"
-    | "group" | "announcement";
+    | "group" | "announcement" | "squad";
   title: string;
   body: string;
   icon: string;

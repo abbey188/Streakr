@@ -34,3 +34,17 @@
 .bento-border-subtle {
   border-color: rgba(255, 255, 255, 0.08);
 }
+
+/* Thin, subtle scrollbar for scroll areas (e.g. the Squad Room chat) — replaces
+   the chunky native bar that looks heavy on the dark UI. */
+.thin-scroll {
+  scrollbar-width: thin;                                  /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent; /* thumb / track */
+}
+.thin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }

@@ -15,6 +15,7 @@ const NOTIF_ICONS: Record<string, React.ComponentType<{ className?: string }>> =
   badge: Medal,
   round_champion: Trophy,
   group: Users,
+  squad: Users,
 };
 import { motion, AnimatePresence } from "motion/react";
 

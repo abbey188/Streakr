@@ -171,9 +171,13 @@ export default function ScreenGroups({
 
   // ─── Group detail view ─────────────────────────────────────────────────────
   if (selectedGroup) {
+    const isSquad = detailTab === "squad";
     return (
-      <div className="flex flex-col h-full bg-[#0A0E1A] text-white font-sans overflow-y-auto pb-12 relative">
-        <div className="sticky top-0 bg-[#0A0E1A]/85 backdrop-blur-md border-b border-white/5 px-4 py-4 flex items-center gap-3 z-30">
+      // When the Squad Room is open it becomes a full-height chat: the page
+      // stops scrolling (overflow-hidden) so the messages scroll internally and
+      // the composer can pin to the bottom. Leaderboard keeps the scrolling page.
+      <div className={`flex flex-col h-full bg-[#0A0E1A] text-white font-sans relative ${isSquad ? "overflow-hidden" : "overflow-y-auto pb-12"}`}>
+        <div className="sticky top-0 bg-[#0A0E1A]/85 backdrop-blur-md border-b border-white/5 px-4 py-4 flex items-center gap-3 z-30 flex-shrink-0">
           <button onClick={() => setSelectedGroup(null)} className="p-1.5 hover:bg-white/5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer">
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -183,83 +187,78 @@ export default function ScreenGroups({
           </div>
         </div>
 
-        <div className="px-4 mt-4 space-y-5 flex-grow max-w-7xl mx-auto w-full z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="space-y-5 lg:col-span-1">
-              <div className="bg-[#151B2E] border border-white/5 p-4 rounded-3xl flex items-center justify-between shadow-lg">
-                <div className="min-w-0 flex-1">
-                  <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block leading-none">Group Invite Code</span>
-                  <div className="flex items-center gap-2 mt-1.5 min-w-0">
-                    <span className="not-italic text-sm flex-shrink-0">{selectedGroup.emoji}</span>
-                    <h3 className="text-sm font-black italic text-slate-200 whitespace-nowrap">{selectedGroup.name}</h3>
-                  </div>
-                  <p className="text-[10px] text-[#8E9299] mt-2 font-mono">
-                    Invite Code: <span className="text-[#FF4E00] font-black italic">{selectedGroup.inviteCode}</span>
-                  </p>
+        {/* Tab switcher — always visible under the header */}
+        <div className="px-4 pt-4 max-w-7xl mx-auto w-full flex items-center justify-between gap-2 flex-shrink-0">
+          <div className="flex gap-1 bg-[#0A0E1A] p-1 rounded-xl border border-white/5">
+            <button
+              onClick={() => setDetailTab("leaderboard")}
+              className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition cursor-pointer ${!isSquad ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
+            >
+              Leaderboard
+            </button>
+            <button
+              onClick={() => setDetailTab("squad")}
+              className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition cursor-pointer ${isSquad ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
+            >
+              Squad Room
+            </button>
+          </div>
+          {!isSquad && selectedGroup.leaderboardType === "both" && (
+            <div className="flex gap-1 bg-[#0A0E1A] p-1 rounded-xl border border-white/5">
+              <button
+                onClick={() => setDetailMetric("streak")}
+                className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "streak" ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
+              >
+                <Flame className="w-3 h-3 fill-current" /> Streak
+              </button>
+              <button
+                onClick={() => setDetailMetric("points")}
+                className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "points" ? "bg-indigo-500/10 text-indigo-400" : "text-[#8E9299] hover:text-white"}`}
+              >
+                <Award className="w-3 h-3" /> Points
+              </button>
+            </div>
+          )}
+        </div>
+
+        {isSquad ? (
+          <div className="flex-1 min-h-0 px-4 pt-3 pb-4 max-w-7xl mx-auto w-full flex flex-col">
+            <SquadRoom groupId={selectedGroup.id} walletAddress={walletAddress} />
+          </div>
+        ) : (
+          <div className="px-4 mt-4 space-y-5 flex-grow max-w-7xl mx-auto w-full z-10">
+            <div className="bg-[#151B2E] border border-white/5 p-4 rounded-3xl flex items-center justify-between shadow-lg">
+              <div className="min-w-0 flex-1">
+                <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block leading-none">Group Invite Code</span>
+                <div className="flex items-center gap-2 mt-1.5 min-w-0">
+                  <span className="not-italic text-sm flex-shrink-0">{selectedGroup.emoji}</span>
+                  <h3 className="text-sm font-black italic text-slate-200 whitespace-nowrap">{selectedGroup.name}</h3>
                 </div>
-                <button
-                  onClick={() => onOpenInviteShare(selectedGroup.name, selectedGroup.inviteCode, groupMembers, selectedGroup.emoji)}
-                  className="p-2.5 bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 rounded-2xl text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-black italic cursor-pointer ml-2 flex-shrink-0"
-                >
-                  <Share2 className="w-4 h-4 text-[#FF4E00]" /> Invite
-                </button>
+                <p className="text-[10px] text-[#8E9299] mt-2 font-mono">
+                  Invite Code: <span className="text-[#FF4E00] font-black italic">{selectedGroup.inviteCode}</span>
+                </p>
               </div>
+              <button
+                onClick={() => onOpenInviteShare(selectedGroup.name, selectedGroup.inviteCode, groupMembers, selectedGroup.emoji)}
+                className="p-2.5 bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 rounded-2xl text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-black italic cursor-pointer ml-2 flex-shrink-0"
+              >
+                <Share2 className="w-4 h-4 text-[#FF4E00]" /> Invite
+              </button>
             </div>
 
-            <div className="space-y-2 lg:col-span-2">
-              {/* Panel switcher: leaderboard ↔ squad room */}
-              <div className="flex items-center justify-between pl-1">
-                <div className="flex gap-1 bg-[#0A0E1A] p-1 rounded-xl border border-white/5">
-                  <button
-                    onClick={() => setDetailTab("leaderboard")}
-                    className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition cursor-pointer ${detailTab === "leaderboard" ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
-                  >
-                    Leaderboard
-                  </button>
-                  <button
-                    onClick={() => setDetailTab("squad")}
-                    className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition cursor-pointer ${detailTab === "squad" ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
-                  >
-                    Squad Room
-                  </button>
-                </div>
-                {/* "Both"-type groups let members toggle the ranking metric. */}
-                {detailTab === "leaderboard" && selectedGroup.leaderboardType === "both" && (
-                  <div className="flex gap-1 bg-[#0A0E1A] p-1 rounded-xl border border-white/5">
-                    <button
-                      onClick={() => setDetailMetric("streak")}
-                      className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "streak" ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
-                    >
-                      <Flame className="w-3 h-3 fill-current" /> Streak
-                    </button>
-                    <button
-                      onClick={() => setDetailMetric("points")}
-                      className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "points" ? "bg-indigo-500/10 text-indigo-400" : "text-[#8E9299] hover:text-white"}`}
-                    >
-                      <Award className="w-3 h-3" /> Points
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {detailTab === "leaderboard" ? (
-                <div className="bg-[#151B2E] rounded-3xl border border-white/5 overflow-hidden divide-y divide-white/5 shadow-xl">
-                  {loadingMembers ? (
-                    <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">Loading members…</div>
-                  ) : rankedMembers.length === 0 ? (
-                    <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">No members yet — share the code!</div>
-                  ) : (
-                    rankedMembers.map((m) => (
-                      <MemberRow key={m.id} member={m} currentUsername={currentUserMember.username} metric={detailMetric} />
-                    ))
-                  )}
-                </div>
+            <div className="bg-[#151B2E] rounded-3xl border border-white/5 overflow-hidden divide-y divide-white/5 shadow-xl">
+              {loadingMembers ? (
+                <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">Loading members…</div>
+              ) : rankedMembers.length === 0 ? (
+                <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">No members yet — share the code!</div>
               ) : (
-                <SquadRoom groupId={selectedGroup.id} walletAddress={walletAddress} />
+                rankedMembers.map((m) => (
+                  <MemberRow key={m.id} member={m} currentUsername={currentUserMember.username} metric={detailMetric} />
+                ))
               )}
             </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }

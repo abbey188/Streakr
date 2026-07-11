@@ -491,8 +491,13 @@ export async function getGroupActivity(groupId: string): Promise<ActivityItem[]>
 }
 
 // ─── Squad Room: merged read (system events + member messages) ───────────
-// See docs/social/SQUAD_ROOM.md. Phase 1 is read-only: no writes exist yet, so
-// a fresh group returns just its existing system events with zero reactions.
+// See docs/social/SQUAD_ROOM.md.
+
+// The feed loads the most recent messages, not the whole history — an active
+// squad's chat is unbounded, and the feed shouldn't get heavier forever. Older
+// messages would come via a future "load older". A reply whose parent falls
+// outside this window simply renders without its quoted snippet.
+const SQUAD_FEED_MESSAGE_LIMIT = 80;
 
 interface SquadEventRow {
   id: string;
@@ -552,7 +557,8 @@ export async function getSquadFeed(
       from group_messages m
       join users u on u.wallet_address = m.author_address
       where m.group_id = ${groupId}
-      order by m.created_at asc
+      order by m.created_at desc
+      limit ${SQUAD_FEED_MESSAGE_LIMIT}
     `,
     sql`
       select target_type, target_id, emoji, count(*)::int as count,
@@ -701,6 +707,17 @@ export async function toggleGroupReaction(
 }
 
 const SQUAD_MESSAGE_MAX = 500;
+
+/** Messages this wallet has sent across all groups in the last `seconds` —
+ *  backs a simple per-user rate limit on the message endpoint. */
+export async function recentMessageCount(wallet: string, seconds: number): Promise<number> {
+  const rows = (await sql`
+    select count(*)::int as n from group_messages
+    where author_address = ${wallet}
+      and created_at > now() - make_interval(secs => ${seconds})
+  `) as { n: number }[];
+  return rows[0]?.n ?? 0;
+}
 
 /**
  * Post a member message (a root, or a one-level reply to a message OR an event).

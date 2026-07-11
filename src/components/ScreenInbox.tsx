@@ -142,6 +142,7 @@ export default function ScreenInbox({
                 else if (n.type === "match_start") accent = "border-sky-500/30 bg-sky-500/5";
                 else if (n.type === "pick_result") accent = "border-[#FF4E00]/25 bg-[#FF4E00]/5";
                 else if (n.type === "group") accent = "border-indigo-500/30 bg-indigo-500/5";
+                else if (n.type === "squad") accent = "border-[#FF4E00]/25 bg-[#FF4E00]/5";
                 else if (n.type === "announcement") accent = "border-teal-500/30 bg-teal-500/5";
                 return (
                   <div

@@ -136,10 +136,12 @@ export default function SquadRoom({
 
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(() => fetchSquadFeed(groupId, walletAddress).then(setItems), [groupId, walletAddress]);
 
   useEffect(() => {
+    if (!walletAddress) { setLoading(false); setItems([]); return; } // read is members-only
     let cancelled = false;
     setLoading(true);
     setError("");
@@ -147,9 +149,27 @@ export default function SquadRoom({
       .catch(() => { if (!cancelled) setError("Couldn't load the squad room."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [load]);
+  }, [load, walletAddress]);
 
   const scrollToEnd = () => requestAnimationFrame(() => endRef.current?.scrollIntoView({ behavior: "smooth" }));
+
+  // Land at the newest message when the count changes (load, sent message/reply).
+  // Instant, so opening the room doesn't animate a long scroll. Reactions don't
+  // change the count, so they never trigger a jump.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [items.length]);
+
+  // Keyboard-aware: when the on-screen keyboard opens it shrinks the visual
+  // viewport — keep the newest line visible above it. iOS-standalone PWA is the
+  // finicky case tuned on device; this covers the common browsers.
+  useEffect(() => {
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    if (!vv) return;
+    const onResize = () => requestAnimationFrame(() => endRef.current?.scrollIntoView({ block: "end" }));
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
 
   function applyToggle(reactions: SquadReaction[], emoji: string): SquadReaction[] {
     const ex = reactions.find((r) => r.emoji === emoji);
@@ -213,8 +233,8 @@ export default function SquadRoom({
   if (error) return <div className="p-8 text-center text-[11px] text-red-400">{error}</div>;
 
   return (
-    <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-3.5 shadow-xl flex flex-col">
-      <div className="flex flex-col gap-0.5 flex-grow">
+    <div className="bg-[#151B2E] border border-white/5 rounded-3xl shadow-xl flex flex-col h-full overflow-hidden">
+      <div ref={scrollRef} className="thin-scroll flex flex-col gap-0.5 flex-1 overflow-y-auto min-h-0 p-3.5">
         {items.length === 0 && (
           <div className="py-10 text-center">
             <p className="text-2xl mb-3">💬</p>
@@ -269,30 +289,33 @@ export default function SquadRoom({
         <div ref={endRef} />
       </div>
 
-      {/* composer */}
-      {walletAddress ? (
-        <div className="mt-3">
-          {replyTo && (
-            <div className="flex items-center gap-2.5 px-3 py-2 bg-[#FF4E00]/5 border border-white/5 rounded-t-2xl">
-              <CornerUpLeft className="w-3.5 h-3.5 text-[#FF4E00] flex-shrink-0" />
-              <div className="flex-1 min-w-0 border-l-2 border-[#FF4E00] pl-2.5">
-                <div className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#FF4E00]">Reply to {replyTo.username}</div>
-                <div className="text-[11px] text-[#8E9299] truncate">{replyTo.body}</div>
-              </div>
-              <button onClick={() => setReplyTo(null)} className="text-[#8E9299] hover:text-white cursor-pointer flex-shrink-0" aria-label="Cancel reply">
-                <X className="w-3.5 h-3.5" />
-              </button>
+      {/* composer — pinned; reply preview + input are ONE bordered unit (Telegram-style) */}
+      <div className="flex-shrink-0 px-3.5 pb-3.5 pt-3 border-t border-white/5">
+        {walletAddress ? (
+          <div className="flex items-end gap-2.5">
+            <div className="flex-1 bg-[#0A0E1A] border border-white/10 focus-within:border-[#FF4E00]/50 rounded-2xl overflow-hidden transition-colors">
+              {replyTo && (
+                <div className="flex items-start gap-2 px-3 pt-2 pb-1.5 border-b border-white/5">
+                  <CornerUpLeft className="w-3.5 h-3.5 text-[#FF4E00] flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#FF4E00]">Reply to {replyTo.username}</div>
+                    <div className="text-[11px] text-[#8E9299] truncate">{replyTo.body}</div>
+                  </div>
+                  <button onClick={() => setReplyTo(null)} className="text-[#8E9299] hover:text-white cursor-pointer flex-shrink-0" aria-label="Cancel reply">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              <input
+                ref={inputRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") sendRoot(); if (e.key === "Escape") setReplyTo(null); }}
+                onFocus={scrollToEnd}
+                placeholder="Message your squad…"
+                className="w-full bg-transparent px-3.5 py-2.5 text-[13px] text-white placeholder-[#8E9299] outline-none border-0"
+              />
             </div>
-          )}
-          <div className={`flex items-center gap-2.5 ${replyTo ? "" : "border-t border-white/5 pt-3"}`}>
-            <input
-              ref={inputRef}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") sendRoot(); if (e.key === "Escape") setReplyTo(null); }}
-              placeholder="Message your squad…"
-              className="flex-1 bg-[#0A0E1A] border border-white/10 focus:border-[#FF4E00]/50 rounded-2xl px-3.5 py-2.5 text-[13px] text-white placeholder-[#8E9299] outline-none"
-            />
             <button
               onClick={sendRoot}
               disabled={!draft.trim() || sending}
@@ -302,10 +325,10 @@ export default function SquadRoom({
               <Send className="w-4 h-4" />
             </button>
           </div>
-        </div>
-      ) : (
-        <div className="mt-3 border-t border-white/5 pt-3 text-center text-[11px] text-[#8E9299]">Sign in to join the conversation.</div>
-      )}
+        ) : (
+          <div className="text-center text-[11px] text-[#8E9299]">Sign in to join the conversation.</div>
+        )}
+      </div>
     </div>
   );
 }
@@ -366,9 +389,11 @@ function ChatMessage({
             <span className="text-[13px] text-slate-200 leading-snug">{item.body}</span>
           </button>
 
-          {/* PC hover toolbar */}
+          {/* PC hover toolbar — anchored top-left, opening RIGHTWARD into the
+              empty space beside a left-aligned bubble, so it never clips on the
+              left/top edge of the scroll box (short bubbles used to cut it off). */}
           {canWrite && (
-            <div className="hidden md:group-hover:flex absolute -top-3.5 right-1 items-center gap-0.5 bg-[#151B2E] border border-white/10 rounded-xl px-1 py-0.5 shadow-xl z-10">
+            <div className="hidden md:group-hover:flex absolute -top-3 left-2 items-center gap-0.5 bg-[#151B2E] border border-white/10 rounded-xl px-1 py-0.5 shadow-xl z-20">
               {["🔥", "😂", "👏"].map((e) => (
                 <button key={e} onClick={() => onReact(e)} className="text-[15px] px-1 rounded hover:bg-white/5 cursor-pointer">{e}</button>
               ))}
@@ -421,6 +446,9 @@ function EventCard({
 }) {
   const meta = EVENT_META[item.eventType ?? "milestone"];
   const replies = item.replies;
+  // The avatar stack shows unique PEOPLE — one person replying five times is
+  // still one face. Count stays the total reply count.
+  const repliers = replies.filter((r, i, arr) => arr.findIndex((x) => x.username === r.username) === i);
   return (
     <div
       className={`border border-white/5 border-l-[3px] rounded-[5px_16px_16px_5px] p-3 my-1.5 ${meta.emotion === "fade" ? "opacity-60" : ""}`}
@@ -460,9 +488,9 @@ function EventCard({
           <div className="absolute z-20 bottom-full left-[46px] mb-1.5"><Palette onPick={onReact} /></div>
         )}
         <button onClick={onToggle} className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 hover:bg-white/5 border border-transparent hover:border-white/5 cursor-pointer">
-          {replies.length > 0 && (
+          {repliers.length > 0 && (
             <span className="flex">
-              {replies.slice(0, 3).map((r, idx) => (
+              {repliers.slice(0, 3).map((r, idx) => (
                 <span key={r.id} className="rounded-md border-[1.5px] border-[#151B2E] overflow-hidden" style={{ marginLeft: idx ? -6 : 0 }}>
                   <Mascot avatar={r.avatar} px={18} />
                 </span>
