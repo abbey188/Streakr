@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { GroupMember } from "../types";
 import type { GroupSummary, GlobalLeaderboardEntry, LeaderboardType } from "@/lib/api/client";
 import AvatarRenderer from "./AvatarRenderer";
 import CountryFlag from "./CountryFlag";
 import SquadRoom from "./SquadRoom";
-import { Users, Plus, ChevronUp, ChevronDown, Minus, Crown, Share2, Flame, ArrowLeft, Award } from "lucide-react";
+import { Users, Plus, ChevronUp, ChevronDown, Minus, Crown, Share2, Flame, ArrowLeft, Award, MessageCircle } from "lucide-react";
 import { motion } from "motion/react";
 
 interface ScreenGroupsProps {
@@ -97,8 +98,11 @@ export default function ScreenGroups({
   const [loadingMembers, setLoadingMembers] = useState(false);
   // For a "both" group, which metric the detail view is currently ranked by.
   const [detailMetric, setDetailMetric] = useState<"streak" | "points">("streak");
-  // Which panel of the open group is showing.
-  const [detailTab, setDetailTab] = useState<"leaderboard" | "squad">("leaderboard");
+  // The Squad Room opens as its own full-screen chat over everything (incl. the
+  // bottom nav), like tapping into an iMessage conversation.
+  const [squadOpen, setSquadOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
@@ -115,7 +119,7 @@ export default function ScreenGroups({
   useEffect(() => {
     if (!selectedGroup) return;
     setDetailMetric(selectedGroup.leaderboardType === "points" ? "points" : "streak");
-    setDetailTab("leaderboard");
+    setSquadOpen(false);
     let cancelled = false;
     setLoadingMembers(true);
     loadGroupMembers(selectedGroup.id)
@@ -171,12 +175,8 @@ export default function ScreenGroups({
 
   // ─── Group detail view ─────────────────────────────────────────────────────
   if (selectedGroup) {
-    const isSquad = detailTab === "squad";
     return (
-      // When the Squad Room is open it becomes a full-height chat: the page
-      // stops scrolling (overflow-hidden) so the messages scroll internally and
-      // the composer can pin to the bottom. Leaderboard keeps the scrolling page.
-      <div className={`flex flex-col h-full bg-[#0A0E1A] text-white font-sans relative ${isSquad ? "overflow-hidden" : "overflow-y-auto pb-12"}`}>
+      <div className="flex flex-col h-full bg-[#0A0E1A] text-white font-sans overflow-y-auto pb-12 relative">
         <div className="sticky top-0 bg-[#0A0E1A]/85 backdrop-blur-md border-b border-white/5 px-4 py-4 flex items-center gap-3 z-30 flex-shrink-0">
           <button onClick={() => setSelectedGroup(null)} className="p-1.5 hover:bg-white/5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer">
             <ArrowLeft className="w-4 h-4" />
@@ -187,65 +187,63 @@ export default function ScreenGroups({
           </div>
         </div>
 
-        {/* Tab switcher — always visible under the header */}
-        <div className="px-4 pt-4 max-w-7xl mx-auto w-full flex items-center justify-between gap-2 flex-shrink-0">
-          <div className="flex gap-1 bg-[#0A0E1A] p-1 rounded-xl border border-white/5">
-            <button
-              onClick={() => setDetailTab("leaderboard")}
-              className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition cursor-pointer ${!isSquad ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
-            >
-              Leaderboard
-            </button>
-            <button
-              onClick={() => setDetailTab("squad")}
-              className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition cursor-pointer ${isSquad ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
-            >
-              Squad Room
-            </button>
-          </div>
-          {!isSquad && selectedGroup.leaderboardType === "both" && (
-            <div className="flex gap-1 bg-[#0A0E1A] p-1 rounded-xl border border-white/5">
-              <button
-                onClick={() => setDetailMetric("streak")}
-                className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "streak" ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
-              >
-                <Flame className="w-3 h-3 fill-current" /> Streak
-              </button>
-              <button
-                onClick={() => setDetailMetric("points")}
-                className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "points" ? "bg-indigo-500/10 text-indigo-400" : "text-[#8E9299] hover:text-white"}`}
-              >
-                <Award className="w-3 h-3" /> Points
-              </button>
-            </div>
-          )}
-        </div>
-
-        {isSquad ? (
-          <div className="flex-1 min-h-0 px-4 pt-3 pb-4 max-w-7xl mx-auto w-full flex flex-col">
-            <SquadRoom groupId={selectedGroup.id} walletAddress={walletAddress} />
-          </div>
-        ) : (
-          <div className="px-4 mt-4 space-y-5 flex-grow max-w-7xl mx-auto w-full z-10">
-            <div className="bg-[#151B2E] border border-white/5 p-4 rounded-3xl flex items-center justify-between shadow-lg">
-              <div className="min-w-0 flex-1">
-                <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block leading-none">Group Invite Code</span>
-                <div className="flex items-center gap-2 mt-1.5 min-w-0">
-                  <span className="not-italic text-sm flex-shrink-0">{selectedGroup.emoji}</span>
-                  <h3 className="text-sm font-black italic text-slate-200 whitespace-nowrap">{selectedGroup.name}</h3>
-                </div>
-                <p className="text-[10px] text-[#8E9299] mt-2 font-mono">
-                  Invite Code: <span className="text-[#FF4E00] font-black italic">{selectedGroup.inviteCode}</span>
-                </p>
+        <div className="px-4 mt-4 space-y-5 flex-grow max-w-7xl mx-auto w-full z-10">
+          {/* Invite */}
+          <div className="bg-[#151B2E] border border-white/5 p-4 rounded-3xl flex items-center justify-between shadow-lg">
+            <div className="min-w-0 flex-1">
+              <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block leading-none">Group Invite Code</span>
+              <div className="flex items-center gap-2 mt-1.5 min-w-0">
+                <span className="not-italic text-sm flex-shrink-0">{selectedGroup.emoji}</span>
+                <h3 className="text-sm font-black italic text-slate-200 whitespace-nowrap">{selectedGroup.name}</h3>
               </div>
-              <button
-                onClick={() => onOpenInviteShare(selectedGroup.name, selectedGroup.inviteCode, groupMembers, selectedGroup.emoji)}
-                className="p-2.5 bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 rounded-2xl text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-black italic cursor-pointer ml-2 flex-shrink-0"
-              >
-                <Share2 className="w-4 h-4 text-[#FF4E00]" /> Invite
-              </button>
+              <p className="text-[10px] text-[#8E9299] mt-2 font-mono">
+                Invite Code: <span className="text-[#FF4E00] font-black italic">{selectedGroup.inviteCode}</span>
+              </p>
             </div>
+            <button
+              onClick={() => onOpenInviteShare(selectedGroup.name, selectedGroup.inviteCode, groupMembers, selectedGroup.emoji)}
+              className="p-2.5 bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 rounded-2xl text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-black italic cursor-pointer ml-2 flex-shrink-0"
+            >
+              <Share2 className="w-4 h-4 text-[#FF4E00]" /> Invite
+            </button>
+          </div>
 
+          {/* Open the Squad Room (full-screen chat) */}
+          <button
+            onClick={() => setSquadOpen(true)}
+            className="w-full bg-[#FF4E00]/10 hover:bg-[#FF4E00]/15 border border-[#FF4E00]/25 rounded-3xl p-4 flex items-center gap-3 transition cursor-pointer shadow-lg"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-[#0A0E1A] border border-[#FF4E00]/20 flex items-center justify-center flex-shrink-0">
+              <MessageCircle className="w-4.5 h-4.5 text-[#FF4E00]" />
+            </div>
+            <div className="text-left min-w-0 flex-grow">
+              <p className="text-xs font-black italic text-white leading-tight">Squad Room</p>
+              <p className="text-[10px] text-[#8E9299] leading-snug mt-0.5">Chat with your squad — goals, banter, and the crown.</p>
+            </div>
+            <ArrowLeft className="w-4 h-4 text-[#8E9299] rotate-180 flex-shrink-0" />
+          </button>
+
+          {/* Leaderboard */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between pl-1">
+              <h4 className="text-[10px] font-mono font-black text-[#8E9299] uppercase tracking-widest">Leaderboard Standings</h4>
+              {selectedGroup.leaderboardType === "both" && (
+                <div className="flex gap-1 bg-[#0A0E1A] p-1 rounded-xl border border-white/5">
+                  <button
+                    onClick={() => setDetailMetric("streak")}
+                    className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "streak" ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
+                  >
+                    <Flame className="w-3 h-3 fill-current" /> Streak
+                  </button>
+                  <button
+                    onClick={() => setDetailMetric("points")}
+                    className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "points" ? "bg-indigo-500/10 text-indigo-400" : "text-[#8E9299] hover:text-white"}`}
+                  >
+                    <Award className="w-3 h-3" /> Points
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="bg-[#151B2E] rounded-3xl border border-white/5 overflow-hidden divide-y divide-white/5 shadow-xl">
               {loadingMembers ? (
                 <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">Loading members…</div>
@@ -258,6 +256,31 @@ export default function ScreenGroups({
               )}
             </div>
           </div>
+        </div>
+
+        {/* Full-screen Squad Room — portaled to <body> so no transformed
+            ancestor can trap it; height tracks --app-h so it sits above the
+            keyboard on mobile. Covers everything, including the bottom nav. */}
+        {squadOpen && mounted && createPortal(
+          <div
+            className="fixed top-0 left-0 right-0 z-40 bg-[#0A0E1A] flex flex-col text-white font-sans"
+            style={{ height: "var(--app-h, 100dvh)", paddingTop: "env(safe-area-inset-top)" }}
+          >
+            <div className="border-b border-white/5 px-4 py-4 flex items-center gap-3 flex-shrink-0">
+              <button onClick={() => setSquadOpen(false)} className="p-1.5 hover:bg-white/5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer">
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <span className="not-italic text-lg flex-shrink-0">{selectedGroup.emoji}</span>
+              <div className="min-w-0">
+                <h2 className="text-sm font-black italic tracking-tighter uppercase text-white whitespace-nowrap leading-none">{selectedGroup.name}</h2>
+                <span className="text-[9px] font-mono text-[#8E9299] uppercase tracking-wider">Squad Room</span>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 p-3">
+              <SquadRoom groupId={selectedGroup.id} walletAddress={walletAddress} />
+            </div>
+          </div>,
+          document.body
         )}
       </div>
     );
