@@ -66,6 +66,7 @@ export interface ActivityItem {
   message: string;
   timestamp: string;
   reactions: { [emoji: string]: number };
+  isMine?: boolean; // the actor is the viewer → render "You" instead of "@name"
 }
 
 // ─── Squad Room (per-group social stream) — see docs/social/SQUAD_ROOM.md ────

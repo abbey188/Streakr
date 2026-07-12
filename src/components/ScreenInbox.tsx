@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ActivityItem, Notification as NotificationItem } from "../types";
 import AvatarRenderer from "./AvatarRenderer";
 import PushNudge from "./PushNudge";
+import { eventPredicate } from "@/lib/social/phrasing";
 import { Bell, Trash2 } from "lucide-react";
 
 interface ScreenInboxProps {
@@ -208,12 +209,12 @@ export default function ScreenInbox({
                       </div>
                       <div className="flex-grow min-w-0 space-y-1">
                         <div className="flex justify-between items-center gap-2">
-                          <span className="text-xs font-black italic text-white truncate">@{item.username}</span>
+                          <span className={`text-xs font-black italic truncate ${item.isMine ? "text-[#FF4E00]" : "text-white"}`}>{item.isMine ? "You" : `@${item.username}`}</span>
                           <span className="text-[9px] font-mono text-[#8E9299] font-medium flex-shrink-0">{item.timestamp}</span>
                         </div>
                         <p className="text-xs text-slate-300 leading-relaxed">
                           <span className="pr-1.5">{typeIcon}</span>
-                          {item.message}
+                          {eventPredicate(item.message, item.isMine)}
                         </p>
                       </div>
                     </div>

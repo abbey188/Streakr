@@ -511,6 +511,7 @@ interface SquadEventRow {
   created_at: string;
   username: string;
   avatar: AvatarConfig;
+  is_mine: boolean;
 }
 interface SquadMessageRow {
   id: string;
@@ -547,7 +548,8 @@ export async function getSquadFeed(
     sql`
       select e.id, e.type, e.message, e.created_at,
              coalesce(u.username, 'Someone') as username,
-             coalesce(u.avatar, '{}'::jsonb) as avatar
+             coalesce(u.avatar, '{}'::jsonb) as avatar,
+             (e.actor_address = ${me}) as is_mine
       from group_activity_events e
       left join users u on u.wallet_address = e.actor_address
       where e.group_id = ${groupId}
@@ -618,7 +620,7 @@ export async function getSquadFeed(
       avatar: e.avatar,
       body: e.message,
       timestamp: e.created_at,
-      isMine: false,
+      isMine: e.is_mine,
       reactions: rx("event", e.id),
       replies: eventReplies.get(e.id) ?? [],
     });
@@ -879,14 +881,15 @@ export async function getMyGroupsActivity(walletAddress: string): Promise<Activi
   const rows = (await sql`
     select e.id, e.type, e.message, e.created_at,
            coalesce(u.username, 'Someone') as username,
-           coalesce(u.avatar, '{}'::jsonb) as avatar
+           coalesce(u.avatar, '{}'::jsonb) as avatar,
+           (e.actor_address = ${walletAddress}) as is_mine
     from group_activity_events e
     join group_members gm on gm.group_id = e.group_id
     left join users u on u.wallet_address = e.actor_address
     where gm.user_address = ${walletAddress}
     order by e.created_at desc
     limit 50
-  `) as (ActivityRow & { created_at: string })[];
+  `) as (ActivityRow & { created_at: string; is_mine: boolean })[];
   return rows.map((r) => ({
     id: r.id,
     type: r.type,
@@ -895,6 +898,7 @@ export async function getMyGroupsActivity(walletAddress: string): Promise<Activi
     message: r.message,
     timestamp: relativeTime(r.created_at),
     reactions: {},
+    isMine: r.is_mine,
   }));
 }
 

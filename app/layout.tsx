@@ -30,6 +30,10 @@ export const viewport: Viewport = {
   // Fill the screen edge-to-edge in standalone mode AND expose the real
   // env(safe-area-inset-*) values so the bottom nav can clear the home indicator.
   viewportFit: "cover",
+  // Let the on-screen keyboard shrink the layout (so a pinned composer rides
+  // above it) where supported — Android/Chrome honour this; iOS is handled via
+  // the visualViewport hook in the app shell.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

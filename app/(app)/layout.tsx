@@ -25,6 +25,28 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
+  // Keyboard-aware shell: iOS/Android don't shrink the layout (dvh) when the
+  // on-screen keyboard opens — it just overlays, burying the bottom nav and any
+  // pinned composer. We track the *visual* viewport instead: drive the app
+  // height off it (so content fits above the keyboard) and hide the bottom nav
+  // while it's open (like iMessage hides its tab bar), so a chat composer lands
+  // flush above the keys.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    if (!vv) return;
+    const onResize = () => {
+      document.documentElement.style.setProperty("--app-h", `${vv.height}px`);
+      setKeyboardOpen(window.innerHeight - vv.height > 120);
+    };
+    onResize();
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    return () => {
+      vv.removeEventListener("resize", onResize);
+      vv.removeEventListener("scroll", onResize);
+    };
+  }, []);
 
   // Poll the unread notification count for the Inbox nav badge; clear it while
   // the user is actually on the Inbox (the page marks everything read on open).
@@ -87,7 +109,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col lg:flex-row w-full h-dvh overflow-hidden">
+      <div
+        className="flex flex-col lg:flex-row w-full overflow-hidden"
+        style={{ height: "var(--app-h, 100dvh)" }}
+      >
 
         {/* PC LEFT SIDEBAR */}
         <aside className="hidden lg:flex flex-col justify-between w-80 bg-[#151B2E] border-r border-white/5 p-6 overflow-y-auto flex-shrink-0">
@@ -168,7 +193,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           {/* Mobile bottom nav — pad the bottom by the home-indicator inset
               (env resolves to 0 on devices without one, so nothing shifts there). */}
           <nav
-            className="lg:hidden bg-[#151B2E] border-t border-white/5 pt-2.5 px-3 flex justify-between items-center z-30 select-none"
+            className={`${keyboardOpen ? "hidden" : "lg:hidden flex"} bg-[#151B2E] border-t border-white/5 pt-2.5 px-3 justify-between items-center z-30 select-none`}
             style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom))" }}
           >
             {NAV_ITEMS.map((item) => {

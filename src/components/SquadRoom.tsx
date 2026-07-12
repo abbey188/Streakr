@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import AvatarRenderer from "./AvatarRenderer";
 import { fetchSquadFeed, toggleSquadReaction, sendSquadMessage } from "@/lib/api/client";
 import { SQUAD_REACTIONS } from "@/lib/social/reactions";
+import { eventPredicate } from "@/lib/social/phrasing";
 import type { SquadItem, SquadReaction } from "../types";
 import { Plus, CornerUpLeft, Send, X, ChevronDown } from "lucide-react";
 
@@ -313,7 +314,7 @@ export default function SquadRoom({
                 onKeyDown={(e) => { if (e.key === "Enter") sendRoot(); if (e.key === "Escape") setReplyTo(null); }}
                 onFocus={scrollToEnd}
                 placeholder="Message your squad…"
-                className="w-full bg-transparent px-3.5 py-2.5 text-[13px] text-white placeholder-[#8E9299] outline-none border-0"
+                className="w-full bg-transparent px-3.5 py-2.5 text-[16px] text-white placeholder-[#8E9299] outline-none border-0"
               />
             </div>
             <button
@@ -470,7 +471,7 @@ function EventCard({
             <span className={`font-black italic ${item.isMine ? "text-[#FF4E00]" : "text-white"}`}>
               {item.isMine ? "You" : `@${item.username}`}
             </span>{" "}
-            {item.body}
+            {eventPredicate(item.body, item.isMine)}
             <span className="text-[8.5px] font-mono text-[#8E9299] ml-1.5">{timeLabel(item.timestamp)}</span>
           </div>
         </div>
@@ -532,7 +533,7 @@ function EventCard({
                 onChange={(e) => setReplyDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") onSendReply(); }}
                 placeholder={`Reply to ${item.isMine ? "your streak" : `@${item.username}`}…`}
-                className="flex-1 bg-[#0A0E1A] border border-white/10 focus:border-[#FF4E00]/50 rounded-xl px-3 py-2 text-[12px] text-white placeholder-[#8E9299]/70 outline-none"
+                className="flex-1 bg-[#0A0E1A] border border-white/10 focus:border-[#FF4E00]/50 rounded-xl px-3 py-2 text-[16px] text-white placeholder-[#8E9299]/70 outline-none"
               />
               <button onClick={onSendReply} disabled={!replyDraft.trim() || sending} className="w-8 h-8 rounded-lg bg-[#FF4E00] hover:bg-orange-600 text-white grid place-items-center flex-shrink-0 disabled:opacity-50 cursor-pointer" aria-label="Send reply">
                 <Send className="w-3.5 h-3.5" />
