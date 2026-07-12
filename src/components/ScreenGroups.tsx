@@ -104,6 +104,28 @@ export default function ScreenGroups({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // While the full-screen chat is open, lock the document so iOS can't scroll
+  // the page under the keyboard (which is what shifted the fixed overlay and
+  // pushed the composer to the top). Standard iOS scroll-lock: pin the body,
+  // restore the scroll position on close.
+  useEffect(() => {
+    if (!squadOpen) return;
+    const scrollY = window.scrollY;
+    const b = document.body;
+    const prev = { position: b.style.position, top: b.style.top, width: b.style.width, overflow: b.style.overflow };
+    b.style.position = "fixed";
+    b.style.top = `-${scrollY}px`;
+    b.style.width = "100%";
+    b.style.overflow = "hidden";
+    return () => {
+      b.style.position = prev.position;
+      b.style.top = prev.top;
+      b.style.width = prev.width;
+      b.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [squadOpen]);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupEmoji, setNewGroupEmoji] = useState("🏆");
@@ -263,18 +285,17 @@ export default function ScreenGroups({
             keyboard on mobile. Covers everything, including the bottom nav. */}
         {squadOpen && mounted && createPortal(
           <div
-            className="fixed top-0 left-0 right-0 z-40 bg-[#0A0E1A] flex flex-col text-white font-sans"
-            style={{ height: "var(--app-h, 100dvh)", paddingTop: "env(safe-area-inset-top)" }}
+            className="fixed left-0 right-0 z-40 bg-[#0A0E1A] flex flex-col text-white font-sans"
+            style={{ top: "var(--app-top, 0px)", height: "var(--app-h, 100dvh)", paddingTop: "env(safe-area-inset-top)" }}
           >
-            <div className="border-b border-white/5 px-4 py-4 flex items-center gap-3 flex-shrink-0">
-              <button onClick={() => setSquadOpen(false)} className="p-1.5 hover:bg-white/5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer">
+            {/* Stationary header — one line, thin: back · emoji · name · Squad Room */}
+            <div className="border-b border-white/5 px-3 py-2.5 flex items-center gap-2 flex-shrink-0">
+              <button onClick={() => setSquadOpen(false)} className="p-1.5 -ml-1 hover:bg-white/5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer flex-shrink-0">
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              <span className="not-italic text-lg flex-shrink-0">{selectedGroup.emoji}</span>
-              <div className="min-w-0">
-                <h2 className="text-sm font-black italic tracking-tighter uppercase text-white whitespace-nowrap leading-none">{selectedGroup.name}</h2>
-                <span className="text-[9px] font-mono text-[#8E9299] uppercase tracking-wider">Squad Room</span>
-              </div>
+              <span className="not-italic text-base flex-shrink-0">{selectedGroup.emoji}</span>
+              <h2 className="text-sm font-black italic tracking-tight uppercase text-white whitespace-nowrap truncate">{selectedGroup.name}</h2>
+              <span className="text-[9px] font-mono text-[#8E9299] uppercase tracking-widest flex-shrink-0">Squad Room</span>
             </div>
             <div className="flex-1 min-h-0 p-3">
               <SquadRoom groupId={selectedGroup.id} walletAddress={walletAddress} />

@@ -37,6 +37,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     if (!vv) return;
     const onResize = () => {
       document.documentElement.style.setProperty("--app-h", `${vv.height}px`);
+      // offsetTop lets a fixed overlay (the full-screen Squad Room) pin itself to
+      // the VISIBLE viewport even when iOS scrolls the page under the keyboard.
+      document.documentElement.style.setProperty("--app-top", `${vv.offsetTop}px`);
       setKeyboardOpen(window.innerHeight - vv.height > 120);
     };
     onResize();
