@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import AvatarRenderer from "./AvatarRenderer";
-import { fetchSquadFeed, toggleSquadReaction, sendSquadMessage } from "@/lib/api/client";
+import { fetchSquadFeed, toggleSquadReaction, sendSquadMessage, deleteSquadMessage } from "@/lib/api/client";
 import { SQUAD_REACTIONS } from "@/lib/social/reactions";
 import { eventPredicate } from "@/lib/social/phrasing";
-import type { SquadItem, SquadReaction } from "../types";
-import { Plus, CornerUpLeft, Send, X, ChevronDown } from "lucide-react";
+import type { SquadItem, SquadReaction, AvatarConfig } from "../types";
+import { Plus, CornerUpLeft, Send, X, ChevronDown, Trash2 } from "lucide-react";
 
 /**
  * Squad Room stream — see docs/social/SQUAD_ROOM.md (v2).
@@ -118,9 +118,11 @@ type ReplyTarget = { id: string; username: string; body: string };
 export default function SquadRoom({
   groupId,
   walletAddress,
+  me,
 }: {
   groupId: string;
   walletAddress?: string;
+  me?: { username: string; avatar: AvatarConfig };
 }) {
   const [items, setItems] = useState<SquadItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,12 +155,40 @@ export default function SquadRoom({
   }, [load, walletAddress]);
 
   const scrollToEnd = () => requestAnimationFrame(() => endRef.current?.scrollIntoView({ behavior: "smooth" }));
+  const isNearBottom = () => {
+    const el = scrollRef.current;
+    return !el || el.scrollHeight - el.scrollTop - el.clientHeight < 140;
+  };
+  const firstLoad = useRef(true);
 
-  // Land at the newest message when the count changes (load, sent message/reply).
-  // Instant, so opening the room doesn't animate a long scroll. Reactions don't
-  // change the count, so they never trigger a jump.
+  // A tap anywhere outside an open reaction palette closes it. Registered a frame
+  // later so the click that opened it doesn't immediately close it again.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
+    if (!msgPaletteFor && !eventPaletteFor) return;
+    const close = () => { setMsgPaletteFor(null); setEventPaletteFor(null); };
+    const raf = requestAnimationFrame(() => document.addEventListener("click", close));
+    return () => { cancelAnimationFrame(raf); document.removeEventListener("click", close); };
+  }, [msgPaletteFor, eventPaletteFor]);
+
+  // Poll while the room is open so a teammate's messages appear live (~8s).
+  // Skips while backgrounded to save work.
+  useEffect(() => {
+    if (!walletAddress) return;
+    const t = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      load().catch(() => {});
+    }, 8000);
+    return () => clearInterval(t);
+  }, [walletAddress, load]);
+
+  // Land at the newest message on open, and follow new ones only if you're
+  // already near the bottom — so a polled message doesn't yank you down while
+  // you're reading history. Reactions don't change the count, so no jump.
+  useEffect(() => {
+    if (firstLoad.current || isNearBottom()) {
+      endRef.current?.scrollIntoView({ block: "end" });
+      if (items.length > 0) firstLoad.current = false;
+    }
   }, [items.length]);
 
   // Keyboard-aware: when the on-screen keyboard opens it shrinks the visual
@@ -180,7 +210,7 @@ export default function SquadRoom({
   }
 
   async function react(item: SquadItem, emoji: string) {
-    if (!walletAddress) return;
+    if (!walletAddress || item.id.startsWith("temp-")) return; // not yet reconciled
     setMsgPaletteFor(null);
     setEventPaletteFor(null);
     const snapshot = items;
@@ -193,7 +223,21 @@ export default function SquadRoom({
     }
   }
 
+  async function deleteMessage(item: SquadItem) {
+    if (!walletAddress || item.id.startsWith("temp-")) return;
+    setMsgPaletteFor(null);
+    const snapshot = items;
+    // Optimistically blank it; reconcile against the server.
+    setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, deleted: true, body: "", reactions: [] } : it)));
+    try {
+      await deleteSquadMessage(groupId, item.id, walletAddress);
+    } catch {
+      setItems(snapshot);
+    }
+  }
+
   function startReply(item: SquadItem) {
+    if (item.id.startsWith("temp-")) return; // not yet reconciled
     setReplyTo({ id: item.id, username: item.isMine ? "You" : `@${item.username}`, body: item.body });
     inputRef.current?.focus();
   }
@@ -201,14 +245,37 @@ export default function SquadRoom({
   async function sendRoot() {
     const text = draft.trim();
     if (!text || !walletAddress || sending) return;
+    const replying = replyTo;
+    // Clear the input immediately and drop the message in optimistically — the
+    // send feels instant; load() reconciles it against the real feed.
+    setDraft("");
+    setReplyTo(null);
+    const tempId = `temp-${Date.now()}`;
+    if (me) {
+      setItems((prev) => [
+        ...prev,
+        {
+          id: tempId, kind: "message", username: me.username, avatar: me.avatar,
+          body: text, timestamp: new Date().toISOString(), isMine: true,
+          reactions: [], replies: [],
+          quoted: replying
+            ? { username: replying.username.replace(/^@/, ""), body: replying.body, isMine: replying.username === "You" }
+            : null,
+        },
+      ]);
+      scrollToEnd();
+    }
     setSending(true);
     try {
-      await sendSquadMessage(groupId, walletAddress, text, replyTo ? { type: "message", id: replyTo.id } : undefined);
-      setDraft("");
-      setReplyTo(null);
+      await sendSquadMessage(groupId, walletAddress, text, replying ? { type: "message", id: replying.id } : undefined);
       await load();
       scrollToEnd();
-    } catch { /* keep draft */ } finally { setSending(false); }
+    } catch {
+      // Roll back the optimistic message and restore the draft.
+      setItems((prev) => prev.filter((it) => it.id !== tempId));
+      setDraft(text);
+      setReplyTo(replying);
+    } finally { setSending(false); }
   }
 
   async function sendEventReply(eventId: string) {
@@ -282,6 +349,7 @@ export default function SquadRoom({
               canWrite={!!walletAddress}
               onReact={(e) => react(item, e)}
               onReply={() => startReply(item)}
+              onDelete={() => deleteMessage(item)}
               paletteOpen={msgPaletteFor === item.id}
               onOpenPalette={() => setMsgPaletteFor(msgPaletteFor === item.id ? null : item.id)}
             />
@@ -341,6 +409,7 @@ function ChatMessage({
   canWrite,
   onReact,
   onReply,
+  onDelete,
   paletteOpen,
   onOpenPalette,
 }: {
@@ -349,9 +418,30 @@ function ChatMessage({
   canWrite: boolean;
   onReact: (e: string) => void;
   onReply: () => void;
+  onDelete: () => void;
   paletteOpen: boolean;
   onOpenPalette: () => void;
 }) {
+  // A deleted message keeps its slot but shows nothing interactive.
+  if (item.deleted) {
+    return (
+      <div className="flex gap-2.5 items-start" style={{ paddingTop: grouped ? 1 : 5 }}>
+        {grouped ? <div className="w-8 flex-shrink-0" /> : (
+          <div className="rounded-xl border border-white/5 flex-shrink-0 opacity-50"><Mascot avatar={item.avatar} px={32} /></div>
+        )}
+        <div className="min-w-0 flex-1">
+          {!grouped && (
+            <div className="flex items-baseline gap-2">
+              <span className="text-[12.5px] font-black italic text-[#8E9299]">{item.isMine ? "You" : `@${item.username}`}</span>
+              <span className="text-[8.5px] font-mono text-[#8E9299]">{timeLabel(item.timestamp)}</span>
+            </div>
+          )}
+          <span className="inline-block mt-0.5 text-[12px] italic text-[#8E9299]/70">🚫 This message was deleted</span>
+        </div>
+      </div>
+    );
+  }
+  const canDelete = canWrite && item.isMine;
   return (
     <motion.div
       className="group relative flex gap-2.5 items-start"
@@ -384,7 +474,9 @@ function ChatMessage({
                 <span className="block text-[11px] font-black italic text-[#FF4E00] leading-tight">
                   {item.quoted.isMine ? "You" : `@${item.quoted.username}`}
                 </span>
-                <span className="block text-[11px] text-[#8E9299] truncate">{item.quoted.body}</span>
+                <span className={`block text-[11px] truncate ${item.quoted.deleted ? "text-[#8E9299]/60 italic" : "text-[#8E9299]"}`}>
+                  {item.quoted.deleted ? "message deleted" : item.quoted.body}
+                </span>
               </span>
             )}
             <span className="text-[13px] text-slate-200 leading-snug">{item.body}</span>
@@ -401,11 +493,21 @@ function ChatMessage({
               <span className="w-px h-4 bg-white/10 mx-0.5" />
               <button onClick={onOpenPalette} className="text-[#8E9299] hover:text-white px-1 cursor-pointer"><Plus className="w-3.5 h-3.5" /></button>
               <button onClick={onReply} className="text-[#8E9299] hover:text-white px-1 cursor-pointer"><CornerUpLeft className="w-3.5 h-3.5" /></button>
+              {canDelete && (
+                <button onClick={onDelete} className="text-[#8E9299] hover:text-red-400 px-1 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+              )}
             </div>
           )}
 
           {paletteOpen && canWrite && (
-            <div className="absolute z-20 bottom-full left-0 mb-1.5"><Palette onPick={onReact} /></div>
+            <div className="absolute z-20 bottom-full left-0 mb-1.5 flex items-center gap-1.5">
+              <Palette onPick={onReact} />
+              {canDelete && (
+                <button onClick={onDelete} className="bg-[#151B2E] border border-white/10 rounded-2xl p-2 text-[#8E9299] hover:text-red-400 shadow-2xl cursor-pointer" aria-label="Delete message">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -520,7 +622,11 @@ function EventCard({
                       </span>
                       <span className="text-[8px] font-mono text-[#8E9299]">{timeLabel(r.timestamp)}</span>
                     </div>
-                    <div className="mt-0.5 inline-block bg-[#0A0E1A] border border-white/5 rounded-[4px_12px_12px_12px] px-2.5 py-1.5 text-[12px] text-slate-200 leading-snug">{r.body}</div>
+                    {r.deleted ? (
+                      <span className="mt-0.5 inline-block text-[11px] italic text-[#8E9299]/70">🚫 This message was deleted</span>
+                    ) : (
+                      <div className="mt-0.5 inline-block bg-[#0A0E1A] border border-white/5 rounded-[4px_12px_12px_12px] px-2.5 py-1.5 text-[12px] text-slate-200 leading-snug">{r.body}</div>
+                    )}
                   </div>
                 </div>
               ))}

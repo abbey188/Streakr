@@ -214,13 +214,8 @@ export default function ScreenGroups({
           <div className="bg-[#151B2E] border border-white/5 p-4 rounded-3xl flex items-center justify-between shadow-lg">
             <div className="min-w-0 flex-1">
               <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block leading-none">Group Invite Code</span>
-              <div className="flex items-center gap-2 mt-1.5 min-w-0">
-                <span className="not-italic text-sm flex-shrink-0">{selectedGroup.emoji}</span>
-                <h3 className="text-sm font-black italic text-slate-200 whitespace-nowrap">{selectedGroup.name}</h3>
-              </div>
-              <p className="text-[10px] text-[#8E9299] mt-2 font-mono">
-                Invite Code: <span className="text-[#FF4E00] font-black italic">{selectedGroup.inviteCode}</span>
-              </p>
+              <p className="text-lg font-black italic text-[#FF4E00] tracking-tight mt-1.5 leading-none">{selectedGroup.inviteCode}</p>
+              <p className="text-[10px] text-[#8E9299] mt-1.5 font-mono">Share it to add your squad</p>
             </div>
             <button
               onClick={() => onOpenInviteShare(selectedGroup.name, selectedGroup.inviteCode, groupMembers, selectedGroup.emoji)}
@@ -298,7 +293,11 @@ export default function ScreenGroups({
               <span className="text-[9px] font-mono text-[#8E9299] uppercase tracking-widest flex-shrink-0">Squad Room</span>
             </div>
             <div className="flex-1 min-h-0 p-3">
-              <SquadRoom groupId={selectedGroup.id} walletAddress={walletAddress} />
+              <SquadRoom
+                groupId={selectedGroup.id}
+                walletAddress={walletAddress}
+                me={{ username: currentUserMember.username, avatar: currentUserMember.avatar }}
+              />
             </div>
           </div>,
           document.body

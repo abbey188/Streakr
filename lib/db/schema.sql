@@ -151,7 +151,10 @@ create table if not exists group_messages (
   body              text not null,
   parent_message_id uuid references group_messages(id) on delete cascade,
   parent_event_id   uuid references group_activity_events(id) on delete cascade,
-  created_at        timestamptz not null default now()
+  created_at        timestamptz not null default now(),
+  -- Soft delete: the row is kept (so replies keep their context and the thread
+  -- doesn't cascade-vanish); the feed renders a "message deleted" placeholder.
+  deleted_at        timestamptz
 );
 create index if not exists group_messages_group_idx on group_messages (group_id, created_at);
 

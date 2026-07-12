@@ -87,6 +87,7 @@ export interface SquadReply {
   body: string;
   timestamp: string;
   isMine: boolean;
+  deleted?: boolean;
 }
 
 /**
@@ -108,7 +109,8 @@ export interface SquadItem {
   // Event threads nest here (Slack-style). Messages never nest — a reply to a
   // message is its own root carrying `quoted` (Telegram-style).
   replies: SquadReply[];
-  quoted?: { username: string; body: string; isMine: boolean } | null;
+  quoted?: { username: string; body: string; isMine: boolean; deleted?: boolean } | null;
+  deleted?: boolean;
 }
 
 /** A personal, addressed-to-you notification (pick result, badge, round champion,

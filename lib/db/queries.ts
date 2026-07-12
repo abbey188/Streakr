@@ -522,6 +522,7 @@ interface SquadMessageRow {
   author_address: string;
   username: string;
   avatar: AvatarConfig;
+  deleted_at: string | null;
 }
 interface SquadReactionRow {
   target_type: "message" | "event";
@@ -558,7 +559,7 @@ export async function getSquadFeed(
     `,
     sql`
       select m.id, m.body, m.created_at, m.parent_message_id, m.parent_event_id,
-             m.author_address,
+             m.author_address, m.deleted_at,
              coalesce(u.username, 'Someone') as username,
              coalesce(u.avatar, '{}'::jsonb) as avatar
       from group_messages m
@@ -591,6 +592,8 @@ export async function getSquadFeed(
 
   const mine = (addr: string) => !!viewer && addr === viewer;
   const msgById = new Map(messages.map((m) => [m.id, m]));
+  // Soft-deleted messages: never send the body to the client — just the flag.
+  const bodyOf = (m: SquadMessageRow) => (m.deleted_at ? "" : m.body);
 
   // Replies to EVENTS nest into that event's thread (Slack-style). Replies to
   // MESSAGES do NOT nest — they surface as their own root carrying a quote.
@@ -602,9 +605,10 @@ export async function getSquadFeed(
       id: m.id,
       username: m.username,
       avatar: m.avatar,
-      body: m.body,
+      body: bodyOf(m),
       timestamp: m.created_at,
       isMine: mine(m.author_address),
+      deleted: !!m.deleted_at,
     });
     eventReplies.set(m.parent_event_id, list);
   }
@@ -631,17 +635,18 @@ export async function getSquadFeed(
     let quoted: SquadItem["quoted"] = null;
     if (m.parent_message_id) {
       const p = msgById.get(m.parent_message_id);
-      if (p) quoted = { username: p.username, body: p.body, isMine: mine(p.author_address) };
+      if (p) quoted = { username: p.username, body: bodyOf(p), isMine: mine(p.author_address), deleted: !!p.deleted_at };
     }
     roots.push({
       id: m.id,
       kind: "message",
       username: m.username,
       avatar: m.avatar,
-      body: m.body,
+      body: bodyOf(m),
+      deleted: !!m.deleted_at,
       timestamp: m.created_at,
       isMine: mine(m.author_address),
-      reactions: rx("message", m.id),
+      reactions: m.deleted_at ? [] : rx("message", m.id),
       replies: [],
       quoted,
     });
@@ -758,6 +763,25 @@ export async function createGroupMessage(
     returning id
   `) as { id: string }[];
   return { ok: true, id: rows[0].id };
+}
+
+/**
+ * Soft-delete a message — author only. The row is kept (so replies keep their
+ * quoted context and the thread doesn't cascade-vanish); the feed then blanks
+ * the body and flags it deleted. Returns false if the caller isn't the author.
+ */
+export async function softDeleteGroupMessage(
+  groupId: string,
+  messageId: string,
+  caller: string
+): Promise<{ ok: boolean }> {
+  const done = (await sql`
+    update group_messages set deleted_at = now()
+    where id = ${messageId} and group_id = ${groupId}
+      and author_address = ${caller} and deleted_at is null
+    returning id
+  `) as { id: string }[];
+  return { ok: done.length > 0 };
 }
 
 // ─── Notifications (personal Inbox feed) ─────────────────────────────────

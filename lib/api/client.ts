@@ -201,6 +201,19 @@ export async function sendSquadMessage(
   return jsonOrThrow<{ id: string }>(res);
 }
 
+/** Soft-delete your own Squad Room message. */
+export async function deleteSquadMessage(
+  groupId: string,
+  messageId: string,
+  walletAddress: string
+): Promise<{ ok: boolean }> {
+  const res = await apiFetch(
+    `/api/groups/${groupId}/messages/${messageId}?wallet=${encodeURIComponent(walletAddress)}`,
+    { method: "DELETE" }
+  );
+  return jsonOrThrow<{ ok: boolean }>(res);
+}
+
 /** Toggle a reaction; returns the target's authoritative fresh summary. */
 export async function toggleSquadReaction(
   groupId: string,
