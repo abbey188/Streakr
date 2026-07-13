@@ -255,7 +255,7 @@ export default function ShareSheets({
               </div>
             </motion.div>
           ) : (
-            /* 2. Group Invite Post (Portrait 3:4, Locker Room Club Squad Card) */
+            /* 2. Group Invite Post (Portrait 3:4, Squad Room Club Card) */
             <motion.div
               key="invite-card"
               ref={cardRef}
@@ -287,7 +287,7 @@ export default function ShareSheets({
                 </div>
                 <div className="px-1 w-full">
                   <span className="text-[7px] font-mono text-[#8E9299] uppercase tracking-widest leading-none block mb-1">
-                    LOCKER ROOM INVITATION
+                    SQUAD ROOM INVITATION
                   </span>
                   <h3 className="text-xs font-black italic text-white uppercase tracking-tight break-words max-w-[240px] line-clamp-1">
                     {groupName}
