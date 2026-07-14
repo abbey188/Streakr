@@ -18,6 +18,7 @@ export interface MomentPhrase {
 type Payload = {
   side?: string; scorer?: string; player?: string; on?: string; off?: string;
   outcome?: string; penalty?: boolean; cardType?: string;
+  possA?: number; possB?: number;
 };
 
 /** How a moment reads. Deterministic from (type, payload, team). */
@@ -48,6 +49,10 @@ export function momentPhrase(type: string, payload: Record<string, unknown>, tea
       };
     case "shot":
       return { icon: "🎯", label: p.outcome === "Woodwork" ? "Woodwork" : "Shot on target", subject: p.player ?? teamName, predicate: p.outcome === "Woodwork" ? "rattles the woodwork" : "forces a save" };
+    case "momentum": {
+      const lead = Math.max(p.possA ?? 0, p.possB ?? 0);
+      return { icon: "📊", label: "Momentum", subject: teamName, predicate: lead >= 70 ? "in total control" : "turning the screw" };
+    }
     default:
       return { icon: "•", label: type, predicate: teamName };
   }
@@ -68,6 +73,7 @@ export function momentTone(type: string): string {
     case "sub": return "text-[#5EC26A] bg-[#5EC26A]/15";
     case "var": return "text-purple-300 bg-purple-500/15";
     case "shot": return "text-sky-400 bg-sky-500/15";
+    case "momentum": return "text-[#FF4E00] bg-[#FF4E00]/15";
     default: return "text-[#8E9299] bg-white/5";
   }
 }
@@ -78,13 +84,19 @@ export function buildMomentAttachment(item: FeedItem): MomentAttachment {
   const side = (item.payload as Payload).side;
   const teamName = side === "A" ? m.teamA.name : side === "B" ? m.teamB.name : m.teamA.name;
   const ph = momentPhrase(item.type, item.payload, teamName);
+  // Momentum has no visual bar in chat, so fold the possession % into the text.
+  let text = momentText(ph);
+  if (item.type === "momentum") {
+    const p = item.payload as { possA?: number; possB?: number };
+    text = `${teamName} ${ph.predicate} — ${Math.max(p.possA ?? 0, p.possB ?? 0)}% of the ball`;
+  }
   return {
     kind: "moment",
     fixtureId: item.fixtureId,
     type: item.type,
     icon: ph.icon,
     label: ph.label,
-    text: momentText(ph),
+    text,
     teamACode: m.teamA.code,
     teamBCode: m.teamB.code,
     teamAName: m.teamA.name,

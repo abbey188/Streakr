@@ -503,6 +503,54 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
   return [...byKey.values()].sort((a, b) => a.seq - b.seq);
 }
 
+// ─── Momentum (our derived read of the possession stream) ────────────────────
+
+const MOMENTUM_WEIGHTS: Record<string, number> = {
+  high_danger_possession: 3, danger_possession: 2.5, attack_possession: 2,
+  possession: 1, safe_possession: 0.5,
+};
+
+/**
+ * Derives a MOMENTUM moment — our own read, not a raw TxLINE field. Weights the
+ * possession stream by danger over the last ~10 minutes of match clock; when one
+ * side holds ≥60% of the weighted ball, emits ONE momentum event bucketed to a
+ * 10-minute block so it can't spam. Re-derived + upserted each poll like every
+ * other event (the block key keeps it to ~one card per team per 10 minutes).
+ * Returns null when play is balanced (nothing worth surfacing).
+ */
+export function deriveMomentum(updates: RawScoreEntry[]): PersistedMatchEvent | null {
+  const poss: { side: "A" | "B"; w: number; sec: number; seq: number }[] = [];
+  for (const e of updates) {
+    const w = MOMENTUM_WEIGHTS[e.Action];
+    if (!w) continue;
+    const side = e.Participant === 1 ? "A" : e.Participant === 2 ? "B" : null;
+    const sec = e.Clock?.Seconds;
+    if (!side || typeof sec !== "number") continue;
+    poss.push({ side, w, sec, seq: e.Seq });
+  }
+  if (poss.length < 20) return null;
+  const latest = Math.max(...poss.map((p) => p.sec));
+  const win = poss.filter((p) => p.sec >= latest - 600); // last 10 min of clock
+  if (win.length < 15) return null; // not enough recent signal
+  let a = 0, b = 0;
+  for (const p of win) { if (p.side === "A") a += p.w; else b += p.w; }
+  const total = a + b;
+  if (!total) return null;
+  const pa = Math.round((a / total) * 100);
+  const pb = 100 - pa;
+  const lead = pa >= pb ? "A" : "B";
+  if (Math.max(pa, pb) < 60) return null; // balanced — no swing to report
+  const minute = Math.floor(latest / 60);
+  return {
+    key: `momentum:${lead}:${Math.floor(minute / 10)}`, // one per team per 10-min block
+    seq: Math.max(...win.map((p) => p.seq)),
+    type: "momentum",
+    minute,
+    confirmed: true,
+    payload: { side: lead, possA: pa, possB: pb },
+  };
+}
+
 // ─── Event timeline (from chronological update entries) ──────────────────────
 
 const partOf = (data?: Record<string, unknown>): "A" | "B" | undefined =>

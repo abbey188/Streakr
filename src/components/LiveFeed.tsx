@@ -106,6 +106,21 @@ function MomentCard({ item, onOpen, onShare }: { item: FeedItem; onOpen: () => v
           </span>
         </div>
         <div className="text-[12.5px] text-slate-200 mt-1 leading-snug">{meta.body}</div>
+        {item.type === "momentum" && (() => {
+          const p = item.payload as { possA?: number; possB?: number };
+          const pa = p.possA ?? 50, pb = p.possB ?? 50;
+          return (
+            <div className="mt-2">
+              <div className="flex justify-between text-[8.5px] font-mono font-bold tabular-nums">
+                <span className="text-[#FF4E00]">{m.teamA.code} {pa}%</span>
+                <span className="text-[#8E9299]">{pb}% {m.teamB.code}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-[#2D364F] overflow-hidden flex mt-1">
+                <span className="bg-[#FF4E00] h-full" style={{ width: `${pa}%` }} />
+              </div>
+            </div>
+          );
+        })()}
         {onShare && (
           <div className="mt-2">
             <button

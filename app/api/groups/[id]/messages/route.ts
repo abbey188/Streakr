@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authWallet } from "@/lib/auth/server-auth";
 import { isGroupMember, createGroupMessage, recentMessageCount } from "@/lib/db/queries";
-import { notifySquadReply } from "@/lib/db/squad-notify";
+import { notifySquadReply, notifySquadMomentShare } from "@/lib/db/squad-notify";
 import type { MomentAttachment } from "@/src/types";
 
 export const dynamic = "force-dynamic";
@@ -74,9 +74,12 @@ export async function POST(
     if (!result.ok) {
       return NextResponse.json({ error: "empty message or invalid parent" }, { status: 400 });
     }
-    // Phase 4: a reply pings whoever it's aimed at (best-effort, never throws).
+    // A reply pings whoever it's aimed at; a shared moment (root + attachment)
+    // pings the rest of the squad. Both best-effort — never throw.
     if (parent && result.id) {
       await notifySquadReply(auth.wallet, body.body ?? "", parent, result.id);
+    } else if (hasAttachment && result.id && body.attachment) {
+      await notifySquadMomentShare(auth.wallet, id, body.attachment.text, body.body ?? "", result.id);
     }
     return NextResponse.json({ id: result.id });
   } catch (err) {

@@ -3,7 +3,7 @@ import type { RawFixture } from "./client";
 import type { PersistedMatchEvent } from "./types";
 import { sql } from "@/lib/db/client";
 import { txlineClient } from "./client";
-import { deriveLiveScore, deriveGoals, deriveMatchEvents, normalizeFixture, buildRoundMap, type DerivedGoal } from "./normalize";
+import { deriveLiveScore, deriveGoals, deriveMatchEvents, deriveMomentum, normalizeFixture, buildRoundMap, type DerivedGoal } from "./normalize";
 import { derivePickWindow } from "@/lib/pick-window";
 import { resolveFinishedFixtures } from "@/lib/db/resolution";
 import { notifyLiveEvents } from "@/lib/db/live-notify";
@@ -71,6 +71,8 @@ async function enrichFixtures(
               if (updates.length) {
                 goals = deriveGoals(updates);
                 events = deriveMatchEvents(updates);
+                const momentum = deriveMomentum(updates); // our derived read
+                if (momentum) events.push(momentum);
               }
             } catch { /* leave goals/events empty on a fetch failure */ }
           }

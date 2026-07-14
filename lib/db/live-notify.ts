@@ -87,7 +87,8 @@ export async function notifyLiveEvents(
           returning user_address
         `) as { user_address: string }[];
         await pushToUsers(goalRows, {
-          title, body, icon: "⚽", url: "/play", tag: `${f.id}-goal-${key}`,
+          // Deep-link goals to the match in the Hub (its live timeline + feed).
+          title, body, icon: "⚽", url: `/hub/${f.id}`, tag: `${f.id}-goal-${key}`,
         });
       }
 
