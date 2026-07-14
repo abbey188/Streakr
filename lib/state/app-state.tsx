@@ -218,7 +218,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     try { localStorage.removeItem("streakr_invite"); } catch { /* ignore */ }
     joinGroup(identity.walletAddress, code)
       .then((g) => {
-        if (!g) { triggerToast("That invite code didn't match a group."); return; }
+        if (!g) { triggerToast("That invite code didn't match a squad."); return; }
         triggerToast(`Joined ${g.name}! 🛡️`);
         // If this is a first-run user (the tour is queued), send them to Groups
         // once they finish it. Existing users are already on the Groups page.

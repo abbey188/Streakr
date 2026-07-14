@@ -90,8 +90,8 @@ export default function ScreenTour({ onDismiss }: ScreenTourProps) {
     },
     {
       id: 6,
-      title: "Groups",
-      text: "Create or join a squad and battle your friends on a private leaderboard. Winning a round crowns a Group Champion.",
+      title: "Squads",
+      text: "Create or join a squad and battle your friends on a private leaderboard. Winning a round crowns a Squad Champion.",
       selector: "#nav-pc-groups",
       selectorMobile: "#nav-mobile-groups",
       icon: Users,
@@ -99,7 +99,7 @@ export default function ScreenTour({ onDismiss }: ScreenTourProps) {
     {
       id: 7,
       title: "Inbox",
-      text: "Everything addressed to you: pick results, goals in your matches, badges you unlock, round-champion crowns and milestones from your groups.",
+      text: "Everything addressed to you: pick results, goals in your matches, badges you unlock, round-champion crowns and milestones from your squads.",
       selector: "#nav-pc-inbox",
       selectorMobile: "#nav-mobile-inbox",
       icon: Bell,

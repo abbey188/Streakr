@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import type { FeedItem } from "../types";
@@ -24,6 +25,23 @@ export default function ShareMomentSheet({ item }: { item: FeedItem }) {
   const [take, setTake] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // iOS scroll-lock while open: pin the body so focusing the take box can't
+  // scroll the page and shove the sheet around. Same proven approach as the
+  // full-screen Squad Room; the overlay itself is pinned to the visual viewport
+  // (--app-top / --app-h) so it always sits centered above the keyboard.
+  useEffect(() => {
+    const b = document.body;
+    const scrollY = window.scrollY;
+    const prev = { position: b.style.position, top: b.style.top, width: b.style.width, overflow: b.style.overflow };
+    b.style.position = "fixed"; b.style.top = `-${scrollY}px`; b.style.width = "100%"; b.style.overflow = "hidden";
+    return () => {
+      b.style.position = prev.position; b.style.top = prev.top; b.style.width = prev.width; b.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
 
   const att = buildMomentAttachment(item);
 
@@ -53,9 +71,12 @@ export default function ShareMomentSheet({ item }: { item: FeedItem }) {
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="absolute inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed left-0 right-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      style={{ top: "var(--app-top, 0px)", height: "var(--app-h, 100dvh)" }}
       onClick={app.closeMomentShare}
     >
       <div
@@ -124,6 +145,7 @@ export default function ShareMomentSheet({ item }: { item: FeedItem }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

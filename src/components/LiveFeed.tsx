@@ -156,9 +156,11 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
 
   return (
     <div className="flex flex-col h-full bg-[#0A0E1A] text-white font-sans overflow-y-auto pb-10">
-      {/* Header — solid (not translucent) so the strip doesn't ghost through it
-          as it scrolls underneath. */}
-      <div className="sticky top-0 bg-[#0A0E1A] border-b border-white/5 px-4 py-3.5 z-30">
+      {/* Header + strip pinned together as ONE solid sticky block, so the strip
+          never partially scrolls under the header (which left an empty card edge
+          peeking out). */}
+      <div className="sticky top-0 z-30 bg-[#0A0E1A]">
+        <div className="border-b border-white/5 px-4 py-3.5">
         <div className="flex items-center gap-2.5">
           <h2 className="text-base font-black italic tracking-tighter uppercase text-white">Hub</h2>
           {live.length > 0 && (
@@ -173,14 +175,15 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
         </div>
       </div>
 
-      {/* Live strip */}
-      {strip.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto px-4 py-3 border-b border-white/5 no-scrollbar">
-          {strip.map((f) => (
-            <StripCard key={f.id} fixture={f} now={now} onOpen={() => onOpenMatch(f.id)} />
-          ))}
-        </div>
-      )}
+        {/* Live strip — inside the sticky block, pinned with the header */}
+        {strip.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto px-4 py-3 border-b border-white/5 no-scrollbar">
+            {strip.map((f) => (
+              <StripCard key={f.id} fixture={f} now={now} onOpen={() => onOpenMatch(f.id)} />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Moment feed */}
       <div className="px-4 pt-3 max-w-2xl mx-auto w-full">

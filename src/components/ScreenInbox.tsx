@@ -107,7 +107,7 @@ export default function ScreenInbox({
                   }`}
                 >
                   <span className="inline-flex items-center justify-center gap-1.5">
-                    {t === "general" ? "General" : "Group"}
+                    {t === "general" ? "General" : "Squad"}
                     {badge > 0 && (
                       <span
                         className={`min-w-[15px] h-[15px] px-1 rounded-full text-[8px] font-black not-italic inline-flex items-center justify-center leading-none ${
@@ -176,7 +176,7 @@ export default function ScreenInbox({
         {tab === "group" && (
           visibleActivity.length === 0 ? (
             <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-6 text-center space-y-1">
-              <p className="text-xs font-black italic text-slate-300">Nothing from your groups yet</p>
+              <p className="text-xs font-black italic text-slate-300">Nothing from your squads yet</p>
               <p className="text-[10px] text-[#8E9299] leading-relaxed max-w-[260px] mx-auto">
                 When a groupmate hits a big streak or gets crowned Round Champion, it&apos;ll show up here.
               </p>

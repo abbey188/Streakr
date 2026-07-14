@@ -15,7 +15,7 @@ import ShareMomentSheet from "@/src/components/ShareMomentSheet";
 const NAV_ITEMS = [
   { label: "Play", icon: Flame, href: "/play" },
   { label: "Hub", icon: Tv, href: "/hub" },
-  { label: "Groups", icon: Users, href: "/groups" },
+  { label: "Squads", icon: Users, href: "/groups" },
   { label: "Inbox", icon: Bell, href: "/inbox" },
   { label: "Profile", icon: User, href: "/profile" },
 ];

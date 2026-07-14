@@ -186,7 +186,7 @@ export default function ScreenGroups({
       setJoinCode("");
       setSelectedGroup(group);
     } else {
-      setJoinError(error || "No group found for that code.");
+      setJoinError(error || "No squad found for that code.");
     }
   };
 
@@ -213,7 +213,7 @@ export default function ScreenGroups({
           {/* Invite */}
           <div className="bg-[#151B2E] border border-white/5 p-4 rounded-3xl flex items-center justify-between shadow-lg">
             <div className="min-w-0 flex-1">
-              <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block leading-none">Group Invite Code</span>
+              <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block leading-none">Squad Invite Code</span>
               <p className="text-lg font-black italic text-[#FF4E00] tracking-tight mt-1.5 leading-none">{selectedGroup.inviteCode}</p>
               <p className="text-[10px] text-[#8E9299] mt-1.5 font-mono">Share it to add your squad</p>
             </div>
@@ -314,17 +314,17 @@ export default function ScreenGroups({
           <div className="bg-[#FF4E00]/10 border border-[#FF4E00]/20 p-1.5 rounded-lg text-[#FF4E00]">
             <Users className="w-4 h-4" />
           </div>
-          <h2 className="text-sm font-black italic tracking-tighter uppercase text-white">Groups</h2>
+          <h2 className="text-sm font-black italic tracking-tighter uppercase text-white">Squads</h2>
         </div>
         <button onClick={() => setShowCreateModal(true)} className="text-[10px] font-black italic bg-[#FF4E00] hover:bg-orange-650 text-white px-3 py-1.5 rounded-xl flex items-center gap-1 transition cursor-pointer">
-          <Plus className="w-3.5 h-3.5" /> Create Group
+          <Plus className="w-3.5 h-3.5" /> Create Squad
         </button>
       </div>
 
       <div className="px-4 mt-4 space-y-5 flex-grow max-w-md mx-auto w-full z-10">
         {/* Join */}
         <div className="bg-[#151B2E] border border-white/5 p-4 rounded-3xl shadow-lg">
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-2">Join Group</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-300 mb-2">Join a Squad</h3>
           <form onSubmit={handleJoinGroup} className="flex gap-2">
             <input
               type="text"
@@ -343,10 +343,10 @@ export default function ScreenGroups({
 
         {/* Groups list */}
         <div className="space-y-3">
-          <h4 className="text-[10px] font-mono font-black text-[#8E9299] uppercase tracking-widest pl-1">Your Active Groups</h4>
+          <h4 className="text-[10px] font-mono font-black text-[#8E9299] uppercase tracking-widest pl-1">Your Squads</h4>
           {myGroups.length === 0 ? (
             <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-6 text-center">
-              <p className="text-xs text-[#8E9299] leading-relaxed">No groups yet. Create one or join with a code to start a streak battle with friends.</p>
+              <p className="text-xs text-[#8E9299] leading-relaxed">No squads yet. Create one or join with a code to start a streak battle with friends.</p>
             </div>
           ) : (
             myGroups.map((group) => (
@@ -380,11 +380,11 @@ export default function ScreenGroups({
       {showCreateModal && (
         <div className="fixed inset-0 bg-[#0A0E1A]/95 z-50 flex flex-col justify-center p-6">
           <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-5 shadow-2xl space-y-4 max-w-sm mx-auto w-full">
-            <h3 className="text-base font-black italic text-white uppercase tracking-tight">Create Custom Group</h3>
-            <p className="text-xs text-[#8E9299] leading-relaxed">Name your group and pick an emoji to build your custom streak battle lobby.</p>
+            <h3 className="text-base font-black italic text-white uppercase tracking-tight">Create a Squad</h3>
+            <p className="text-xs text-[#8E9299] leading-relaxed">Name your squad and pick an emoji to build your custom streak battle lobby.</p>
             <form onSubmit={handleCreateGroup} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block">Group Name</label>
+                <label className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block">Squad Name</label>
                 <input
                   type="text"
                   required
@@ -437,7 +437,7 @@ export default function ScreenGroups({
               <div className="flex gap-2.5 pt-2">
                 <button type="button" onClick={() => setShowCreateModal(false)} className="w-1/2 bg-[#0A0E1A] hover:bg-[#2D364F]/30 border border-white/5 text-slate-400 text-xs font-bold py-2.5 rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" disabled={creating} className="w-1/2 bg-[#FF4E00] hover:bg-orange-650 text-white text-xs font-black italic py-2.5 rounded-xl cursor-pointer disabled:opacity-60">
-                  {creating ? "Creating…" : "Create Group"}
+                  {creating ? "Creating…" : "Create Squad"}
                 </button>
               </div>
             </form>
