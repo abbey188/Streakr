@@ -129,16 +129,14 @@ export async function fetchFixtures(walletAddress?: string): Promise<Fixture[]> 
   return fixtures;
 }
 
-/** The Hub's Live Feed — recent match moments, newest-first. Never throws
- *  (returns [] on failure) so a feed hiccup can't break a page that polls it. */
+/** The Hub's Live Feed — recent match moments, newest-first. THROWS on failure
+ *  (like fetchFixtures) so the poller can keep the last-good feed instead of
+ *  flickering to the empty state on a transient hiccup mid-match. A successful
+ *  empty response ([]) still legitimately clears the feed. */
 export async function fetchFeed(limit = 60): Promise<FeedItem[]> {
-  try {
-    const res = await apiFetch(`/api/feed?limit=${limit}`);
-    const { feed } = await jsonOrThrow<{ feed: FeedItem[] }>(res);
-    return feed;
-  } catch {
-    return [];
-  }
+  const res = await apiFetch(`/api/feed?limit=${limit}`);
+  const { feed } = await jsonOrThrow<{ feed: FeedItem[] }>(res);
+  return feed;
 }
 
 export type PickResult = { ok: boolean; reason?: string };

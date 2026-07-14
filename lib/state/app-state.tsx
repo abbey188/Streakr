@@ -182,8 +182,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         .then((rows) => { if (!cancelled && rows.length > 0) setFixtures(rows); })
         .catch(() => { /* keep last-good fixtures on failure */ });
       // The Live Feed rides the same adaptive cadence — one unified live-data
-      // core, so the Hub feed is fresh app-wide (fetchFeed never throws).
-      fetchFeed().then((items) => { if (!cancelled) setFeed(items); });
+      // core, so the Hub feed is fresh app-wide. Keep last-good on a failed poll
+      // (don't flicker the feed to empty mid-match); a successful [] still clears.
+      fetchFeed()
+        .then((items) => { if (!cancelled) setFeed(items); })
+        .catch(() => { /* keep last-good feed on failure */ });
     };
     load();
     let tick = 0;
