@@ -48,3 +48,7 @@
   border-radius: 999px;
 }
 .thin-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Fully hidden scrollbar for horizontal strips (Live Feed scores strip, etc.). */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

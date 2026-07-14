@@ -92,6 +92,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   const isActive = (href: string) => pathname === href;
+  // A live match glows the Hub nav icon to pull you into the feed (the icon
+  // itself never changes — this is a live-state cue, not a swap).
+  const anyLive = app.fixtures.some((f) => f.status === "live");
 
   return (
     <div className="min-h-dvh bg-[#0A0E1A] text-white flex flex-col lg:flex-row font-sans selection:bg-[#FF4E00] selection:text-white antialiased overflow-hidden relative">
@@ -148,8 +151,19 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                         : "text-[#8E9299] hover:bg-[#2D364F]/40 hover:text-white"
                     }`}
                   >
-                    <Icon className="w-4.5 h-4.5" />
+                    <Icon
+                      className={`w-4.5 h-4.5 ${
+                        item.href === "/hub" && anyLive && !active
+                          ? "text-[#FF4E00] drop-shadow-[0_0_6px_rgba(255,78,0,0.75)] animate-pulse"
+                          : ""
+                      }`}
+                    />
                     <span>{item.label}</span>
+                    {item.href === "/hub" && anyLive && (
+                      <span className="ml-auto inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-widest text-red-500 not-italic">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live
+                      </span>
+                    )}
                     {item.href === "/inbox" && unreadCount > 0 && (
                       <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF4E00] text-white text-[10px] font-black flex items-center justify-center not-italic">
                         {unreadCount > 9 ? "9+" : unreadCount}
@@ -212,7 +226,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     active ? "text-[#FF4E00] scale-105" : "text-[#8E9299] hover:text-slate-300"
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${active ? "fill-[#FF4E00]/10" : ""}`} />
+                  <Icon
+                    className={`w-5 h-5 ${active ? "fill-[#FF4E00]/10" : ""} ${
+                      item.href === "/hub" && anyLive && !active
+                        ? "text-[#FF4E00] drop-shadow-[0_0_6px_rgba(255,78,0,0.8)] animate-pulse"
+                        : ""
+                    }`}
+                  />
+                  {item.href === "/hub" && anyLive && (
+                    <span className="absolute top-0 right-[26%] w-2 h-2 rounded-full bg-red-500 animate-pulse ring-2 ring-[#151B2E]" />
+                  )}
                   {item.href === "/inbox" && unreadCount > 0 && (
                     <span className="absolute top-0 right-[22%] min-w-[15px] h-[15px] px-0.5 rounded-full bg-[#FF4E00] text-white text-[8px] font-black flex items-center justify-center">
                       {unreadCount > 9 ? "9+" : unreadCount}

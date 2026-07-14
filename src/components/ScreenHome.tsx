@@ -48,6 +48,7 @@ interface ScreenHomeProps {
   walletAddress?: string;
   onMakePick: (fixtureId: string, pick: "A" | "B") => void;
   onOpenProfile: () => void;
+  onSeePastMatches?: () => void;
 }
 
 // Knockout rounds in tournament order — drives the Knockout Stage tracker.
@@ -128,6 +129,7 @@ export default function ScreenHome({
   walletAddress,
   onMakePick,
   onOpenProfile,
+  onSeePastMatches,
 }: ScreenHomeProps) {
   const now = useNow(); // ticks live-match minutes forward between syncs
 
@@ -882,6 +884,17 @@ export default function ScreenHome({
           </div>
 
         </div>
+
+        {/* See past matches — the finished-match browser lives one tap from your
+            picks (moved off the Hub, which is now live-only). */}
+        {onSeePastMatches && (
+          <button
+            onClick={onSeePastMatches}
+            className="mt-6 w-full flex items-center justify-center gap-2 bg-[#0A0E1A] border border-dashed border-white/15 rounded-2xl py-3.5 text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[#8E9299] hover:text-white hover:border-white/25 transition"
+          >
+            🗂 See <span className="text-white">past matches</span> →
+          </button>
+        )}
       </div>
 
       {/* Screen 6 — PICK FLOW MODAL OVERLAY */}

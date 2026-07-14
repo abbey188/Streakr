@@ -4,12 +4,12 @@ import {
   createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import type { AvatarConfig, Fixture, GroupMember, ActivityItem } from "@/src/types";
+import type { AvatarConfig, Fixture, GroupMember, ActivityItem, FeedItem } from "@/src/types";
 import { INITIAL_LEADERBOARD, INITIAL_ACTIVITY } from "@/src/data/fixtures";
 import { useIdentity } from "@/lib/identity/context";
 import {
   fetchMe, createUser, updateAvatar as apiUpdateAvatar, makePick as apiMakePick,
-  fetchFixtures, joinGroup,
+  fetchFixtures, fetchFeed, joinGroup,
 } from "@/lib/api/client";
 
 /**
@@ -43,6 +43,7 @@ interface AppState {
   userEmail: string;
 
   fixtures: Fixture[];
+  feed: FeedItem[];
   leaderboard: GroupMember[];
   activity: ActivityItem[];
 
@@ -97,6 +98,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // first paint. (leaderboard/activity mocks below are only share-card fallbacks,
   // not shown on Play, so they stay.)
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [feed, setFeed] = useState<FeedItem[]>([]);
   const [leaderboard, setLeaderboard] = useState<GroupMember[]>(INITIAL_LEADERBOARD);
   const [activity, setActivity] = useState<ActivityItem[]>(INITIAL_ACTIVITY);
 
@@ -179,6 +181,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       fetchFixtures(wallet)
         .then((rows) => { if (!cancelled && rows.length > 0) setFixtures(rows); })
         .catch(() => { /* keep last-good fixtures on failure */ });
+      // The Live Feed rides the same adaptive cadence — one unified live-data
+      // core, so the Hub feed is fresh app-wide (fetchFeed never throws).
+      fetchFeed().then((items) => { if (!cancelled) setFeed(items); });
     };
     load();
     let tick = 0;
@@ -321,7 +326,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const value: AppState = {
     profileStatus,
     avatar, streak, personalBest, points, userEmail,
-    fixtures, leaderboard, activity,
+    fixtures, feed, leaderboard, activity,
     toastMessage, activeShareSheet, shareGroupInfo, showTour, dismissTour,
     triggerToast, makePick, updateUserAvatar, createProfile,
     openShareSheet, closeShareSheet,

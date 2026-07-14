@@ -39,6 +39,7 @@ export default function PlayPage() {
         walletAddress={identity.walletAddress ?? undefined}
         onMakePick={app.makePick}
         onOpenProfile={() => router.push("/profile")}
+        onSeePastMatches={() => router.push("/past")}
       />
       {app.showTour && <ScreenTour onDismiss={app.dismissTour} />}
     </div>

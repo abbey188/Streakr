@@ -1,6 +1,6 @@
 import React from "react";
 import { Fixture } from "../types";
-import { Tv, Clock } from "lucide-react";
+import { Tv, Clock, ChevronLeft } from "lucide-react";
 import { groupByDay, kickoffLabel } from "@/lib/match-groups";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import CountryFlag from "./CountryFlag";
@@ -9,9 +9,14 @@ import PickConsensus from "./PickConsensus";
 interface ScreenLiveScoresProps {
   fixtures: Fixture[];
   onOpenMatch: (fixtureId: string) => void;
+  // "Past matches" mode: finished-only browser reached from Play. Hides the
+  // live/upcoming sections and shows a titled header with a back control.
+  onlyFinished?: boolean;
+  title?: string;
+  onBack?: () => void;
 }
 
-export default function ScreenLiveScores({ fixtures, onOpenMatch }: ScreenLiveScoresProps) {
+export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, title, onBack }: ScreenLiveScoresProps) {
   const now = useNow(); // ticks live-match minutes forward between syncs
   // Group fixtures. Upcoming stays soonest-first; completed shows most-recent
   // first (down to the least recent of the round), like a results feed.
@@ -176,11 +181,21 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch }: ScreenLiveSc
       {/* Visual Header */}
       <div className="sticky top-0 bg-[#0A0E1A]/85 backdrop-blur-md border-b border-white/5 px-4 py-4 flex items-center justify-between z-30">
         <div className="flex items-center gap-2">
-          <div className="bg-[#FF4E00]/10 border border-[#FF4E00]/20 p-1.5 rounded-lg text-[#FF4E00]">
-            <Tv className="w-4 h-4" />
-          </div>
+          {onBack ? (
+            <button
+              onClick={onBack}
+              aria-label="Back"
+              className="bg-[#151B2E] border border-white/5 p-1.5 rounded-lg text-slate-300 hover:text-white hover:border-white/15 transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          ) : (
+            <div className="bg-[#FF4E00]/10 border border-[#FF4E00]/20 p-1.5 rounded-lg text-[#FF4E00]">
+              <Tv className="w-4 h-4" />
+            </div>
+          )}
           <h2 className="text-sm font-black italic tracking-tighter uppercase text-white">
-            Score Hub
+            {title ?? "Score Hub"}
           </h2>
         </div>
         <span className="text-[10px] font-mono text-[#8E9299] font-bold uppercase tracking-widest bg-[#151B2E] px-2.5 py-1 rounded-lg border border-white/5">
@@ -190,7 +205,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch }: ScreenLiveSc
 
       <div className="px-4 space-y-6 mt-4 max-w-7xl mx-auto w-full">
         {/* 1. Live Now Match List */}
-        {liveMatches.length > 0 && (
+        {!onlyFinished && liveMatches.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-[10px] font-mono font-bold text-red-500 uppercase tracking-wider pl-1 flex items-center gap-1.5 animate-pulse">
               <span className="w-1.5 h-1.5 bg-red-500 rounded-full inline-block" />
@@ -203,7 +218,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch }: ScreenLiveSc
         )}
 
         {/* 2. Upcoming — grouped by day (Today / Tomorrow / dates) */}
-        {upcomingMatches.length > 0 && (
+        {!onlyFinished && upcomingMatches.length > 0 && (
           <div className="space-y-5">
             <h3 className="text-[10px] font-mono font-bold text-[#FF4E00] uppercase tracking-wider pl-1">
               {upcomingMatches[0]?.round ?? "Knockout"} Upcoming Fixtures
@@ -226,11 +241,20 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch }: ScreenLiveSc
         {finishedMatches.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-[10px] font-mono font-bold text-[#8E9299] uppercase tracking-wider pl-1">
-              Completed Matches
+              {onlyFinished ? "Every match played" : "Completed Matches"}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {finishedMatches.map(renderMatchCard)}
             </div>
+          </div>
+        )}
+
+        {/* Empty state — only relevant in the finished-only browser. */}
+        {onlyFinished && finishedMatches.length === 0 && (
+          <div className="mt-16 text-center px-6">
+            <div className="text-3xl mb-3">🗂</div>
+            <p className="text-sm font-black italic text-slate-200">No matches played yet</p>
+            <p className="text-xs text-[#8E9299] mt-1.5">Finished matches show up here as the tournament unfolds.</p>
           </div>
         )}
       </div>
