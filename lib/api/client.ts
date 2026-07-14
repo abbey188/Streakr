@@ -8,6 +8,7 @@ import type {
   SquadItem,
   SquadReaction,
   FeedItem,
+  MomentAttachment,
 } from "@/src/types";
 import type { MatchDetail, FormEntry } from "@/lib/txline/types";
 
@@ -192,12 +193,14 @@ export async function fetchSquadFeed(
   return feed;
 }
 
-/** Post a Squad Room message — a root, or a one-level reply to a message/event. */
+/** Post a Squad Room message — a root, a one-level reply, and/or a shared
+ *  Live-Feed moment (attachment). A moment can post with an empty body. */
 export async function sendSquadMessage(
   groupId: string,
   walletAddress: string,
   body: string,
-  parent?: { type: "message" | "event"; id: string }
+  parent?: { type: "message" | "event"; id: string },
+  attachment?: MomentAttachment | null
 ): Promise<{ id: string }> {
   const res = await apiFetch(`/api/groups/${groupId}/messages`, {
     method: "POST",
@@ -207,6 +210,7 @@ export async function sendSquadMessage(
       body,
       parentMessageId: parent?.type === "message" ? parent.id : undefined,
       parentEventId: parent?.type === "event" ? parent.id : undefined,
+      attachment: attachment ?? undefined,
     }),
   });
   return jsonOrThrow<{ id: string }>(res);

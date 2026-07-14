@@ -1,7 +1,8 @@
 import React from "react";
-import type { Fixture, FeedItem, FeedMatch } from "../types";
+import type { Fixture, FeedItem } from "../types";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import { kickoffLabel } from "@/lib/match-groups";
+import { momentPhrase, momentTone } from "@/lib/social/moment";
 import CountryFlag from "./CountryFlag";
 
 /**
@@ -20,90 +21,26 @@ interface LiveFeedProps {
 }
 
 // ─── moment vocabulary ───────────────────────────────────────────────────────
-// Objects for the machine feed (⚽ 🟨 🔁 📺); faces stay reserved for humans.
+// Phrasing + tone come from the shared lib (lib/social/moment) so the feed card
+// and the shared Squad Room card never drift.
 
-interface MomentMeta {
-  icon: string;
-  label: string;
-  tone: string; // badge colour classes
-  body: React.ReactNode;
-}
-
-const teamName = (m: FeedMatch, side?: string) =>
-  side === "A" ? m.teamA.name : side === "B" ? m.teamB.name : m.teamA.name;
+interface MomentMeta { icon: string; label: string; tone: string; body: React.ReactNode; }
 
 function momentMeta(item: FeedItem): MomentMeta {
-  const p = item.payload as {
-    side?: string; scorer?: string; player?: string; on?: string; off?: string;
-    outcome?: string; penalty?: boolean; cardType?: string;
-  };
   const m = item.match;
-  const team = teamName(m, p.side);
-  const b = (s?: string) => <b className="text-white font-bold">{s}</b>;
-
-  switch (item.type) {
-    case "goal":
-      return {
-        icon: "⚽", label: p.penalty ? "Penalty" : "Goal",
-        tone: "text-emerald-400 bg-emerald-500/15",
-        body: p.scorer
-          ? <>{b(p.scorer)} {p.penalty ? "converts from the spot" : "finds the net"}</>
-          : <>{b(team)} {p.penalty ? "score from the spot" : "score"}</>,
-      };
-    case "penalty":
-      return {
-        icon: "⚽", label: "Penalty",
-        tone: "text-emerald-400 bg-emerald-500/15",
-        body: <>{b(p.scorer ?? team)} scores from the spot</>,
-      };
-    case "penalty_missed":
-      return {
-        icon: "🥅", label: "Penalty",
-        tone: "text-slate-300 bg-white/5",
-        body: <>{b(p.player ?? team)} sees the penalty {p.outcome ?? "saved"}</>,
-      };
-    case "yellow":
-      return {
-        icon: "🟨", label: "Yellow card",
-        tone: "text-amber-400 bg-amber-500/15",
-        body: <>{b(p.player ?? team)} goes into the book</>,
-      };
-    case "red":
-      return {
-        icon: "🟥", label: "Red card",
-        tone: "text-red-400 bg-red-500/15",
-        body: <>{b(p.player ?? team)} {p.cardType === "SecondYellow" ? "sent off — second yellow" : "is shown red"}</>,
-      };
-    case "sub":
-      return {
-        icon: "🔁", label: "Substitution",
-        tone: "text-[#5EC26A] bg-[#5EC26A]/15",
-        body: p.on
-          ? <>{b(p.on)} on{p.off ? <>, {p.off} off</> : null} <span className="text-[#8E9299]">· {team}</span></>
-          : <>{b(p.off ?? "Change")} off <span className="text-[#8E9299]">· {team}</span></>,
-      };
-    case "var":
-      return {
-        icon: "📺",
-        label: p.outcome === "overturned" ? "VAR · Overturned" : p.outcome === "stands" ? "VAR · Stands" : "VAR",
-        tone: "text-purple-300 bg-purple-500/15",
-        body: p.outcome === "overturned"
-          ? <>The decision is <b className="text-white">overturned</b></>
-          : p.outcome === "stands"
-            ? <>After review, the <b className="text-white">decision stands</b></>
-            : <>Under VAR review</>,
-      };
-    case "shot":
-      return {
-        icon: "🎯", label: p.outcome === "Woodwork" ? "Woodwork" : "Shot on target",
-        tone: "text-sky-400 bg-sky-500/15",
-        body: p.outcome === "Woodwork"
-          ? <>{b(p.player ?? team)} rattles the woodwork</>
-          : <>{b(p.player ?? team)} forces a save</>,
-      };
-    default:
-      return { icon: "•", label: item.type, tone: "text-[#8E9299] bg-white/5", body: <>{team}</> };
-  }
+  const side = (item.payload as { side?: string }).side;
+  const team = side === "A" ? m.teamA.name : side === "B" ? m.teamB.name : m.teamA.name;
+  const ph = momentPhrase(item.type, item.payload, team);
+  return {
+    icon: ph.icon, label: ph.label, tone: momentTone(item.type),
+    body: (
+      <>
+        {ph.subject ? <b className="text-white font-bold">{ph.subject}</b> : null}
+        {ph.subject ? " " : null}{ph.predicate}
+        {ph.context ? <span className="text-[#8E9299]"> · {ph.context}</span> : null}
+      </>
+    ),
+  };
 }
 
 // ─── strip ───────────────────────────────────────────────────────────────────

@@ -60,6 +60,25 @@ export interface FeedMatch {
   teamB: Team;
 }
 
+/** A feed moment shared into a Squad Room — frozen at share time so the chat
+ *  card renders identically forever, independent of later feed logic. Stored on
+ *  group_messages.attachment. */
+export interface MomentAttachment {
+  kind: "moment";
+  fixtureId: string;
+  type: string; // goal | penalty | yellow | … (drives icon tone)
+  icon: string;
+  label: string;
+  text: string;
+  teamACode: string;
+  teamBCode: string;
+  teamAName: string;
+  teamBName: string;
+  scoreA: number;
+  scoreB: number;
+  minute: number | null;
+}
+
 /** One moment in the Live Feed. `payload` carries type-specific detail
  *  (side, scorer/player, on/off, outcome, penalty, cardType). */
 export interface FeedItem {
@@ -143,6 +162,8 @@ export interface SquadItem {
   replies: SquadReply[];
   quoted?: { username: string; body: string; isMine: boolean; deleted?: boolean } | null;
   deleted?: boolean;
+  // A shared Live-Feed moment renders as a rich card above the message body.
+  attachment?: MomentAttachment | null;
 }
 
 /** A personal, addressed-to-you notification (pick result, badge, round champion,

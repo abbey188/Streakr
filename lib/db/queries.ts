@@ -12,6 +12,7 @@ import type {
   SquadReply,
   FeedItem,
   FeedMatch,
+  MomentAttachment,
 } from "../../src/types";
 import type { FormEntry, PersistedMatchEvent } from "@/lib/txline/types";
 import { prefAllows } from "./notify-prefs";
@@ -525,6 +526,7 @@ interface SquadMessageRow {
   username: string;
   avatar: AvatarConfig;
   deleted_at: string | null;
+  attachment: MomentAttachment | null;
 }
 interface SquadReactionRow {
   target_type: "message" | "event";
@@ -561,7 +563,7 @@ export async function getSquadFeed(
     `,
     sql`
       select m.id, m.body, m.created_at, m.parent_message_id, m.parent_event_id,
-             m.author_address, m.deleted_at,
+             m.author_address, m.deleted_at, m.attachment,
              coalesce(u.username, 'Someone') as username,
              coalesce(u.avatar, '{}'::jsonb) as avatar
       from group_messages m
@@ -651,6 +653,7 @@ export async function getSquadFeed(
       reactions: m.deleted_at ? [] : rx("message", m.id),
       replies: [],
       quoted,
+      attachment: m.deleted_at ? null : m.attachment,
     });
   }
   roots.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -742,10 +745,13 @@ export async function createGroupMessage(
   groupId: string,
   author: string,
   body: string,
-  parent?: { type: "message" | "event"; id: string }
+  parent?: { type: "message" | "event"; id: string },
+  attachment?: MomentAttachment | null
 ): Promise<{ ok: boolean; id?: string }> {
   const text = body.trim().slice(0, SQUAD_MESSAGE_MAX);
-  if (!text) return { ok: false };
+  // A shared moment can stand on its own (no take), so an attachment makes an
+  // empty body valid — otherwise a message must have text.
+  if (!text && !attachment) return { ok: false };
 
   if (parent) {
     const belongs =
@@ -756,11 +762,12 @@ export async function createGroupMessage(
   }
 
   const rows = (await sql`
-    insert into group_messages (group_id, author_address, body, parent_message_id, parent_event_id)
+    insert into group_messages (group_id, author_address, body, parent_message_id, parent_event_id, attachment)
     values (
       ${groupId}, ${author}, ${text},
       ${parent?.type === "message" ? parent.id : null},
-      ${parent?.type === "event" ? parent.id : null}
+      ${parent?.type === "event" ? parent.id : null},
+      ${attachment ? JSON.stringify(attachment) : null}
     )
     returning id
   `) as { id: string }[];

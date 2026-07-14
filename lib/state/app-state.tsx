@@ -51,6 +51,7 @@ interface AppState {
   toastMessage: string;
   activeShareSheet: "streak" | "invite" | null;
   shareGroupInfo: ShareGroupInfo | null;
+  momentToShare: FeedItem | null; // a Live-Feed moment being shared to a squad
   showTour: boolean; // first-run guided tour overlay on /play
   dismissTour: () => void;
 
@@ -61,6 +62,8 @@ interface AppState {
   createProfile: (config: AvatarConfig) => Promise<void>;
   openShareSheet: (type: "streak" | "invite", info?: ShareGroupInfo) => void;
   closeShareSheet: () => void;
+  openMomentShare: (item: FeedItem) => void;
+  closeMomentShare: () => void;
 }
 
 const DEFAULT_AVATAR: AvatarConfig = {
@@ -105,6 +108,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [toastMessage, setToastMessage] = useState("");
   const [activeShareSheet, setActiveShareSheet] = useState<"streak" | "invite" | null>(null);
   const [shareGroupInfo, setShareGroupInfo] = useState<ShareGroupInfo | null>(null);
+  const [momentToShare, setMomentToShare] = useState<FeedItem | null>(null);
   const [showTour, setShowTour] = useState(false);
   // Set when a new user joins via an invite link — on tour dismissal we route
   // them to Groups so they land in the squad they were invited to.
@@ -326,13 +330,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setShareGroupInfo(null);
   }, []);
 
+  const openMomentShare = useCallback((item: FeedItem) => setMomentToShare(item), []);
+  const closeMomentShare = useCallback(() => setMomentToShare(null), []);
+
   const value: AppState = {
     profileStatus,
     avatar, streak, personalBest, points, userEmail,
     fixtures, feed, leaderboard, activity,
     toastMessage, activeShareSheet, shareGroupInfo, showTour, dismissTour,
+    momentToShare,
     triggerToast, makePick, updateUserAvatar, createProfile,
-    openShareSheet, closeShareSheet,
+    openShareSheet, closeShareSheet, openMomentShare, closeMomentShare,
   };
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

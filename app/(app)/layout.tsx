@@ -10,6 +10,7 @@ import { useAppState } from "@/lib/state/app-state";
 import { fetchUnreadCount } from "@/lib/api/client";
 import LoadingSplash from "@/src/components/LoadingSplash";
 import ShareSheets from "@/src/components/ShareSheets";
+import ShareMomentSheet from "@/src/components/ShareMomentSheet";
 
 const NAV_ITEMS = [
   { label: "Play", icon: Flame, href: "/play" },
@@ -185,6 +186,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         >
           <div className="flex-grow overflow-hidden relative w-full h-full flex flex-col">
             {children}
+
+            {/* Share-a-moment sheet — dropping a Live-Feed moment into a squad */}
+            {app.momentToShare && <ShareMomentSheet item={app.momentToShare} />}
 
             {/* Share sheet overlay */}
             {app.activeShareSheet && (

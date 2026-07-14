@@ -12,6 +12,7 @@ export default function HubPage() {
       fixtures={app.fixtures}
       feed={app.feed}
       onOpenMatch={(fixtureId) => router.push(`/hub/${fixtureId}`)}
+      onShareMoment={app.openMomentShare}
     />
   );
 }

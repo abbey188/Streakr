@@ -157,6 +157,9 @@ create table if not exists group_messages (
   deleted_at        timestamptz
 );
 create index if not exists group_messages_group_idx on group_messages (group_id, created_at);
+-- A shared Live-Feed moment: a frozen MomentAttachment snapshot (icon/label/text
+-- + team codes + score at share time) rendered as a card above the message body.
+alter table group_messages add column if not exists attachment jsonb;
 
 -- Normalized reactions — the source of truth for who reacted with what, on a
 -- message OR a system event. Counts are DERIVED (group by), so a tap toggles

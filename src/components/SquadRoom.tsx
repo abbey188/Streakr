@@ -7,6 +7,7 @@ import { fetchSquadFeed, toggleSquadReaction, sendSquadMessage, deleteSquadMessa
 import { SQUAD_REACTIONS } from "@/lib/social/reactions";
 import { eventPredicate } from "@/lib/social/phrasing";
 import type { SquadItem, SquadReaction, AvatarConfig } from "../types";
+import MomentAttachmentCard from "./MomentAttachmentCard";
 import { Plus, CornerUpLeft, Send, X, ChevronDown, Trash2 } from "lucide-react";
 
 /**
@@ -479,7 +480,13 @@ function ChatMessage({
                 </span>
               </span>
             )}
-            <span className="text-[13px] text-slate-200 leading-snug">{item.body}</span>
+            {/* A shared Live-Feed moment renders as a card above the take. */}
+            {item.attachment && (
+              <span className={`block ${item.body ? "mb-1.5" : ""}`}>
+                <MomentAttachmentCard att={item.attachment} />
+              </span>
+            )}
+            {item.body && <span className="text-[13px] text-slate-200 leading-snug">{item.body}</span>}
           </button>
 
           {/* PC hover toolbar — anchored top-left, opening RIGHTWARD into the

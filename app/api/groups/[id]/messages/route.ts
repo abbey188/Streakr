@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authWallet } from "@/lib/auth/server-auth";
 import { isGroupMember, createGroupMessage, recentMessageCount } from "@/lib/db/queries";
 import { notifySquadReply } from "@/lib/db/squad-notify";
+import type { MomentAttachment } from "@/src/types";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +30,14 @@ export async function POST(
       body?: string;
       parentMessageId?: string;
       parentEventId?: string;
+      attachment?: MomentAttachment | null;
     };
-    if (!body.walletAddress || !body.body || !body.body.trim()) {
+    // A shared moment can post with no text, so a body is required only when
+    // there's no attachment.
+    const hasAttachment = body.attachment?.kind === "moment";
+    if (!body.walletAddress || ((!body.body || !body.body.trim()) && !hasAttachment)) {
       return NextResponse.json(
-        { error: "walletAddress and a non-empty body are required" },
+        { error: "walletAddress and a non-empty body (or an attachment) are required" },
         { status: 400 }
       );
     }
@@ -63,13 +68,15 @@ export async function POST(
       ? ({ type: "event", id: body.parentEventId } as const)
       : undefined;
 
-    const result = await createGroupMessage(id, auth.wallet, body.body, parent);
+    const result = await createGroupMessage(
+      id, auth.wallet, body.body ?? "", parent, hasAttachment ? body.attachment : null
+    );
     if (!result.ok) {
       return NextResponse.json({ error: "empty message or invalid parent" }, { status: 400 });
     }
     // Phase 4: a reply pings whoever it's aimed at (best-effort, never throws).
     if (parent && result.id) {
-      await notifySquadReply(auth.wallet, body.body, parent, result.id);
+      await notifySquadReply(auth.wallet, body.body ?? "", parent, result.id);
     }
     return NextResponse.json({ id: result.id });
   } catch (err) {
