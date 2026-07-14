@@ -55,13 +55,12 @@ export default function ShareMomentSheet({ item }: { item: FeedItem }) {
 
   return (
     <div
-      className="absolute inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm"
+      className="absolute inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
       onClick={app.closeMomentShare}
     >
       <div
-        className="w-full sm:max-w-md bg-[#0C1224] border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl"
+        className="w-full max-w-md max-h-full overflow-y-auto bg-[#0C1224] border border-white/10 rounded-3xl p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
-        style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
       >
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-black italic uppercase tracking-tight text-white">Share to squad</h3>

@@ -142,18 +142,23 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
   const now = useNow();
 
   const live = fixtures.filter((f) => f.status === "live");
-  // Next-up: soonest upcoming knockout fixtures, so the strip is never empty
-  // between matches (and Play remains where you actually pick).
+  // The strip is a scoreboard glance for TODAY only — live matches + any still
+  // to kick off today. Future fixtures live on Play, not here.
+  const isToday = (iso?: string) => {
+    if (!iso) return false;
+    const d = new Date(iso), n = new Date();
+    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+  };
   const upcoming = fixtures
-    .filter((f) => f.status === "upcoming")
-    .sort((a, b) => (a.kickoffAt ? Date.parse(a.kickoffAt) : 0) - (b.kickoffAt ? Date.parse(b.kickoffAt) : 0))
-    .slice(0, 4);
+    .filter((f) => f.status === "upcoming" && isToday(f.kickoffAt))
+    .sort((a, b) => (a.kickoffAt ? Date.parse(a.kickoffAt) : 0) - (b.kickoffAt ? Date.parse(b.kickoffAt) : 0));
   const strip = [...live, ...upcoming];
 
   return (
     <div className="flex flex-col h-full bg-[#0A0E1A] text-white font-sans overflow-y-auto pb-10">
-      {/* Header */}
-      <div className="sticky top-0 bg-[#0A0E1A]/90 backdrop-blur-md border-b border-white/5 px-4 py-3.5 z-30">
+      {/* Header — solid (not translucent) so the strip doesn't ghost through it
+          as it scrolls underneath. */}
+      <div className="sticky top-0 bg-[#0A0E1A] border-b border-white/5 px-4 py-3.5 z-30">
         <div className="flex items-center gap-2.5">
           <h2 className="text-base font-black italic tracking-tighter uppercase text-white">Hub</h2>
           {live.length > 0 && (
