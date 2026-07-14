@@ -1,10 +1,11 @@
-/* Streakr service worker — PUSH + notification-click, and NO caching.
+/* Streakr service worker — PUSH + notification-click, and NO caching of app
+ * assets.
  *
  * A caching SW is the classic way to brick a web app by serving stale JS/CSS
- * after a deploy, so nothing here ever answers a request: the app always loads
- * fresh from the network. The fetch listener below exists purely to satisfy
- * Chrome's installability check — see the note above it before touching it.
- * Registered by lib/push/client.ts.
+ * after a deploy, so app requests always fall through to the network. The ONLY
+ * exception is country-flag images (flagcdn) — immutable, cross-origin, and not
+ * app code — which are cache-first so they don't re-download and flash on every
+ * client-side navigation. Registered by lib/push/client.ts.
  */
 
 // Activate a new version immediately (so SW updates roll out without a stale
@@ -12,12 +13,29 @@
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
-// PASS-THROUGH fetch handler. Chrome's install criteria require a registered
-// service worker WITH a fetch handler before it will offer "Install app". This
-// listener deliberately never calls event.respondWith(), so every request falls
-// through to the normal network — nothing is cached, and the stale-asset failure
-// mode a caching SW would introduce stays impossible.
-self.addEventListener("fetch", () => {});
+// Fetch handler. Chrome's install criteria require a registered service worker
+// WITH a fetch handler before it offers "Install app". App requests fall through
+// untouched (no respondWith → normal network → no stale-asset risk). The ONE
+// exception: country-flag images are served cache-first — they're immutable and
+// cross-origin, so caching them can't brick the app, and it stops the flags from
+// re-downloading (and flashing) on every page navigation.
+self.addEventListener("fetch", (event) => {
+  if (event.request.url.startsWith("https://flagcdn.com/")) {
+    event.respondWith(
+      caches.open("streakr-flags-v1").then((cache) =>
+        cache.match(event.request).then(
+          (hit) =>
+            hit ||
+            fetch(event.request).then((res) => {
+              cache.put(event.request, res.clone());
+              return res;
+            })
+        )
+      )
+    );
+  }
+  // else: pass through — nothing else is ever cached.
+});
 
 self.addEventListener("push", (event) => {
   let data = {};

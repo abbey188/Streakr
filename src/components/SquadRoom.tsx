@@ -269,14 +269,17 @@ export default function SquadRoom({
     setSending(true);
     try {
       await sendSquadMessage(groupId, walletAddress, text, replying ? { type: "message", id: replying.id } : undefined);
-      await load();
-      scrollToEnd();
+      // Unlock the composer the moment the message is persisted — reconcile the
+      // real feed in the background so typing the next line never waits on a poll.
+      setSending(false);
+      load().then(() => scrollToEnd()).catch(() => {});
     } catch {
       // Roll back the optimistic message and restore the draft.
       setItems((prev) => prev.filter((it) => it.id !== tempId));
       setDraft(text);
       setReplyTo(replying);
-    } finally { setSending(false); }
+      setSending(false);
+    }
   }
 
   async function sendEventReply(eventId: string) {

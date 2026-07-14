@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { authWallet } from "@/lib/auth/server-auth";
 import { isGroupMember, createGroupMessage, recentMessageCount } from "@/lib/db/queries";
 import { notifySquadReply, notifySquadMomentShare } from "@/lib/db/squad-notify";
@@ -75,13 +75,18 @@ export async function POST(
       return NextResponse.json({ error: "empty message or invalid parent" }, { status: 400 });
     }
     // A reply pings whoever it's aimed at; a shared moment (root + attachment)
-    // pings the rest of the squad. Both best-effort — never throw.
-    if (parent && result.id) {
-      await notifySquadReply(auth.wallet, body.body ?? "", parent, result.id);
-    } else if (hasAttachment && result.id && body.attachment) {
-      await notifySquadMomentShare(auth.wallet, id, body.attachment.text, body.body ?? "", result.id);
+    // pings the rest of the squad. Run the notification fan-out (DB + Web Push
+    // to every recipient) AFTER the response is sent — so the sender's message
+    // lands instantly instead of waiting on push delivery. Both never throw.
+    const mid = result.id;
+    if (parent && mid) {
+      const text = body.body ?? "";
+      after(() => notifySquadReply(auth.wallet, text, parent, mid));
+    } else if (hasAttachment && mid && body.attachment) {
+      const att = body.attachment, take = body.body ?? "";
+      after(() => notifySquadMomentShare(auth.wallet, id, att.text, take, mid));
     }
-    return NextResponse.json({ id: result.id });
+    return NextResponse.json({ id: mid });
   } catch (err) {
     console.error("POST /api/groups/[id]/messages failed:", err);
     return NextResponse.json({ error: "Failed to send message" }, { status: 500 });

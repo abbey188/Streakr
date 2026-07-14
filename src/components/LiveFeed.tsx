@@ -1,4 +1,5 @@
 import React from "react";
+import { motion, AnimatePresence } from "motion/react";
 import type { Fixture, FeedItem } from "../types";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import { kickoffLabel } from "@/lib/match-groups";
@@ -153,6 +154,10 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
     .filter((f) => f.status === "upcoming" && isToday(f.kickoffAt))
     .sort((a, b) => (a.kickoffAt ? Date.parse(a.kickoffAt) : 0) - (b.kickoffAt ? Date.parse(b.kickoffAt) : 0));
   const strip = [...live, ...upcoming];
+  // For the empty banner state: the soonest upcoming fixture on any day.
+  const nextUp = fixtures
+    .filter((f) => f.status === "upcoming")
+    .sort((a, b) => (a.kickoffAt ? Date.parse(a.kickoffAt) : 0) - (b.kickoffAt ? Date.parse(b.kickoffAt) : 0))[0];
 
   return (
     <div className="flex flex-col h-full bg-[#0A0E1A] text-white font-sans overflow-y-auto pb-10">
@@ -175,13 +180,32 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
         </div>
       </div>
 
-        {/* Live strip — inside the sticky block, pinned with the header */}
-        {strip.length > 0 && (
+        {/* Live strip — inside the sticky block, pinned with the header. Always
+            present so the banner never collapses into the feed; shows a graceful
+            state when there's nothing on today. */}
+        {strip.length > 0 ? (
           <div className="flex gap-2 overflow-x-auto px-4 py-3 border-b border-white/5 no-scrollbar">
             {strip.map((f) => (
               <StripCard key={f.id} fixture={f} now={now} onOpen={() => onOpenMatch(f.id)} />
             ))}
           </div>
+        ) : (
+          <button
+            onClick={nextUp ? () => onOpenMatch(nextUp.id) : undefined}
+            className="w-full flex items-center gap-2 px-4 py-3 border-b border-white/5 text-left"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#8E9299] flex-shrink-0" />
+            <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-[#8E9299]">No live matches</span>
+            {nextUp && (
+              <span className="ml-auto flex items-center gap-1.5 text-[9px] font-mono text-[#8E9299]">
+                <span className="uppercase tracking-widest">Next</span>
+                <CountryFlag name={nextUp.teamA.name} className="w-3.5 h-2.5" />
+                <span className="font-bold tracking-tight text-slate-300">{nextUp.teamA.code} v {nextUp.teamB.code}</span>
+                <CountryFlag name={nextUp.teamB.name} className="w-3.5 h-2.5" />
+                <span>· {kickoffLabel(nextUp)}</span>
+              </span>
+            )}
+          </button>
         )}
       </div>
 
@@ -192,14 +216,26 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
             <h3 className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-[#8E9299] pl-1 pb-0.5">
               Latest
             </h3>
-            {feed.map((item) => (
-              <MomentCard
-                key={item.id}
-                item={item}
-                onOpen={() => onOpenMatch(item.fixtureId)}
-                onShare={onShareMoment ? () => onShareMoment(item) : undefined}
-              />
-            ))}
+            {/* Layout-animated: a new moment fades/slides in at the top and the
+                rest smoothly shift down, instead of the list hard-swapping. */}
+            <AnimatePresence initial={false}>
+              {feed.map((item) => (
+                <motion.div
+                  key={item.id}
+                  layout
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                >
+                  <MomentCard
+                    item={item}
+                    onOpen={() => onOpenMatch(item.fixtureId)}
+                    onShare={onShareMoment ? () => onShareMoment(item) : undefined}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         ) : (
           <div className="mt-10 text-center px-6">
