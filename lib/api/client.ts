@@ -7,6 +7,7 @@ import type {
   Notification,
   SquadItem,
   SquadReaction,
+  FeedItem,
 } from "@/src/types";
 import type { MatchDetail, FormEntry } from "@/lib/txline/types";
 
@@ -126,6 +127,18 @@ export async function fetchFixtures(walletAddress?: string): Promise<Fixture[]> 
   const res = await apiFetch(`/api/fixtures${qs}`);
   const { fixtures } = await jsonOrThrow<{ fixtures: Fixture[] }>(res);
   return fixtures;
+}
+
+/** The Hub's Live Feed — recent match moments, newest-first. Never throws
+ *  (returns [] on failure) so a feed hiccup can't break a page that polls it. */
+export async function fetchFeed(limit = 60): Promise<FeedItem[]> {
+  try {
+    const res = await apiFetch(`/api/feed?limit=${limit}`);
+    const { feed } = await jsonOrThrow<{ feed: FeedItem[] }>(res);
+    return feed;
+  } catch {
+    return [];
+  }
 }
 
 export type PickResult = { ok: boolean; reason?: string };

@@ -10,6 +10,8 @@ import type {
   SquadItem,
   SquadReaction,
   SquadReply,
+  FeedItem,
+  FeedMatch,
 } from "../../src/types";
 import type { FormEntry, PersistedMatchEvent } from "@/lib/txline/types";
 import { prefAllows } from "./notify-prefs";
@@ -1131,4 +1133,63 @@ export async function upsertMatchEvents(
       seq = least(match_events.seq, excluded.seq),
       updated_at = now()
   `;
+}
+
+interface FeedRow {
+  fixture_id: string; event_key: string; type: string; ev_minute: number | null;
+  payload: Record<string, unknown> | null; created_at: string | Date;
+  status: string; round: string; score_a: number | null; score_b: number | null;
+  match_minute: number | null; period: string | null; actual_winner: "A" | "B" | null;
+  a_id: string; a_name: string; a_code: string; a_flag: string;
+  b_id: string; b_name: string; b_code: string; b_flag: string;
+}
+
+/**
+ * The Live Feed: recent match moments across live + just-finished knockout
+ * matches, newest-first, each joined to its fixture + teams so an item renders
+ * (and shares) on its own. Bounded by a recency window and `limit` so the read
+ * stays cheap as events accumulate. Group-stage fixtures are excluded (the Hub
+ * is knockout-only). Public — no user-specific data.
+ */
+export async function getFeed(limit = 60): Promise<FeedItem[]> {
+  const rows = (await sql`
+    select
+      me.fixture_id, me.event_key, me.type, me.minute as ev_minute, me.payload, me.created_at,
+      f.status, f.round, f.score_a, f.score_b, f.minute as match_minute, f.period, f.actual_winner,
+      ta.id as a_id, ta.name as a_name, ta.code as a_code, ta.flag as a_flag,
+      tb.id as b_id, tb.name as b_name, tb.code as b_code, tb.flag as b_flag
+    from match_events me
+    join fixtures f on f.id = me.fixture_id
+    join teams ta on ta.id = f.team_a_id
+    join teams tb on tb.id = f.team_b_id
+    where me.created_at > now() - interval '2 days'
+      and f.round <> 'Group Stage'
+      and f.status in ('live', 'finished')
+    order by me.created_at desc, me.seq desc
+    limit ${limit}
+  `) as FeedRow[];
+
+  return rows.map((r) => {
+    const match: FeedMatch = {
+      fixtureId: r.fixture_id,
+      round: r.round,
+      status: r.status as FeedMatch["status"],
+      period: r.period,
+      minute: r.match_minute,
+      scoreA: r.score_a,
+      scoreB: r.score_b,
+      winner: r.actual_winner,
+      teamA: { id: r.a_id, name: r.a_name, code: r.a_code, flag: r.a_flag },
+      teamB: { id: r.b_id, name: r.b_name, code: r.b_code, flag: r.b_flag },
+    };
+    return {
+      id: `${r.fixture_id}:${r.event_key}`,
+      fixtureId: r.fixture_id,
+      type: r.type,
+      minute: r.ev_minute,
+      createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
+      payload: r.payload ?? {},
+      match,
+    };
+  });
 }

@@ -40,6 +40,38 @@ export interface Fixture {
   pickCloseReason?: "goal" | "red" | "secondhalf" | "finished" | null;
 }
 
+// ─── Live Feed ────────────────────────────────────────────────────────────
+// The Hub's scrollable moment feed, powered by TxLINE via match_events. Each
+// item is one match moment (goal/card/sub/VAR/shot) with the match context it
+// needs to render on its own (flags, country, score, minute) and to be shared
+// into a squad. See docs/social/LIVE_FEED.md.
+
+/** The match a feed moment belongs to — enough to render context standalone. */
+export interface FeedMatch {
+  fixtureId: string;
+  round: string;
+  status: "live" | "upcoming" | "finished";
+  period?: string | null; // "2H" | "ET" | "PENS" | "FT" | …
+  minute?: number | null; // live match minute
+  scoreA?: number | null;
+  scoreB?: number | null;
+  winner?: "A" | "B" | null; // who advanced (filled at full-time)
+  teamA: Team;
+  teamB: Team;
+}
+
+/** One moment in the Live Feed. `payload` carries type-specific detail
+ *  (side, scorer/player, on/off, outcome, penalty, cardType). */
+export interface FeedItem {
+  id: string; // stable: `${fixtureId}:${eventKey}`
+  fixtureId: string;
+  type: string; // goal | penalty | penalty_missed | yellow | red | sub | var | shot
+  minute?: number | null;
+  createdAt: string; // ISO — orders the feed + powers "x min ago"
+  payload: Record<string, unknown>;
+  match: FeedMatch;
+}
+
 export interface Badge {
   id: string;
   name: string;
