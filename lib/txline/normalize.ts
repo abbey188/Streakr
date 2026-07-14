@@ -1,5 +1,5 @@
 import type { Fixture, Team } from "@/src/types";
-import type { LiveScore, MatchEvent, MatchStats, MatchStatus } from "./types";
+import type { LiveScore, MatchEvent, MatchStats, MatchStatus, PersistedMatchEvent } from "./types";
 import type { RawFixture, RawScoreEntry, RawTotalScore } from "./client";
 import { countryInfo } from "./countries";
 
@@ -393,6 +393,114 @@ export function deriveAdvancedStats(updates: RawScoreEntry[]): Partial<MatchStat
     shotsA, shotsB, shotsOnTargetA: sotA, shotsOnTargetB: sotB,
     offsidesA: offA, offsidesB: offB,
   };
+}
+
+// ─── Persisted feed events (match_events) ────────────────────────────────────
+
+/** Drop undefined values so a later (named) merge never overwrites a real value with a blank. */
+function pruneU(o: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) if (v !== undefined) out[k] = v;
+  return out;
+}
+
+/**
+ * Derives the Live Feed's persistable moments from the action log — the same
+ * confirmed beats buildEvents renders (goal · penalty · yellow · red · sub · var
+ * · shot), each with a STABLE event_key so the sync can upsert idempotently:
+ *   • goals key on the running score (`goal:A:2`) — identical for the unnamed and
+ *     the later named copy, so the scorer just fills into the same row (never a
+ *     duplicate). Matches deriveGoals' proven identity.
+ *   • cards/subs/shots/var key on (type, side, minute[, id/outcome]).
+ * The log is a FULL retransmitting stream, so re-deriving each poll and upserting
+ * is self-healing. Unconfirmed (VAR-pending / disallowed) entries are skipped.
+ */
+export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent[] {
+  const names = buildPlayerNames(entries);
+  const nameOf = (pid: unknown): string | undefined =>
+    typeof pid === "number" ? names.get(pid) : undefined;
+
+  const bySeq = new Map<number, RawScoreEntry>();
+  for (const e of entries) if (!bySeq.has(e.Seq)) bySeq.set(e.Seq, e);
+  const chrono = [...bySeq.values()].sort((a, b) => a.Seq - b.Seq);
+
+  const byKey = new Map<string, PersistedMatchEvent>();
+  const put = (key: string, ev: Omit<PersistedMatchEvent, "key">) => {
+    const cur = byKey.get(key);
+    if (!cur) { byKey.set(key, { key, ...ev, payload: pruneU(ev.payload) }); return; }
+    cur.seq = Math.min(cur.seq, ev.seq);         // earliest transmission orders it
+    if (!cur.minute && ev.minute) cur.minute = ev.minute;
+    cur.payload = { ...cur.payload, ...pruneU(ev.payload) }; // named beats unnamed
+    if (ev.confirmed) cur.confirmed = true;
+  };
+
+  for (const e of chrono) {
+    if (e.Confirmed === false) continue; // VAR-pending / disallowed — never persist
+    const side = e.Participant === 1 ? "A" : e.Participant === 2 ? "B" : undefined;
+    const min = minuteOf(e);
+    const d = e.Data ?? {};
+    const runningGoals = (s: "A" | "B") =>
+      s === "A" ? e.Score?.Participant1?.Total?.Goals : e.Score?.Participant2?.Total?.Goals;
+
+    switch (e.Action) {
+      case "goal": {
+        if (!side) break;
+        const pen = d.GoalType === "Penalty";
+        const rg = runningGoals(side);
+        const key = rg != null ? `goal:${side}:${rg}` : `goal:${side}:m${min}`;
+        put(key, { seq: e.Seq, type: pen ? "penalty" : "goal", minute: min, confirmed: true,
+          payload: { side, scorer: nameOf(d.PlayerId), penalty: pen || undefined } });
+        break;
+      }
+      case "penalty_outcome": {
+        if (!side) break;
+        const outcome = String(d.Outcome ?? "");
+        const taker = nameOf(d.PlayerId);
+        if (outcome === "Scored") {
+          const rg = runningGoals(side);
+          const key = rg != null ? `goal:${side}:${rg}` : `goal:${side}:pen:${min}`;
+          put(key, { seq: e.Seq, type: "penalty", minute: min, confirmed: true,
+            payload: { side, scorer: taker, penalty: true } });
+        } else {
+          put(`penmiss:${side}:${min}`, { seq: e.Seq, type: "penalty_missed", minute: min, confirmed: true,
+            payload: { side, player: taker, outcome: outcome.toLowerCase() || "missed" } });
+        }
+        break;
+      }
+      case "yellow_card":
+      case "red_card": {
+        if (!side) break;
+        const type = e.Action === "red_card" ? "red" : "yellow";
+        put(`${type}:${side}:${min}`, { seq: e.Seq, type, minute: min, confirmed: true,
+          payload: { side, player: nameOf(d.PlayerId), cardType: d.Type } });
+        break;
+      }
+      case "substitution": {
+        const subSide = partOf(d) ?? side;
+        const key = `sub:${subSide ?? "?"}:${d.PlayerInId ?? d.PlayerOutId ?? min}`;
+        put(key, { seq: e.Seq, type: "sub", minute: min, confirmed: true,
+          payload: { side: subSide, on: nameOf(d.PlayerInId), off: nameOf(d.PlayerOutId) } });
+        break;
+      }
+      case "var_end": {
+        // The resolution (Stands / Overturned) is the meaningful beat, not the check-start.
+        const outcome = String(d.Outcome ?? "").toLowerCase();
+        put(`var:${min}:${outcome || "review"}`, { seq: e.Seq, type: "var", minute: min, confirmed: true,
+          payload: { side, outcome: outcome || "review" } });
+        break;
+      }
+      case "shot": {
+        if (!side) break;
+        const outcome = String(d.Outcome ?? "");
+        if (outcome !== "OnTarget" && outcome !== "Woodwork") break; // only the notable ones
+        put(`shot:${side}:${min}:${outcome}`, { seq: e.Seq, type: "shot", minute: min, confirmed: true,
+          payload: { side, player: nameOf(d.PlayerId), outcome } });
+        break;
+      }
+    }
+  }
+
+  return [...byKey.values()].sort((a, b) => a.seq - b.seq);
 }
 
 // ─── Event timeline (from chronological update entries) ──────────────────────

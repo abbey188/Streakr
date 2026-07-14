@@ -1,11 +1,13 @@
 import type { Fixture, Team } from "@/src/types";
 import type { RawFixture } from "./client";
+import type { PersistedMatchEvent } from "./types";
 import { sql } from "@/lib/db/client";
 import { txlineClient } from "./client";
-import { deriveLiveScore, deriveGoals, normalizeFixture, buildRoundMap, type DerivedGoal } from "./normalize";
+import { deriveLiveScore, deriveGoals, deriveMatchEvents, normalizeFixture, buildRoundMap, type DerivedGoal } from "./normalize";
 import { derivePickWindow } from "@/lib/pick-window";
 import { resolveFinishedFixtures } from "@/lib/db/resolution";
 import { notifyLiveEvents } from "@/lib/db/live-notify";
+import { upsertMatchEvents } from "@/lib/db/queries";
 
 /**
  * TxLINE → Neon sync.
@@ -40,9 +42,10 @@ const WINDOW_FUTURE_MS = 45 * 60 * 1000;
 async function enrichFixtures(
   raws: RawFixture[],
   roundByGroup: Map<number, string>
-): Promise<{ fixtures: Fixture[]; goals: Map<string, DerivedGoal[]> }> {
+): Promise<{ fixtures: Fixture[]; goals: Map<string, DerivedGoal[]>; events: Map<string, PersistedMatchEvent[]> }> {
   const fixtures: Fixture[] = [];
   const goals = new Map<string, DerivedGoal[]>();
+  const events = new Map<string, PersistedMatchEvent[]>();
   for (let i = 0; i < raws.length; i += BATCH) {
     const slice = raws.slice(i, i + BATCH);
     const results = await Promise.all(
@@ -56,29 +59,45 @@ async function enrichFixtures(
           const pw = derivePickWindow(id, entries);
           fixture.pickOpen = pw.open;
           fixture.pickCloseReason = (pw.reason ?? null) as Fixture["pickCloseReason"];
-          // Goals come from the ACTION LOG (updates stream), not the snapshot —
-          // the snapshot keeps only the latest goal per action-type, so it can't
-          // enumerate every goal. Only for LIVE fixtures, short timeout so the
-          // sync stays fast (the historical log arrives on connect).
+          // Goals + feed events come from the ACTION LOG (updates stream), not the
+          // snapshot — the snapshot keeps only the latest goal per action-type, so
+          // it can't enumerate every goal/card/sub. Only for LIVE fixtures, short
+          // timeout so the sync stays fast (the historical log arrives on connect).
           let goals: DerivedGoal[] = [];
+          let events: PersistedMatchEvent[] = [];
           if (live.status === "live") {
             try {
               const updates = await txlineClient.getScoresUpdates(rf.FixtureId, 4000);
-              if (updates.length) goals = deriveGoals(updates);
-            } catch { /* leave goals empty on a fetch failure */ }
+              if (updates.length) {
+                goals = deriveGoals(updates);
+                events = deriveMatchEvents(updates);
+              }
+            } catch { /* leave goals/events empty on a fetch failure */ }
           }
-          return { fixture, id, goals };
+          return { fixture, id, goals, events };
         } catch {
-          return { fixture: normalizeFixture(rf, null, round), id, goals: [] as DerivedGoal[] };
+          return { fixture: normalizeFixture(rf, null, round), id, goals: [] as DerivedGoal[], events: [] as PersistedMatchEvent[] };
         }
       })
     );
     for (const r of results) {
       fixtures.push(r.fixture);
       if (r.goals.length) goals.set(r.id, r.goals);
+      if (r.events.length) events.set(r.id, r.events);
     }
   }
-  return { fixtures, goals };
+  return { fixtures, goals, events };
+}
+
+/** Flatten the per-fixture events map and persist — best-effort, never throws. */
+async function persistMatchEvents(events: Map<string, PersistedMatchEvent[]>): Promise<void> {
+  const rows = [...events.entries()].flatMap(([fixtureId, evs]) => evs.map((ev) => ({ fixtureId, ev })));
+  if (rows.length === 0) return;
+  try {
+    await upsertMatchEvents(rows);
+  } catch (err) {
+    console.error("[sync] match_events upsert failed:", err);
+  }
 }
 
 /**
@@ -172,7 +191,7 @@ async function upsertFixtures(fixtures: Fixture[]): Promise<void> {
 export async function syncFixtures(): Promise<{ synced: number }> {
   const raw = await txlineClient.getFixturesSnapshot(COMPETITION_ID, WC_START_EPOCH_DAY);
   const roundByGroup = buildRoundMap(raw);
-  const { fixtures: enriched, goals } = await enrichFixtures(raw, roundByGroup);
+  const { fixtures: enriched, goals, events } = await enrichFixtures(raw, roundByGroup);
 
   // Diff live events against the pre-upsert DB state, THEN persist, THEN resolve.
   try {
@@ -181,6 +200,7 @@ export async function syncFixtures(): Promise<{ synced: number }> {
     console.error("[sync] live-notify failed:", err);
   }
   await upsertFixtures(enriched);
+  await persistMatchEvents(events); // after fixtures exist (FK)
 
   // Drop old mock seed fixtures.
   await sql`delete from fixtures where id like 'm%'`;
@@ -231,7 +251,7 @@ export async function syncLiveFixtures(): Promise<{ discovered: number; refreshe
     return inWindow || stuckIds.has(String(rf.FixtureId));
   });
 
-  const { fixtures: enriched, goals } = await enrichFixtures(near, roundByGroup);
+  const { fixtures: enriched, goals, events } = await enrichFixtures(near, roundByGroup);
 
   // Compare live events against the true pre-sync DB state first.
   try {
@@ -249,6 +269,7 @@ export async function syncLiveFixtures(): Promise<{ discovered: number; refreshe
 
   // Then persist live scores/results for near-now matches.
   await upsertFixtures(enriched);
+  await persistMatchEvents(events); // after fixtures exist (FK)
 
   try {
     await resolveFinishedFixtures();

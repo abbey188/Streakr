@@ -11,7 +11,7 @@ import type {
   SquadReaction,
   SquadReply,
 } from "../../src/types";
-import type { FormEntry } from "@/lib/txline/types";
+import type { FormEntry, PersistedMatchEvent } from "@/lib/txline/types";
 import { prefAllows } from "./notify-prefs";
 
 /**
@@ -1097,4 +1097,38 @@ export async function getActiveAnnouncements(): Promise<AnnouncementRow[]> {
     order by priority desc, created_at desc
     limit 10
   `) as AnnouncementRow[];
+}
+
+// ─── match_events (Live Feed) ─────────────────────────────────────────────────
+
+/**
+ * Persist Live Feed moments derived from the action log. One batched upsert keyed
+ * on the STABLE (fixture_id, event_key): a re-derivation each poll fills in the
+ * scorer / merges detail without ever duplicating a moment, and `created_at` is
+ * kept from the first insert so the feed's "x minutes ago" stays true. Best-effort
+ * — the caller wraps it so a feed write never breaks the sync.
+ */
+export async function upsertMatchEvents(
+  rows: { fixtureId: string; ev: PersistedMatchEvent }[]
+): Promise<void> {
+  if (rows.length === 0) return;
+  await sql`
+    insert into match_events (fixture_id, event_key, seq, type, minute, payload, confirmed)
+    select f, k, s, t, m, p::jsonb, c
+    from unnest(
+      ${rows.map((r) => r.fixtureId)}::text[],
+      ${rows.map((r) => r.ev.key)}::text[],
+      ${rows.map((r) => r.ev.seq)}::int[],
+      ${rows.map((r) => r.ev.type)}::text[],
+      ${rows.map((r) => r.ev.minute)}::int[],
+      ${rows.map((r) => JSON.stringify(r.ev.payload))}::text[],
+      ${rows.map((r) => r.ev.confirmed)}::bool[]
+    ) as x(f, k, s, t, m, p, c)
+    on conflict (fixture_id, event_key) do update set
+      type = excluded.type,
+      minute = excluded.minute,
+      payload = excluded.payload,
+      seq = least(match_events.seq, excluded.seq),
+      updated_at = now()
+  `;
 }

@@ -259,6 +259,32 @@ create table if not exists announcements (
 );
 create index if not exists announcements_live_idx on announcements (active, starts_at);
 
+-- ─── match_events (Live Feed) ─────────────────────────────────────────────
+-- Per-fixture timeline moments derived from the TxLINE action log and persisted
+-- by the sync, so the Hub feed reads from Neon (the client never hits TxLINE).
+-- Keyed on a STABLE content key (event_key), NOT the raw action Seq: the log
+-- retransmits a goal first unnamed then named, and the kept Seq changes when the
+-- scorer resolves, so a seq key would double-insert. event_key stays stable
+-- across that transition (goals use the running-score identity, like
+-- deriveGoals), so the named version UPDATES the same row. Re-derived + upserted
+-- each poll from the full log → a cron gap self-heals.
+-- type: goal | penalty | penalty_missed | yellow | red | sub | var | shot.
+create table if not exists match_events (
+  id          uuid primary key default gen_random_uuid(),
+  fixture_id  text not null references fixtures(id) on delete cascade,
+  event_key   text not null,                         -- stable dedup identity per fixture
+  seq         integer not null default 0,            -- lowest source action Seq (ordering fallback)
+  type        text not null,
+  minute      integer,
+  payload     jsonb not null default '{}'::jsonb,    -- side, scorer/player, on/off, outcome, penalty…
+  confirmed   boolean not null default true,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  unique (fixture_id, event_key)
+);
+create index if not exists match_events_fixture_idx on match_events (fixture_id, minute, seq);
+create index if not exists match_events_recent_idx on match_events (created_at desc);
+
 -- ─── push subscriptions (Web Push / PWA) ──────────────────────────────────
 -- One row per browser/device push subscription. `endpoint` is the push
 -- service URL and uniquely identifies a subscription (upsert on re-subscribe).

@@ -36,6 +36,20 @@ export interface MatchEvent {
   detail?: string; // e.g. "Header", scorer name, "Penalty saved"
 }
 
+/**
+ * A feed moment derived from the action log and persisted to `match_events`.
+ * `key` is a STABLE per-fixture dedup identity (survives the unnamed→named
+ * scorer transition); `seq` is the lowest source action Seq (ordering fallback).
+ */
+export interface PersistedMatchEvent {
+  key: string;
+  seq: number;
+  type: string; // goal | penalty | penalty_missed | yellow | red | sub | var | shot
+  minute: number;
+  confirmed: boolean;
+  payload: Record<string, unknown>;
+}
+
 /** Aggregate match stats (SofaScore-style bars). */
 export interface MatchStats {
   possessionA?: number; // %
