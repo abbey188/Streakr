@@ -42,8 +42,15 @@ function momentMeta(item: FeedItem): MomentMeta {
   const side = (item.payload as { side?: string }).side;
   const team = side === "A" ? m.teamA.name : side === "B" ? m.teamB.name : m.teamA.name;
   const ph = momentPhrase(item.type, item.payload, team);
+  // Free kicks are colour-coded by threat: a dangerous one (TxLINE's Danger tag)
+  // pops orange; a routine one stays quiet in soft grey.
+  const tone = item.type === "freekick"
+    ? ((item.payload as { dangerous?: boolean }).dangerous
+        ? "text-[#FF4E00] bg-[#FF4E00]/12"
+        : "text-slate-300 bg-white/8")
+    : momentTone(item.type);
   return {
-    icon: ph.icon, label: ph.label, tone: momentTone(item.type),
+    icon: ph.icon, label: ph.label, tone,
     body: (
       <>
         {ph.subject ? <b className="text-white font-bold">{ph.subject}</b> : null}
