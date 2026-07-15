@@ -477,6 +477,7 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
 
   let phase = "NS"; // running match phase (drives stoppage labels + state beats)
   let maxSid = 0;   // furthest phase reached — advances only, so glitches can't regress it
+  let lastVarType: string | undefined; // what the most recent VAR check is reviewing
   const byKey = new Map<string, PersistedMatchEvent>();
   const put = (key: string, ev: Omit<PersistedMatchEvent, "key">) => {
     const p = pruneU(ev.payload);
@@ -557,11 +558,17 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
           payload: { side: subSide, on: nameOf(d.PlayerInId), off: nameOf(d.PlayerOutId) } });
         break;
       }
+      case "var": {
+        // The check-start tells us WHAT is under review (Goal / Penalty / …).
+        if (typeof d.Type === "string") lastVarType = d.Type;
+        break;
+      }
       case "var_end": {
-        // The resolution (Stands / Overturned) is the meaningful beat, not the check-start.
+        // The resolution (Stands / Overturned) is the meaningful beat, carrying
+        // what was reviewed so the feed can say "the goal is ruled out", etc.
         const outcome = String(d.Outcome ?? "").toLowerCase();
         put(`var:${min}:${outcome || "review"}`, { seq: e.Seq, type: "var", minute: min, confirmed: true,
-          payload: { side, outcome: outcome || "review" } });
+          payload: { side, outcome: outcome || "review", reviewType: lastVarType } });
         break;
       }
       case "shot": {
@@ -594,7 +601,19 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
     put("lineup", { seq: luSeq, type: "lineup", minute: 0, confirmed: true, payload: { A: roster.A, B: roster.B } });
   }
 
-  return [...byKey.values()].sort((a, b) => a.seq - b.seq);
+  // A goal's own strike also arrives as a shot-on-target — drop those so a goal
+  // never doubles as a "forces a save" beat (same side, within a minute).
+  const goalAt = new Set(
+    [...byKey.values()].filter((e) => e.type === "goal" || e.type === "penalty")
+      .map((e) => `${(e.payload as { side?: string }).side}:${e.minute}`)
+  );
+  const events = [...byKey.values()].filter((e) => {
+    if (e.type !== "shot") return true;
+    const s = (e.payload as { side?: string }).side, mn = e.minute;
+    return !(goalAt.has(`${s}:${mn}`) || goalAt.has(`${s}:${mn - 1}`) || goalAt.has(`${s}:${mn + 1}`));
+  });
+
+  return events.sort((a, b) => a.seq - b.seq);
 }
 
 // ─── Momentum (our derived read of the possession stream) ────────────────────

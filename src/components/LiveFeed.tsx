@@ -192,6 +192,37 @@ function StateBeat({ item }: { item: FeedItem }) {
   );
 }
 
+// ─── full-time result card (who advances / who won) ─────────────────────────
+
+function ResultCard({ item }: { item: FeedItem }) {
+  const m = item.match;
+  const w = m.winner === "A" ? m.teamA : m.winner === "B" ? m.teamB : null;
+  const method = m.period === "PENS" ? " on penalties" : m.period === "AET" ? " after extra time" : "";
+  const verdict = !w
+    ? "Full-time"
+    : m.round === "Final"
+      ? `${w.name} are champions 🏆`
+      : m.round === "Third Place"
+        ? `${w.name} take third place`
+        : `${w.name} are through${method}`;
+  return (
+    <div className="flex gap-3 items-center bg-[#FF4E00]/[0.05] border border-[#FF4E00]/30 rounded-2xl p-3.5">
+      <div className="w-9 h-9 rounded-xl grid place-items-center text-[17px] bg-[#0A0E1A] border border-[#FF4E00]/20 flex-shrink-0">🏁</div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded text-[#FF4E00] bg-[#FF4E00]/15">Full-time</span>
+          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-slate-300 tabular-nums whitespace-nowrap">
+            <CountryFlag name={m.teamA.name} className="w-3.5 h-2.5" />
+            <span className="whitespace-nowrap">{m.teamA.code} {m.scoreA ?? 0}–{m.scoreB ?? 0} {m.teamB.code}</span>
+            <CountryFlag name={m.teamB.name} className="w-3.5 h-2.5" />
+          </span>
+        </div>
+        <div className="text-[13px] font-black italic text-white mt-1 leading-snug">{verdict}</div>
+      </div>
+    </div>
+  );
+}
+
 // ─── the Hub ─────────────────────────────────────────────────────────────────
 
 export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }: LiveFeedProps) {
@@ -282,7 +313,9 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
                 >
-                  {item.type === "status" || item.type === "stoppage" ? (
+                  {item.type === "status" && (item.payload as { kind?: string }).kind === "ft" ? (
+                    <ResultCard item={item} />
+                  ) : item.type === "status" || item.type === "stoppage" ? (
                     <StateBeat item={item} />
                   ) : item.type === "lineup" ? (
                     <MomentCard item={item} onOpen={() => setLineupItem(item)} />

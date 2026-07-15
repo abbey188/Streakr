@@ -18,7 +18,7 @@ export interface MomentPhrase {
 type Payload = {
   side?: string; scorer?: string; player?: string; on?: string; off?: string;
   outcome?: string; penalty?: boolean; cardType?: string; keeper?: string;
-  possA?: number; possB?: number;
+  reviewType?: string; possA?: number; possB?: number;
 };
 
 /** How a moment reads. Deterministic from (type, payload, team). */
@@ -41,12 +41,16 @@ export function momentPhrase(type: string, payload: Record<string, unknown>, tea
       return p.on
         ? { icon: "🔁", label: "Substitution", subject: p.on, predicate: p.off ? `on, ${p.off} off` : "on", context: teamName }
         : { icon: "🔁", label: "Substitution", subject: p.off ?? "Change", predicate: "off", context: teamName };
-    case "var":
-      return {
-        icon: "📺",
-        label: p.outcome === "overturned" ? "VAR · Overturned" : p.outcome === "stands" ? "VAR · Stands" : "VAR",
-        predicate: p.outcome === "overturned" ? "The decision is overturned" : p.outcome === "stands" ? "After review, the decision stands" : "Under VAR review",
-      };
+    case "var": {
+      const label = p.outcome === "overturned" ? "VAR · Overturned" : p.outcome === "stands" ? "VAR · Stands" : "VAR";
+      const noun = p.reviewType === "Goal" ? "goal" : p.reviewType === "Penalty" ? "penalty" : p.reviewType === "RedCard" ? "red card" : null;
+      let predicate: string;
+      if (p.reviewType === "MistakenIdentity") predicate = "VAR corrects a mistaken identity";
+      else if (p.outcome === "overturned") predicate = noun ? `The ${noun} is overturned by VAR` : "The decision is overturned by VAR";
+      else if (p.outcome === "stands") predicate = noun ? `The ${noun} stands after VAR` : "After review, the decision stands";
+      else predicate = "Under VAR review";
+      return { icon: "📺", label, predicate };
+    }
     case "shot":
       if (p.outcome === "Woodwork")
         return { icon: "🎯", label: "Woodwork", subject: p.player ?? teamName, predicate: "rattles the woodwork" };
