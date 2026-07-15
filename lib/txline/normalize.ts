@@ -536,6 +536,19 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
           payload: { side, player: nameOf(d.PlayerId), outcome } });
         break;
       }
+      case "corner": {
+        if (!side) break;
+        put(`corner:${side}:${min}`, { seq: e.Seq, type: "corner", minute: min, confirmed: true, payload: { side } });
+        break;
+      }
+      case "free_kick": {
+        if (!side) break;
+        const fkt = String(d.FreeKickType ?? "");
+        if (fkt !== "Danger" && fkt !== "Attack") break; // only threatening set pieces, not every foul
+        put(`freekick:${side}:${min}`, { seq: e.Seq, type: "freekick", minute: min, confirmed: true,
+          payload: { side, dangerous: fkt === "Danger" } });
+        break;
+      }
     }
   }
 

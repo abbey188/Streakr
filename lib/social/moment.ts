@@ -74,6 +74,11 @@ export function momentPhrase(type: string, payload: Record<string, unknown>, tea
       const mins = (payload as { minutes?: number }).minutes ?? 0;
       return { icon: "⏱️", label: "Added time", predicate: `${mins} ${mins === 1 ? "minute" : "minutes"} added` };
     }
+    case "corner":
+      return { icon: "🚩", label: "Corner", subject: teamName, predicate: "win a corner" };
+    case "freekick":
+      return { icon: "🧱", label: "Free kick", subject: teamName,
+        predicate: (payload as { dangerous?: boolean }).dangerous ? "win a dangerous free kick" : "win a free kick in the final third" };
     default:
       return { icon: "•", label: type, predicate: teamName };
   }
@@ -95,6 +100,7 @@ export function momentTone(type: string): string {
     case "var": return "text-purple-300 bg-purple-500/15";
     case "shot": return "text-sky-400 bg-sky-500/15";
     case "momentum": return "text-[#FF4E00] bg-[#FF4E00]/15";
+    case "corner": case "freekick": return "text-slate-300 bg-white/8"; // low-weight
     default: return "text-[#8E9299] bg-white/5";
   }
 }
