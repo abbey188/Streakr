@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Activity } from "lucide-react";
+import { Activity, ArrowLeftRight } from "lucide-react";
 import type { Fixture, FeedItem } from "../types";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import { kickoffLabel } from "@/lib/match-groups";
 import { momentPhrase, momentTone } from "@/lib/social/moment";
 import CountryFlag from "./CountryFlag";
+import LineupModal from "./LineupModal";
 
 /** Card time label — shows stoppage time ("45+2'") when the deriver set it. */
 function minLabel(item: FeedItem): string {
@@ -99,7 +100,9 @@ function MomentCard({ item, onOpen, onShare }: { item: FeedItem; onOpen: () => v
       className="flex gap-3 items-start bg-[#151B2E] border border-white/5 rounded-2xl p-3 transition hover:border-white/12 active:scale-[0.995] cursor-pointer"
     >
       <div className="w-9 h-9 rounded-xl flex-shrink-0 grid place-items-center text-[17px] bg-[#0A0E1A] border border-white/5">
-        {item.type === "momentum" ? <Activity className="w-4.5 h-4.5 text-[#FF4E00]" strokeWidth={2.5} /> : meta.icon}
+        {item.type === "momentum" ? <Activity className="w-4.5 h-4.5 text-[#FF4E00]" strokeWidth={2.5} />
+          : item.type === "sub" ? <ArrowLeftRight className="w-4.5 h-4.5 text-[#5EC26A]" strokeWidth={2.5} />
+          : meta.icon}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
@@ -185,6 +188,7 @@ function StateBeat({ item }: { item: FeedItem }) {
 
 export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }: LiveFeedProps) {
   const now = useNow();
+  const [lineupItem, setLineupItem] = useState<FeedItem | null>(null);
 
   const live = fixtures.filter((f) => f.status === "live");
   // The strip is a scoreboard glance for TODAY only — live matches + any still
@@ -236,17 +240,15 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
         ) : (
           <button
             onClick={nextUp ? () => onOpenMatch(nextUp.id) : undefined}
-            className="w-full flex items-center gap-2 px-4 py-3 border-b border-white/5 text-left"
+            className="w-full flex items-center gap-2 px-4 py-3 border-b border-white/5 text-left overflow-hidden"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#8E9299] flex-shrink-0" />
-            <span className="text-[9px] font-mono font-bold uppercase tracking-widest text-[#8E9299]">No live matches</span>
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#8E9299] flex-shrink-0">No live matches</span>
             {nextUp && (
-              <span className="ml-auto flex items-center gap-1.5 text-[9px] font-mono text-[#8E9299]">
-                <span className="uppercase tracking-widest">Next</span>
-                <CountryFlag name={nextUp.teamA.name} className="w-3.5 h-2.5" />
-                <span className="font-bold tracking-tight text-slate-300">{nextUp.teamA.code} v {nextUp.teamB.code}</span>
-                <CountryFlag name={nextUp.teamB.name} className="w-3.5 h-2.5" />
-                <span>· {kickoffLabel(nextUp)}</span>
+              <span className="ml-auto flex items-center gap-1.5 text-[9px] font-mono text-[#8E9299] min-w-0">
+                <span className="uppercase tracking-wider flex-shrink-0">Next</span>
+                <span className="font-bold text-slate-300 truncate">{nextUp.teamA.code} v {nextUp.teamB.code}</span>
+                <span className="flex-shrink-0">· {kickoffLabel(nextUp)}</span>
               </span>
             )}
           </button>
@@ -274,6 +276,8 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
                 >
                   {item.type === "status" || item.type === "stoppage" ? (
                     <StateBeat item={item} />
+                  ) : item.type === "lineup" ? (
+                    <MomentCard item={item} onOpen={() => setLineupItem(item)} />
                   ) : (
                     <MomentCard
                       item={item}
@@ -298,6 +302,8 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
           </div>
         )}
       </div>
+
+      {lineupItem && <LineupModal item={lineupItem} onClose={() => setLineupItem(null)} />}
     </div>
   );
 }

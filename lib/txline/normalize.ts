@@ -1,6 +1,6 @@
-import type { Fixture, Team } from "@/src/types";
+import type { Fixture, Team, RosterPlayer } from "@/src/types";
 import type { LiveScore, MatchEvent, MatchStats, MatchStatus, PersistedMatchEvent } from "./types";
-import type { RawFixture, RawScoreEntry, RawTotalScore } from "./client";
+import type { RawFixture, RawScoreEntry, RawTotalScore, RawLineupTeam } from "./client";
 import { countryInfo } from "./countries";
 
 /**
@@ -419,6 +419,38 @@ const STATUS_BEAT: Record<number, string> = {
   2: "kickoff", 3: "ht", 6: "et", 7: "et", 11: "pens", 12: "pens",
 };
 
+/** TxLINE positionId → position label (verified: 34=GK, 35=DEF, 36=MID, 37=FWD). */
+const POSITION_LABEL: Record<number, string> = { 34: "GK", 35: "DEF", 36: "MID", 37: "FWD" };
+const POS_ORDER: Record<string, number> = { GK: 0, DEF: 1, MID: 2, FWD: 3, "": 4 };
+
+interface Roster { A: RosterPlayer[]; B: RosterPlayer[]; gkA?: string; gkB?: string }
+
+/** Parse the Lineups block into per-side rosters (Lineups[0]=A, [1]=B) + each
+ *  side's starting keeper (positionId 34), used for the roster card + keeper
+ *  saves. Returns null until lineups publish. */
+function parseRoster(entries: RawScoreEntry[]): Roster | null {
+  const luEntries = entries.filter((e) => e.Lineups && e.Lineups.length >= 2);
+  if (!luEntries.length) return null;
+  // The stream carries several lineup snapshots (provisional → confirmed); pick
+  // the one with the most jersey numbers filled in.
+  const numCount = (e: RawScoreEntry) =>
+    (e.Lineups ?? []).reduce((n, t) => n + (t.lineups ?? []).filter((s) => typeof s.rosterNumber === "number").length, 0);
+  const lu = luEntries.reduce((a, b) => (numCount(b) > numCount(a) ? b : a)).Lineups!;
+  const parse = (team: RawLineupTeam): RosterPlayer[] =>
+    (team.lineups ?? [])
+      .map((s) => ({
+        n: typeof s.rosterNumber === "number" ? s.rosterNumber : null,
+        name: formatPlayerName(String(s.player?.preferredName || s.player?.name || "")),
+        pos: POSITION_LABEL[s.positionId ?? -1] ?? "",
+        starter: !!s.starter,
+      }))
+      .filter((p) => p.name)
+      .sort((a, b) => Number(b.starter) - Number(a.starter) || POS_ORDER[a.pos] - POS_ORDER[b.pos] || (a.n ?? 99) - (b.n ?? 99));
+  const A = parse(lu[0]), B = parse(lu[1]);
+  const gk = (r: RosterPlayer[]) => (r.find((p) => p.pos === "GK" && p.starter) ?? r.find((p) => p.pos === "GK"))?.name;
+  return { A, B, gkA: gk(A), gkB: gk(B) };
+}
+
 /**
  * Derives the Live Feed's persistable moments from the action log — the same
  * confirmed beats buildEvents renders (goal · penalty · yellow · red · sub · var
@@ -438,6 +470,10 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
   const bySeq = new Map<number, RawScoreEntry>();
   for (const e of entries) if (!bySeq.has(e.Seq)) bySeq.set(e.Seq, e);
   const chrono = [...bySeq.values()].sort((a, b) => a.Seq - b.Seq);
+
+  // Lineups (once published): powers the roster card + naming the keeper on a save.
+  const roster = parseRoster(entries);
+  const keeperFor = (shooter: "A" | "B") => (shooter === "A" ? roster?.gkB : roster?.gkA);
 
   let phase = "NS"; // running match phase (drives stoppage labels + state beats)
   let maxSid = 0;   // furthest phase reached — advances only, so glitches can't regress it
@@ -533,7 +569,7 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
         const outcome = String(d.Outcome ?? "");
         if (outcome !== "OnTarget" && outcome !== "Woodwork") break; // only the notable ones
         put(`shot:${side}:${min}:${outcome}`, { seq: e.Seq, type: "shot", minute: min, confirmed: true,
-          payload: { side, player: nameOf(d.PlayerId), outcome } });
+          payload: { side, player: nameOf(d.PlayerId), outcome, keeper: outcome === "OnTarget" ? keeperFor(side) : undefined } });
         break;
       }
       case "corner": {
@@ -550,6 +586,12 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
         break;
       }
     }
+  }
+
+  // Pre-match roster card — one per fixture, ordered at the very start (low seq).
+  if (roster) {
+    const luSeq = entries.find((e) => e.Lineups)?.Seq ?? 0;
+    put("lineup", { seq: luSeq, type: "lineup", minute: 0, confirmed: true, payload: { A: roster.A, B: roster.B } });
   }
 
   return [...byKey.values()].sort((a, b) => a.seq - b.seq);

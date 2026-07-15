@@ -1171,7 +1171,7 @@ export async function getFeed(limit = 60): Promise<FeedItem[]> {
     join teams tb on tb.id = f.team_b_id
     where me.created_at > now() - interval '2 days'
       and f.round <> 'Group Stage'
-      and f.status in ('live', 'finished')
+      and f.status in ('live', 'finished', 'upcoming')
     order by me.created_at desc, me.seq desc
     limit ${limit}
   `) as FeedRow[];

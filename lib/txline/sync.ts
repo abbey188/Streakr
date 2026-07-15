@@ -32,7 +32,12 @@ const BATCH = 12;
 // start" pick reminder actually fires across its full 45-min window (it was
 // previously capped at 30 min by this future bound).
 const WINDOW_PAST_MS = 4 * 60 * 60 * 1000;
-const WINDOW_FUTURE_MS = 45 * 60 * 1000;
+// Widened to 2h so fixtures within their pre-kickoff window are enriched — that's
+// when lineups publish, and the feed's roster card needs them before the whistle.
+const WINDOW_FUTURE_MS = 2 * 60 * 60 * 1000;
+// Within this long before kickoff, also pull the action log so a published
+// Lineups block is captured (and the lineup feed moment posted) pre-match.
+const PRE_KICKOFF_MS = 2 * 60 * 60 * 1000;
 
 /**
  * Enrich raw fixtures with live score/status (batched parallel scores calls).
@@ -65,13 +70,17 @@ async function enrichFixtures(
           // timeout so the sync stays fast (the historical log arrives on connect).
           let goals: DerivedGoal[] = [];
           let events: PersistedMatchEvent[] = [];
-          if (live.status === "live") {
+          // Pull the action log while live, AND in the pre-kickoff window (so the
+          // published lineups become the roster card before the whistle).
+          const koMs = Number(rf.StartTime);
+          const preKickoff = live.status === "upcoming" && koMs > Date.now() && koMs - Date.now() < PRE_KICKOFF_MS;
+          if (live.status === "live" || preKickoff) {
             try {
               const updates = await txlineClient.getScoresUpdates(rf.FixtureId, 4000);
               if (updates.length) {
                 goals = deriveGoals(updates);
-                events = deriveMatchEvents(updates);
-                const momentum = deriveMomentum(updates); // our derived read
+                events = deriveMatchEvents(updates); // emits the lineup moment pre-match
+                const momentum = deriveMomentum(updates); // our derived read (live only in practice)
                 if (momentum) events.push(momentum);
               }
             } catch { /* leave goals/events empty on a fetch failure */ }

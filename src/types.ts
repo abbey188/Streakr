@@ -79,6 +79,14 @@ export interface MomentAttachment {
   minute: number | null;
 }
 
+/** One player in a shared lineup roster (payload of a `lineup` feed moment). */
+export interface RosterPlayer {
+  n: number | null; // jersey number
+  name: string;
+  pos: string; // "GK" | "DEF" | "MID" | "FWD"
+  starter: boolean;
+}
+
 /** One moment in the Live Feed. `payload` carries type-specific detail
  *  (side, scorer/player, on/off, outcome, penalty, cardType). */
 export interface FeedItem {

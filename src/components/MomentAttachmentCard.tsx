@@ -1,4 +1,5 @@
 import React from "react";
+import { Activity, ArrowLeftRight } from "lucide-react";
 import type { MomentAttachment } from "../types";
 import { momentTone } from "@/lib/social/moment";
 import CountryFlag from "./CountryFlag";
@@ -13,7 +14,9 @@ export default function MomentAttachmentCard({ att, className = "" }: { att: Mom
   return (
     <div className={`flex gap-2.5 items-start bg-[#0A0E1A] border border-white/10 rounded-xl p-2.5 ${className}`}>
       <div className="w-7 h-7 rounded-lg grid place-items-center text-[14px] bg-[#151B2E] border border-white/5 flex-shrink-0">
-        {att.icon}
+        {att.type === "momentum" ? <Activity className="w-3.5 h-3.5 text-[#FF4E00]" strokeWidth={2.5} />
+          : att.type === "sub" ? <ArrowLeftRight className="w-3.5 h-3.5 text-[#5EC26A]" strokeWidth={2.5} />
+          : att.icon}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 flex-wrap">

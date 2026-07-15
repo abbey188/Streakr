@@ -17,7 +17,7 @@ export interface MomentPhrase {
 
 type Payload = {
   side?: string; scorer?: string; player?: string; on?: string; off?: string;
-  outcome?: string; penalty?: boolean; cardType?: string;
+  outcome?: string; penalty?: boolean; cardType?: string; keeper?: string;
   possA?: number; possB?: number;
 };
 
@@ -48,7 +48,12 @@ export function momentPhrase(type: string, payload: Record<string, unknown>, tea
         predicate: p.outcome === "overturned" ? "The decision is overturned" : p.outcome === "stands" ? "After review, the decision stands" : "Under VAR review",
       };
     case "shot":
-      return { icon: "🎯", label: p.outcome === "Woodwork" ? "Woodwork" : "Shot on target", subject: p.player ?? teamName, predicate: p.outcome === "Woodwork" ? "rattles the woodwork" : "forces a save" };
+      if (p.outcome === "Woodwork")
+        return { icon: "🎯", label: "Woodwork", subject: p.player ?? teamName, predicate: "rattles the woodwork" };
+      return { icon: "🎯", label: "Shot on target", subject: p.player ?? teamName,
+        predicate: p.keeper ? `forces ${p.keeper} into a save` : "forces a save" };
+    case "lineup":
+      return { icon: "📋", label: "Lineups", predicate: "Both XIs are in — tap for the roster" };
     case "momentum": {
       const lead = Math.max(p.possA ?? 0, p.possB ?? 0);
       const predicate = lead >= 75 ? "camped in the other half"
@@ -101,6 +106,7 @@ export function momentTone(type: string): string {
     case "shot": return "text-sky-400 bg-sky-500/15";
     case "momentum": return "text-[#FF4E00] bg-[#FF4E00]/15";
     case "corner": case "freekick": return "text-slate-300 bg-white/8"; // low-weight
+    case "lineup": return "text-slate-300 bg-white/8";
     default: return "text-[#8E9299] bg-white/5";
   }
 }

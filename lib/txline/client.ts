@@ -128,9 +128,11 @@ export interface RawScore {
   Participant2?: RawTotalScore;
 }
 
-// Lineups: event Data.PlayerId maps to player.normativeId (verified).
+// Lineups: event Data.PlayerId maps to player.normativeId (verified). Each slot
+// carries the jersey number, position (34=GK, 35=DEF, 36=MID, 37=FWD — verified),
+// and whether the player started.
 export interface RawLineupPlayer { normativeId?: number; preferredName?: string; name?: string; }
-export interface RawLineupSlot { player?: RawLineupPlayer }
+export interface RawLineupSlot { player?: RawLineupPlayer; rosterNumber?: number; positionId?: number; starter?: boolean }
 export interface RawLineupTeam { preferredName?: string; lineups?: RawLineupSlot[] }
 
 export interface RawScoreEntry {
