@@ -51,7 +51,28 @@ export function momentPhrase(type: string, payload: Record<string, unknown>, tea
       return { icon: "🎯", label: p.outcome === "Woodwork" ? "Woodwork" : "Shot on target", subject: p.player ?? teamName, predicate: p.outcome === "Woodwork" ? "rattles the woodwork" : "forces a save" };
     case "momentum": {
       const lead = Math.max(p.possA ?? 0, p.possB ?? 0);
-      return { icon: "📊", label: "Momentum", subject: teamName, predicate: lead >= 70 ? "in total control" : "turning the screw" };
+      const predicate = lead >= 75 ? "camped in the other half"
+        : lead >= 68 ? "in total control"
+        : lead >= 63 ? "turning the screw"
+        : "building the pressure";
+      return { icon: "📊", label: "Momentum", subject: teamName, predicate };
+    }
+    case "status": {
+      const kind = (payload as { kind?: string }).kind;
+      const m: Record<string, { icon: string; label: string; predicate: string }> = {
+        kickoff: { icon: "⏱️", label: "Kick-off", predicate: "We're under way" },
+        ht: { icon: "⏸️", label: "Half-time", predicate: "It's the half-time whistle" },
+        secondhalf: { icon: "▶️", label: "Second half", predicate: "Back under way" },
+        ft: { icon: "🏁", label: "Full-time", predicate: "Full-time" },
+        et: { icon: "⏳", label: "Extra time", predicate: "Still level — we go to extra time" },
+        pens: { icon: "🥅", label: "Penalties", predicate: "It's going to a shootout" },
+      };
+      const s = m[kind ?? ""] ?? { icon: "⏱️", label: "Update", predicate: "" };
+      return { icon: s.icon, label: s.label, predicate: s.predicate };
+    }
+    case "stoppage": {
+      const mins = (payload as { minutes?: number }).minutes ?? 0;
+      return { icon: "⏱️", label: "Added time", predicate: `${mins} ${mins === 1 ? "minute" : "minutes"} added` };
     }
     default:
       return { icon: "•", label: type, predicate: teamName };
@@ -88,7 +109,7 @@ export function buildMomentAttachment(item: FeedItem): MomentAttachment {
   let text = momentText(ph);
   if (item.type === "momentum") {
     const p = item.payload as { possA?: number; possB?: number };
-    text = `${teamName} ${ph.predicate} — ${Math.max(p.possA ?? 0, p.possB ?? 0)}% of the ball`;
+    text = `${teamName} ${ph.predicate} · ${Math.max(p.possA ?? 0, p.possB ?? 0)}% momentum`;
   }
   return {
     kind: "moment",

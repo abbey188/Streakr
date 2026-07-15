@@ -1,10 +1,19 @@
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { Activity } from "lucide-react";
 import type { Fixture, FeedItem } from "../types";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import { kickoffLabel } from "@/lib/match-groups";
 import { momentPhrase, momentTone } from "@/lib/social/moment";
 import CountryFlag from "./CountryFlag";
+
+/** Card time label — shows stoppage time ("45+2'") when the deriver set it. */
+function minLabel(item: FeedItem): string {
+  const custom = (item.payload as { min?: string }).min;
+  if (custom) return `${custom}'`;
+  if (item.minute != null) return `${item.minute}'`;
+  return item.match.status === "finished" ? "FT" : "";
+}
 
 /**
  * The Hub, reimagined (docs/social/LIVE_FEED.md): a clean live-scores strip on
@@ -90,7 +99,7 @@ function MomentCard({ item, onOpen, onShare }: { item: FeedItem; onOpen: () => v
       className="flex gap-3 items-start bg-[#151B2E] border border-white/5 rounded-2xl p-3 transition hover:border-white/12 active:scale-[0.995] cursor-pointer"
     >
       <div className="w-9 h-9 rounded-xl flex-shrink-0 grid place-items-center text-[17px] bg-[#0A0E1A] border border-white/5">
-        {meta.icon}
+        {item.type === "momentum" ? <Activity className="w-4.5 h-4.5 text-[#FF4E00]" strokeWidth={2.5} /> : meta.icon}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
@@ -103,21 +112,24 @@ function MomentCard({ item, onOpen, onShare }: { item: FeedItem; onOpen: () => v
             <CountryFlag name={m.teamB.name} className="w-3.5 h-2.5" />
           </span>
           <span className="ml-auto text-[9px] font-mono text-[#8E9299] tabular-nums">
-            {item.minute != null ? `${item.minute}'` : m.status === "finished" ? "FT" : ""}
+            {minLabel(item)}
           </span>
         </div>
         <div className="text-[12.5px] text-slate-200 mt-1 leading-snug">{meta.body}</div>
         {item.type === "momentum" && (() => {
-          const p = item.payload as { possA?: number; possB?: number };
-          const pa = p.possA ?? 50, pb = p.possB ?? 50;
+          const p = item.payload as { side?: string; possA?: number; possB?: number };
+          const pa = p.possA ?? 50, pb = p.possB ?? 50, leadA = p.side === "A";
+          // Flipped bar: the bright (orange) fill sits on the side of whoever has
+          // the momentum; the other team's share stays grey.
           return (
             <div className="mt-2">
               <div className="flex justify-between text-[8.5px] font-mono font-bold tabular-nums">
-                <span className="text-[#FF4E00]">{m.teamA.code} {pa}%</span>
-                <span className="text-[#8E9299]">{pb}% {m.teamB.code}</span>
+                <span className={leadA ? "text-[#FF4E00]" : "text-[#8E9299]"}>{m.teamA.code} {pa}%</span>
+                <span className={!leadA ? "text-[#FF4E00]" : "text-[#8E9299]"}>{pb}% {m.teamB.code}</span>
               </div>
-              <div className="h-1.5 rounded-full bg-[#2D364F] overflow-hidden flex mt-1">
-                <span className="bg-[#FF4E00] h-full" style={{ width: `${pa}%` }} />
+              <div className="h-1.5 rounded-full overflow-hidden flex mt-1 bg-[#2D364F]">
+                <span className={`h-full ${leadA ? "bg-[#FF4E00]" : "bg-transparent"}`} style={{ width: `${pa}%` }} />
+                <span className={`h-full ${!leadA ? "bg-[#FF4E00]" : "bg-transparent"}`} style={{ width: `${pb}%` }} />
               </div>
             </div>
           );
@@ -133,6 +145,38 @@ function MomentCard({ item, onOpen, onShare }: { item: FeedItem; onOpen: () => v
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── match-state beat (kickoff / HT / FT / extra time / added time) ──────────
+// Rendered as a centered timeline divider, not a shareable card — it's a state
+// marker, not a moment to argue about.
+
+function StateBeat({ item }: { item: FeedItem }) {
+  const m = item.match;
+  const p = item.payload as { kind?: string };
+  const ph = momentPhrase(item.type, item.payload, m.teamA.name);
+  const isFT = item.type === "status" && p.kind === "ft";
+  const isKickoff = item.type === "status" && p.kind === "kickoff";
+  const result = isFT && m.winner ? `${(m.winner === "A" ? m.teamA : m.teamB).code} through` : null;
+  // Kickoff shows the fixture (its score isn't 0–0 by full-time); everything
+  // else shows the score, which is meaningful at that beat.
+  const context = isKickoff
+    ? `${m.teamA.code} v ${m.teamB.code}`
+    : item.type === "stoppage"
+      ? ph.predicate
+      : `${m.teamA.code} ${m.scoreA ?? 0}–${m.scoreB ?? 0} ${m.teamB.code}`;
+  return (
+    <div className="flex items-center gap-2.5 py-1.5">
+      <div className="flex-1 h-px bg-white/5" />
+      <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold uppercase tracking-widest text-[#8E9299] whitespace-nowrap">
+        <span className="text-[11px]">{ph.icon}</span>
+        {ph.label}
+        <span className="text-slate-400">· {context}</span>
+        {result && <span className="text-[#FF4E00]">· {result}</span>}
+      </span>
+      <div className="flex-1 h-px bg-white/5" />
     </div>
   );
 }
@@ -228,11 +272,15 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
                 >
-                  <MomentCard
-                    item={item}
-                    onOpen={() => onOpenMatch(item.fixtureId)}
-                    onShare={onShareMoment ? () => onShareMoment(item) : undefined}
-                  />
+                  {item.type === "status" || item.type === "stoppage" ? (
+                    <StateBeat item={item} />
+                  ) : (
+                    <MomentCard
+                      item={item}
+                      onOpen={() => onOpenMatch(item.fixtureId)}
+                      onShare={onShareMoment ? () => onShareMoment(item) : undefined}
+                    />
+                  )}
                 </motion.div>
               ))}
             </AnimatePresence>

@@ -404,6 +404,21 @@ function pruneU(o: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
+/** Football stoppage-time label: 47' in the first half → "45+2". Undefined when
+ *  the minute is within regulation (the feed then just shows `${minute}'`). */
+function stoppageMinLabel(min: number, phase: string): string | undefined {
+  if (phase === "1H" && min > 45) return `45+${min - 45}`;
+  if (phase === "2H" && min > 90) return `90+${min - 90}`;
+  if ((phase === "ET1" || phase === "ET") && min > 105) return `105+${min - 105}`;
+  if (phase === "ET2" && min > 120) return `120+${min - 120}`;
+  return undefined;
+}
+
+/** StatusId → the one-off "match state" beat it should post to the feed. */
+const STATUS_BEAT: Record<number, string> = {
+  2: "kickoff", 3: "ht", 6: "et", 7: "et", 11: "pens", 12: "pens",
+};
+
 /**
  * Derives the Live Feed's persistable moments from the action log — the same
  * confirmed beats buildEvents renders (goal · penalty · yellow · red · sub · var
@@ -424,13 +439,19 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
   for (const e of entries) if (!bySeq.has(e.Seq)) bySeq.set(e.Seq, e);
   const chrono = [...bySeq.values()].sort((a, b) => a.Seq - b.Seq);
 
+  let phase = "NS"; // running match phase (drives stoppage labels + state beats)
+  let maxSid = 0;   // furthest phase reached — advances only, so glitches can't regress it
   const byKey = new Map<string, PersistedMatchEvent>();
   const put = (key: string, ev: Omit<PersistedMatchEvent, "key">) => {
+    const p = pruneU(ev.payload);
+    const label = stoppageMinLabel(ev.minute, phase);
+    // "45+2" for a moment during stoppage — but never for a state marker itself.
+    if (label && ev.type !== "status" && ev.type !== "stoppage") p.min = label;
     const cur = byKey.get(key);
-    if (!cur) { byKey.set(key, { key, ...ev, payload: pruneU(ev.payload) }); return; }
+    if (!cur) { byKey.set(key, { key, ...ev, payload: p }); return; }
     cur.seq = Math.min(cur.seq, ev.seq);         // earliest transmission orders it
     if (!cur.minute && ev.minute) cur.minute = ev.minute;
-    cur.payload = { ...cur.payload, ...pruneU(ev.payload) }; // named beats unnamed
+    cur.payload = { ...cur.payload, ...p }; // named beats unnamed
     if (ev.confirmed) cur.confirmed = true;
   };
 
@@ -441,6 +462,24 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
     const d = e.Data ?? {};
     const runningGoals = (s: "A" | "B") =>
       s === "A" ? e.Score?.Participant1?.Total?.Goals : e.Score?.Participant2?.Total?.Goals;
+
+    // ── Match-state beats + phase tracking (kickoff / HT / FT / ET / pens) ──
+    // Advance the phase MONOTONICALLY (StatusId 1..13 are ordered by progression),
+    // so a glitchy status riding on a coverage/disconnect entry can't regress the
+    // phase or re-fire a beat. Beat fires once, when a phase is first reached.
+    const sid = e.StatusId;
+    if (typeof sid === "number" && sid >= 1 && sid <= 13 && sid > maxSid) {
+      maxSid = sid;
+      phase = SOCCER_STATUS[sid].period;
+      const kind = STATUS_BEAT[sid];
+      if (kind) put(`status:${kind}`, { seq: e.Seq, type: "status", minute: min, confirmed: true, payload: { kind } });
+    }
+    if (e.Action === "game_finalised") {
+      put("status:ft", { seq: e.Seq, type: "status", minute: min, confirmed: true, payload: { kind: "ft" } });
+    }
+    if (e.Action === "additional_time" && typeof d.Minutes === "number" && (d.Minutes as number) > 0) {
+      put(`stoppage:${phase}`, { seq: e.Seq, type: "stoppage", minute: min, confirmed: true, payload: { minutes: d.Minutes, phase } });
+    }
 
     switch (e.Action) {
       case "goal": {
@@ -511,26 +550,34 @@ const MOMENTUM_WEIGHTS: Record<string, number> = {
 };
 
 /**
- * Derives a MOMENTUM moment — our own read, not a raw TxLINE field. Weights the
- * possession stream by danger over the last ~10 minutes of match clock; when one
- * side holds ≥60% of the weighted ball, emits ONE momentum event bucketed to a
- * 10-minute block so it can't spam. Re-derived + upserted each poll like every
- * other event (the block key keeps it to ~one card per team per 10 minutes).
- * Returns null when play is balanced (nothing worth surfacing).
+ * Derives a MOMENTUM moment — our own read, not a raw TxLINE field. It's a
+ * blended index over the last ~10 min of match clock, not raw possession: the
+ * five possession tiers weighted by danger, PLUS shots (a shot on target is a
+ * strong momentum signal) and corners (territory). When one side holds ≥60% of
+ * that weighted momentum it emits ONE event, bucketed to a 10-min block so it
+ * can't spam, and never before the 20th minute (too early to call a swing).
+ * Re-derived + upserted each poll; returns null when play is even.
  */
 export function deriveMomentum(updates: RawScoreEntry[]): PersistedMatchEvent | null {
-  const poss: { side: "A" | "B"; w: number; sec: number; seq: number }[] = [];
+  const pts: { side: "A" | "B"; w: number; sec: number; seq: number }[] = [];
   for (const e of updates) {
-    const w = MOMENTUM_WEIGHTS[e.Action];
-    if (!w) continue;
     const side = e.Participant === 1 ? "A" : e.Participant === 2 ? "B" : null;
     const sec = e.Clock?.Seconds;
     if (!side || typeof sec !== "number") continue;
-    poss.push({ side, w, sec, seq: e.Seq });
+    let w = MOMENTUM_WEIGHTS[e.Action] ?? 0;
+    if (!w && e.Action === "shot" && e.Confirmed !== false) {
+      const o = (e.Data as { Outcome?: string })?.Outcome;
+      w = o === "OnTarget" || o === "Woodwork" ? 6 : o ? 3 : 0; // shots weigh heavily
+    }
+    if (!w && e.Action === "corner") w = 2; // territory
+    if (!w) continue;
+    pts.push({ side, w, sec, seq: e.Seq });
   }
-  if (poss.length < 20) return null;
-  const latest = Math.max(...poss.map((p) => p.sec));
-  const win = poss.filter((p) => p.sec >= latest - 600); // last 10 min of clock
+  if (pts.length < 20) return null;
+  const latest = Math.max(...pts.map((p) => p.sec));
+  const minute = Math.floor(latest / 60);
+  if (minute < 20) return null; // too early to call momentum
+  const win = pts.filter((p) => p.sec >= latest - 600); // last 10 min of clock
   if (win.length < 15) return null; // not enough recent signal
   let a = 0, b = 0;
   for (const p of win) { if (p.side === "A") a += p.w; else b += p.w; }
@@ -540,7 +587,6 @@ export function deriveMomentum(updates: RawScoreEntry[]): PersistedMatchEvent | 
   const pb = 100 - pa;
   const lead = pa >= pb ? "A" : "B";
   if (Math.max(pa, pb) < 60) return null; // balanced — no swing to report
-  const minute = Math.floor(latest / 60);
   return {
     key: `momentum:${lead}:${Math.floor(minute / 10)}`, // one per team per 10-min block
     seq: Math.max(...win.map((p) => p.seq)),
