@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Activity, ArrowLeftRight, Play } from "lucide-react";
+import { Activity, ArrowLeftRight, Play, Crosshair } from "lucide-react";
 import type { Fixture, FeedItem } from "../types";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import { kickoffLabel } from "@/lib/match-groups";
@@ -109,6 +109,7 @@ function MomentCard({ item, onOpen, onShare }: { item: FeedItem; onOpen: () => v
       <div className="w-9 h-9 rounded-xl flex-shrink-0 grid place-items-center text-[17px] bg-[#0A0E1A] border border-white/5">
         {item.type === "momentum" ? <Activity className="w-4.5 h-4.5 text-[#FF4E00]" strokeWidth={2.5} />
           : item.type === "sub" ? <ArrowLeftRight className="w-4.5 h-4.5 text-[#5EC26A]" strokeWidth={2.5} />
+          : item.type === "freekick" ? <Crosshair className={`w-4 h-4 ${(item.payload as { dangerous?: boolean }).dangerous ? "text-[#FF4E00]" : "text-slate-400"}`} strokeWidth={2.5} />
           : meta.icon}
       </div>
       <div className="min-w-0 flex-1">
@@ -116,9 +117,9 @@ function MomentCard({ item, onOpen, onShare }: { item: FeedItem; onOpen: () => v
           <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${meta.tone}`}>
             {meta.label}
           </span>
-          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-slate-300 tabular-nums">
+          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-slate-300 tabular-nums whitespace-nowrap flex-shrink-0">
             <CountryFlag name={m.teamA.name} className="w-3.5 h-2.5" />
-            {m.teamA.code} {m.scoreA ?? 0}–{m.scoreB ?? 0} {m.teamB.code}
+            <span className="whitespace-nowrap">{m.teamA.code} {m.scoreA ?? 0}–{m.scoreB ?? 0} {m.teamB.code}</span>
             <CountryFlag name={m.teamB.name} className="w-3.5 h-2.5" />
           </span>
           <span className="ml-auto text-[9px] font-mono text-[#8E9299] tabular-nums">

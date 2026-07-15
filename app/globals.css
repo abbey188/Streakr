@@ -52,3 +52,15 @@
 /* Fully hidden scrollbar for horizontal strips (Live Feed scores strip, etc.). */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Uniform, subtle scrollbars app-wide — the thin blended bar from the Squad Room,
+   applied everywhere so scroll areas look clean and consistent. `.no-scrollbar`
+   still hides where needed (its class selector outranks these universal rules). */
+* {
+  scrollbar-width: thin;                                   /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 999px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
