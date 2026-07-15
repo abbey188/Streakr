@@ -5,13 +5,19 @@ import { useIdentity } from "@/lib/identity/context";
 import {
   fetchNotifications, markNotificationsRead, fetchMyGroupsActivity, clearNotifications,
 } from "@/lib/api/client";
+import { getCached, setCached } from "@/lib/state/cache";
 import type { Notification, ActivityItem } from "@/src/types";
 import ScreenInbox from "@/src/components/ScreenInbox";
 
 export default function InboxPage() {
   const identity = useIdentity();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [groupActivity, setGroupActivity] = useState<ActivityItem[]>([]);
+  // Seed from cache so re-opening the Inbox shows the last feed instantly.
+  const [notifications, setNotifications] = useState<Notification[]>(
+    () => getCached<Notification[]>("notifications") ?? []
+  );
+  const [groupActivity, setGroupActivity] = useState<ActivityItem[]>(
+    () => getCached<ActivityItem[]>("groupActivity") ?? []
+  );
 
   useEffect(() => {
     const wallet = identity.walletAddress;
@@ -19,10 +25,10 @@ export default function InboxPage() {
     let cancelled = false;
     const load = () => {
       fetchNotifications(wallet)
-        .then((rows) => { if (!cancelled) setNotifications(rows); })
+        .then((rows) => { if (!cancelled) { setNotifications(rows); setCached("notifications", rows); } })
         .catch(() => { /* keep last feed on failure */ });
       fetchMyGroupsActivity(wallet)
-        .then((rows) => { if (!cancelled) setGroupActivity(rows); })
+        .then((rows) => { if (!cancelled) { setGroupActivity(rows); setCached("groupActivity", rows); } })
         .catch(() => { /* keep last feed on failure */ });
     };
     load();

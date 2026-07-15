@@ -25,7 +25,7 @@ function TeamColumn({ name, teamName, players }: { name: string; teamName: strin
     <div className="min-w-0 flex-1">
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/5">
         <CountryFlag name={teamName} className="w-5 h-3.5 flex-shrink-0" />
-        <span className="text-[12px] font-black italic uppercase tracking-tight truncate">{name}</span>
+        <span className="text-[12px] font-black italic uppercase tracking-tight truncate text-[#FF4E00]">{name}</span>
       </div>
       <div>{xi.map(Row)}</div>
       {bench.length > 0 && (

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useIdentity } from "@/lib/identity/context";
 import { useAppState } from "@/lib/state/app-state";
 import { fetchGlobalLeaderboard, type GlobalLeaderboardEntry } from "@/lib/api/client";
+import { getCached, setCached } from "@/lib/state/cache";
 import ScreenHome from "@/src/components/ScreenHome";
 import ScreenTour from "@/src/components/ScreenTour";
 
@@ -12,7 +13,11 @@ export default function PlayPage() {
   const app = useAppState();
   const identity = useIdentity();
   const router = useRouter();
-  const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
+  // Seed from the last-good cache so returning to Play shows the board instantly
+  // (no empty flash), then refresh in the background.
+  const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>(
+    () => getCached<GlobalLeaderboardEntry[]>("globalLeaderboard") ?? []
+  );
 
   useEffect(() => {
     const wallet = identity.walletAddress;
@@ -20,7 +25,7 @@ export default function PlayPage() {
     let cancelled = false;
     const load = () =>
       fetchGlobalLeaderboard(wallet)
-        .then((rows) => { if (!cancelled) setGlobalLeaderboard(rows); })
+        .then((rows) => { if (!cancelled) { setGlobalLeaderboard(rows); setCached("globalLeaderboard", rows); } })
         .catch(() => {});
     load();
     const t = setInterval(load, 30_000); // keep the leaderboard live while open

@@ -9,17 +9,19 @@ import {
   fetchMyGroups, createGroup, joinGroup, fetchLeaderboard,
   type GroupSummary, type LeaderboardType,
 } from "@/lib/api/client";
+import { getCached, setCached } from "@/lib/state/cache";
 
 export default function GroupsPage() {
   const identity = useIdentity();
   const app = useAppState();
   const wallet = identity.walletAddress;
 
-  const [myGroups, setMyGroups] = useState<GroupSummary[]>([]);
+  // Seed from cache so re-opening Squads shows your squads instantly.
+  const [myGroups, setMyGroups] = useState<GroupSummary[]>(() => getCached<GroupSummary[]>("myGroups") ?? []);
 
   const refreshGroups = useCallback(() => {
     if (!wallet) return;
-    fetchMyGroups(wallet).then(setMyGroups).catch(() => {});
+    fetchMyGroups(wallet).then((g) => { setMyGroups(g); setCached("myGroups", g); }).catch(() => {});
   }, [wallet]);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function GroupsPage() {
         refreshGroups();
         return group;
       } catch {
-        app.triggerToast("Couldn't create group — try again.");
+        app.triggerToast("Couldn't create squad — try again.");
         return null;
       }
     },

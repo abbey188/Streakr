@@ -1172,7 +1172,10 @@ export async function getFeed(limit = 60): Promise<FeedItem[]> {
     where me.created_at > now() - interval '2 days'
       and f.round <> 'Group Stage'
       and f.status in ('live', 'finished', 'upcoming')
-    order by me.created_at desc, me.seq desc
+    -- Pin a live/upcoming match's lineup card to the very top (it's the headline
+    -- as a match is about to start); everything else is strict newest-first.
+    order by (me.type = 'lineup' and f.status in ('live', 'upcoming')) desc,
+             me.created_at desc, me.seq desc
     limit ${limit}
   `) as FeedRow[];
 
