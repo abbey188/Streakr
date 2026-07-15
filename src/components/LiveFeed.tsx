@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Activity, ArrowLeftRight } from "lucide-react";
+import { Activity, ArrowLeftRight, Play } from "lucide-react";
 import type { Fixture, FeedItem } from "../types";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
 import { kickoffLabel } from "@/lib/match-groups";
@@ -174,7 +174,7 @@ function StateBeat({ item }: { item: FeedItem }) {
     <div className="flex items-center gap-2.5 py-1.5">
       <div className="flex-1 h-px bg-white/5" />
       <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold uppercase tracking-widest text-[#8E9299] whitespace-nowrap">
-        <span className="text-[11px]">{ph.icon}</span>
+        {isKickoff ? <Play className="w-2.5 h-2.5 text-[#8E9299]" strokeWidth={3} fill="currentColor" /> : <span className="text-[11px]">{ph.icon}</span>}
         {ph.label}
         <span className="text-slate-400">· {context}</span>
         {result && <span className="text-[#FF4E00]">· {result}</span>}

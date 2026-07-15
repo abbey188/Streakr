@@ -15,17 +15,17 @@ function TeamColumn({ name, teamName, players }: { name: string; teamName: strin
   const xi = players.filter((p) => p.starter);
   const bench = players.filter((p) => !p.starter);
   const Row = (p: RosterPlayer) => (
-    <div key={`${p.n}-${p.name}`} className="flex items-center gap-2 py-1">
-      <span className="w-5 text-right font-mono text-[10px] text-[#8E9299] tabular-nums flex-shrink-0">{p.n ?? "–"}</span>
-      <span className="text-[12px] text-slate-200 truncate">{p.name}</span>
-      {p.pos === "GK" && <span className="ml-auto text-[8px] font-mono font-bold text-[#8E9299] uppercase tracking-wider flex-shrink-0">GK</span>}
+    <div key={`${p.n}-${p.name}`} className="flex items-start gap-2 py-1">
+      <span className="w-5 text-right font-mono text-[10px] text-[#8E9299] tabular-nums flex-shrink-0 pt-px">{p.n ?? "–"}</span>
+      <span className="text-[12px] text-slate-200 leading-tight">{p.name}</span>
+      {p.pos === "GK" && <span className="ml-auto text-[8px] font-mono font-bold text-[#8E9299] uppercase tracking-wider flex-shrink-0 pt-0.5">GK</span>}
     </div>
   );
   return (
     <div className="min-w-0 flex-1">
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/5">
         <CountryFlag name={teamName} className="w-5 h-3.5 flex-shrink-0" />
-        <span className="text-[12px] font-black italic uppercase tracking-tight truncate text-[#FF4E00]">{name}</span>
+        <span className="text-[12px] font-black italic uppercase tracking-tight text-[#FF4E00] leading-tight">{name}</span>
       </div>
       <div>{xi.map(Row)}</div>
       {bench.length > 0 && (
@@ -71,8 +71,8 @@ export default function LineupModal({ item, onClose }: { item: FeedItem; onClose
           <button onClick={onClose} aria-label="Close" className="text-[#8E9299] hover:text-white transition"><X className="w-4 h-4" /></button>
         </div>
         <div className="flex gap-4">
-          <TeamColumn name={m.teamA.code} teamName={m.teamA.name} players={p.A ?? []} />
-          <TeamColumn name={m.teamB.code} teamName={m.teamB.name} players={p.B ?? []} />
+          <TeamColumn name={m.teamA.name} teamName={m.teamA.name} players={p.A ?? []} />
+          <TeamColumn name={m.teamB.name} teamName={m.teamB.name} players={p.B ?? []} />
         </div>
       </div>
     </div>,

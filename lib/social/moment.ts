@@ -83,7 +83,7 @@ export function momentPhrase(type: string, payload: Record<string, unknown>, tea
       return { icon: "🚩", label: "Corner", subject: teamName, predicate: "win a corner" };
     case "freekick":
       return { icon: "🧱", label: "Free kick", subject: teamName,
-        predicate: (payload as { dangerous?: boolean }).dangerous ? "win a dangerous free kick" : "win a free kick in the final third" };
+        predicate: (payload as { dangerous?: boolean }).dangerous ? "win a dangerous free kick" : "win a free kick" };
     default:
       return { icon: "•", label: type, predicate: teamName };
   }
