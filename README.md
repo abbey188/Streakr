@@ -87,27 +87,29 @@ holes — and nothing is ever double-inserted.
 
 ---
 
-## We found real bugs in the live feed — and defended against them
+## Where it goes next — beyond the World Cup
 
-Building against live data surfaced genuine anomalies in the feed itself. They're written
-up for the TxLINE team in **[`docs/txline/FEED_LOG.md`](docs/txline/FEED_LOG.md)**, each
-paired with the mitigation we shipped. That log is the honest artefact of this build.
+The World Cup is the launch competition, not the ceiling. Most of what's here is already
+sport-agnostic: identity, streaks and points, squads and the Squad Room, notifications,
+the share loop, and the whole cron → derive → Neon → poll pipeline don't know what a goal
+*is*.
 
-- **`StatusId: 100` leaked onto a `disconnected` action** — the settlement marker rode on
-  a *transport* event mid-match. Trusted naively, it **falsely ends a live match and
-  resolves everyone's picks**. It did, to us, once.
-- **Every goal is emitted twice under different `Seq`**, only one copy carrying
-  `PlayerId` — verified across **8/8 goals in 3 fixtures**. `Seq` looks like a stable id,
-  so a consumer keyed on it **double-inserts every goal**. We key on a derived stable
-  identity instead.
-- **A goal's own strike also arrives as a separate shot-on-target**, so a goal doubles as
-  "forces a save" unless deduped (2–4 per fixture).
-- **Aggregate goal counts move with no confirmed `goal` action**, then revert — we sent a
-  phantom goal alert to 8 users before requiring a real action.
+Only two thin slices are football-shaped, and they're the seams we expand along:
 
-The invariants that came out of it now hold everywhere: never key on `Seq`; the match
-phase only advances, never regresses; a match with a running clock is never "finished";
-goals require a confirmed action, never a count delta.
+- **The normalizer** — turning a sport's action vocabulary into feed moments. Football
+  speaks in goals, cards, subs and VAR; another sport speaks in wickets, tries or
+  timeouts. Same pipeline, new vocabulary.
+- **The pick primitive** — "who advances" is knockout-shaped. A league season needs a
+  different one (a result, a table position), which is the next model we build.
+
+**Momentum generalises too.** The index isn't football logic — it's *"weight recent
+danger-heavy events over a rolling window and call the swing."* The weights change per
+sport; the read doesn't.
+
+So a new sport is a **normalizer + a pick model + its phrasing**, against a pipeline
+that's already proven against live data. TxLINE carries other sports, which is what makes
+that tractable rather than a rewrite. The nearest step is a **league/season model** — the
+same expansion work aimed at a new competition shape rather than a new sport.
 
 ---
 
