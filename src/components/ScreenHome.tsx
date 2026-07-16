@@ -241,6 +241,14 @@ export default function ScreenHome({
   // Filter fixtures
   const liveMatches = fixtures.filter((f) => f.status === "live");
   const upcomingMatches = fixtures.filter((f) => f.status === "upcoming");
+  // The bracket-picks header names the round only when every upcoming match IS
+  // that round. At the end of the tournament the Third-place play-off and the
+  // Final are open together, so naming it after the first would mislabel the
+  // Final's card as "Third Place".
+  const upcomingRounds = new Set(upcomingMatches.map((f) => f.round));
+  const picksTitle = upcomingRounds.size === 1
+    ? `${upcomingMatches[0].round} Bracket Picks`
+    : "Bracket Picks";
   // The user's own resolved picks — surfaced right in Play so you don't have to
   // dig into the Hub to learn whether you won or lost. Most recent first.
   const myResults = fixtures
@@ -522,7 +530,7 @@ export default function ScreenHome({
             <div className="space-y-5">
               <h3 className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1">
                 <Zap className="w-3.5 h-3.5 text-[#FF4E00]" />
-                {upcomingMatches[0]?.round ?? "Knockout"} Bracket Picks
+                {picksTitle}
               </h3>
               {groupByDay(upcomingMatches).map((grp) => (
                 <div key={grp.key} className="space-y-3">
