@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Activity, ArrowLeftRight, Play, Crosshair } from "lucide-react";
 import type { Fixture, FeedItem } from "../types";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
-import { kickoffLabel } from "@/lib/match-groups";
+import { kickoffLabel, kickoffWhen } from "@/lib/match-groups";
 import { momentPhrase, momentTone } from "@/lib/social/moment";
 import CountryFlag from "./CountryFlag";
 import LineupModal from "./LineupModal";
@@ -279,15 +279,15 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
         ) : (
           <button
             onClick={nextUp ? () => onOpenMatch(nextUp.id) : undefined}
-            className="w-full flex items-center gap-2 px-4 py-3 border-b border-white/5 text-left overflow-hidden"
+            className="w-full flex items-center gap-x-2 gap-y-1 flex-wrap px-4 py-3 border-b border-white/5 text-left"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[#8E9299] flex-shrink-0" />
             <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#8E9299] flex-shrink-0">No live matches</span>
             {nextUp && (
-              <span className="ml-auto flex items-center gap-1.5 text-[9px] font-mono text-[#8E9299] min-w-0">
-                <span className="uppercase tracking-wider flex-shrink-0">Next</span>
-                <span className="font-bold text-slate-300 truncate">{nextUp.teamA.code} v {nextUp.teamB.code}</span>
-                <span className="flex-shrink-0">· {kickoffLabel(nextUp)}</span>
+              <span className="ml-auto flex items-center gap-1.5 text-[9px] font-mono text-[#8E9299] whitespace-nowrap">
+                <span className="uppercase tracking-wider">Next</span>
+                <span className="font-bold text-slate-300">{nextUp.teamA.code} v {nextUp.teamB.code}</span>
+                <span>· {kickoffWhen(nextUp)}</span>
               </span>
             )}
           </button>
@@ -336,8 +336,8 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
             <p className="text-sm font-black italic text-slate-200">The feed lights up at kickoff</p>
             <p className="text-xs text-[#8E9299] mt-1.5 leading-relaxed">
               Every goal, card, sub and VAR call lands here live — straight from TxLINE.
-              {upcoming[0] && (
-                <> Next up: <span className="text-slate-300 font-bold">{upcoming[0].teamA.code} v {upcoming[0].teamB.code}</span>, {kickoffLabel(upcoming[0])}.</>
+              {nextUp && (
+                <> Next up: <span className="text-slate-300 font-bold">{nextUp.teamA.code} v {nextUp.teamB.code}</span>, {kickoffWhen(nextUp)}.</>
               )}
             </p>
           </div>

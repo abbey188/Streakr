@@ -8,6 +8,23 @@ export function kickoffLabel(f: Fixture): string {
   return f.kickoffTime;
 }
 
+/** Compact "when" for a fixture — day + time, so it's unambiguous when a match
+ *  is: "Today · 20:00", "Tomorrow · 20:00", or "Sat 18 Jul · 20:00". */
+export function kickoffWhen(f: Fixture): string {
+  const time = kickoffLabel(f);
+  if (!f.kickoffAt) return time;
+  const d = new Date(f.kickoffAt);
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const key = localDayKey(d);
+  let day: string;
+  if (key === localDayKey(now)) day = "Today";
+  else if (key === localDayKey(tomorrow)) day = "Tomorrow";
+  else day = d.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
+  return `${day} · ${time}`;
+}
+
 function localDayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
