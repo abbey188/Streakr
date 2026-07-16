@@ -8,9 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "node --env-file=.env.local scripts/migrate.mjs",
-    "db:reset": "node --env-file=.env.local scripts/migrate.mjs --reset",
-    "db:seed": "node --env-file=.env.local scripts/seed.mjs"
+    "db:migrate": "node --env-file=.env scripts/migrate.mjs",
+    "db:reset": "node --env-file=.env scripts/migrate.mjs --reset",
+    "db:seed": "node --env-file=.env scripts/seed.mjs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
