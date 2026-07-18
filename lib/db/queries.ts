@@ -12,6 +12,7 @@ import type {
   SquadReply,
   FeedItem,
   FeedMatch,
+  FeedReaction,
   MomentAttachment,
 } from "../../src/types";
 import type { FormEntry, PersistedMatchEvent } from "@/lib/txline/types";
@@ -75,38 +76,78 @@ export async function getUserByWallet(
   return mapUser(rows[0]);
 }
 
-/** Create a new user at signup (avatar = chosen mascot). Idempotent on wallet. */
+/** Thrown when a username is already taken (case-insensitive). Routes map it to 409. */
+export class UsernameTakenError extends Error {
+  constructor() {
+    super("USERNAME_TAKEN");
+    this.name = "UsernameTakenError";
+  }
+}
+
+/** A Postgres unique-violation (23505) on the username index. */
+function isUsernameViolation(e: unknown): boolean {
+  const err = e as { code?: string; constraint?: string; message?: string };
+  return err?.code === "23505" && /username/i.test(`${err.constraint ?? ""} ${err.message ?? ""}`);
+}
+
+/**
+ * Is a username already in use (case-insensitive)? Pass excludeWallet so a user
+ * editing their own profile isn't told their current name is taken.
+ */
+export async function isUsernameTaken(username: string, excludeWallet?: string): Promise<boolean> {
+  const rows = (await sql`
+    select 1 from users
+    where lower(username) = lower(${username})
+      and (${excludeWallet ?? null}::text is null or wallet_address <> ${excludeWallet ?? null})
+    limit 1
+  `) as unknown[];
+  return rows.length > 0;
+}
+
+/** Create a new user at signup (avatar = chosen mascot). Idempotent on wallet.
+ *  Throws UsernameTakenError if the chosen username belongs to someone else. */
 export async function createUser(input: {
   walletAddress: string;
   username: string;
   email?: string | null;
   avatar: AvatarConfig;
 }): Promise<UserState> {
-  const rows = (await sql`
-    insert into users (wallet_address, username, email, avatar)
-    values (${input.walletAddress}, ${input.username}, ${input.email ?? null}, ${JSON.stringify(input.avatar)})
-    on conflict (wallet_address) do update
-      set username = excluded.username,
-          email = coalesce(excluded.email, users.email),
-          avatar = excluded.avatar,
-          last_seen_at = now()
-    returning wallet_address, username, email, avatar, points, current_streak, personal_best
-  `) as UserRow[];
-  return mapUser(rows[0]);
+  try {
+    const rows = (await sql`
+      insert into users (wallet_address, username, email, avatar)
+      values (${input.walletAddress}, ${input.username}, ${input.email ?? null}, ${JSON.stringify(input.avatar)})
+      on conflict (wallet_address) do update
+        set username = excluded.username,
+            email = coalesce(excluded.email, users.email),
+            avatar = excluded.avatar,
+            last_seen_at = now()
+      returning wallet_address, username, email, avatar, points, current_streak, personal_best
+    `) as UserRow[];
+    return mapUser(rows[0]);
+  } catch (e) {
+    if (isUsernameViolation(e)) throw new UsernameTakenError();
+    throw e;
+  }
 }
 
-/** Update the mascot/avatar (and username) from the profile editor. */
+/** Update the mascot/avatar (and username) from the profile editor.
+ *  Throws UsernameTakenError if the new username belongs to someone else. */
 export async function updateUserAvatar(
   walletAddress: string,
   avatar: AvatarConfig
 ): Promise<UserState> {
-  const rows = (await sql`
-    update users
-      set avatar = ${JSON.stringify(avatar)}, username = ${avatar.username}
-      where wallet_address = ${walletAddress}
-    returning wallet_address, username, email, avatar, points, current_streak, personal_best
-  `) as UserRow[];
-  return mapUser(rows[0]);
+  try {
+    const rows = (await sql`
+      update users
+        set avatar = ${JSON.stringify(avatar)}, username = ${avatar.username}
+        where wallet_address = ${walletAddress}
+      returning wallet_address, username, email, avatar, points, current_streak, personal_best
+    `) as UserRow[];
+    return mapUser(rows[0]);
+  } catch (e) {
+    if (isUsernameViolation(e)) throw new UsernameTakenError();
+    throw e;
+  }
 }
 
 // ─── Fixtures ───────────────────────────────────────────────────────────
@@ -816,15 +857,20 @@ interface NotificationRow {
   icon: string | null;
   read: boolean;
   created_at: string;
+  group_id: string | null;
 }
 
 /** A user's personal notifications, newest first. */
 export async function getNotifications(walletAddress: string): Promise<Notification[]> {
   const rows = (await sql`
-    select id, type, title, body, icon, read, created_at
-    from notifications
-    where user_address = ${walletAddress}
-    order by created_at desc
+    select n.id, n.type, n.title, n.body, n.icon, n.read, n.created_at,
+           gm.group_id::text as group_id
+    from notifications n
+    -- Squad notifications dedup on the message id, so we can resolve which squad
+    -- they belong to (powers "tap the notification → open that chat").
+    left join group_messages gm on n.type = 'squad' and gm.id::text = n.dedup_key
+    where n.user_address = ${walletAddress}
+    order by n.created_at desc
     limit 50
   `) as NotificationRow[];
   return rows.map((r) => ({
@@ -835,7 +881,38 @@ export async function getNotifications(walletAddress: string): Promise<Notificat
     icon: r.icon ?? "🔔",
     read: r.read,
     timestamp: relativeTime(r.created_at),
+    groupId: r.group_id ?? undefined,
   }));
+}
+
+/** Unread squad-message notifications, counted per squad — powers the Squads nav
+ *  badge, the per-squad row badge, and the chat-button badge. */
+export async function getSquadUnreadByGroup(
+  walletAddress: string
+): Promise<Record<string, number>> {
+  const rows = (await sql`
+    select gm.group_id::text as group_id, count(*)::int as n
+    from notifications n
+    join group_messages gm on gm.id::text = n.dedup_key
+    where n.user_address = ${walletAddress} and n.type = 'squad' and n.read = false
+    group by gm.group_id
+  `) as { group_id: string; n: number }[];
+  const out: Record<string, number> = {};
+  for (const r of rows) out[r.group_id] = r.n;
+  return out;
+}
+
+/** Mark a squad's chat notifications read — called when the user opens that
+ *  Squad Room, so the badges clear for the squad they just looked at. */
+export async function markSquadGroupRead(
+  walletAddress: string,
+  groupId: string
+): Promise<void> {
+  await sql`
+    update notifications set read = true
+    where user_address = ${walletAddress} and type = 'squad' and read = false
+      and dedup_key in (select id::text from group_messages where group_id = ${groupId})
+  `;
 }
 
 /** Mark all of a user's notifications as read (called when they open the Inbox). */
@@ -1144,11 +1221,37 @@ export async function upsertMatchEvents(
 
 interface FeedRow {
   fixture_id: string; event_key: string; type: string; ev_minute: number | null;
-  payload: Record<string, unknown> | null; created_at: string | Date;
+  payload: Record<string, unknown> | null; created_at: string | Date; seq: number;
   status: string; round: string; score_a: number | null; score_b: number | null;
   match_minute: number | null; period: string | null; actual_winner: "A" | "B" | null;
   a_id: string; a_name: string; a_code: string; a_flag: string;
   b_id: string; b_name: string; b_code: string; b_flag: string;
+  reactions: FeedReaction[] | null;
+}
+
+/**
+ * Toggle a global reaction on a feed moment (fixture_id + event_key): add it, or
+ * remove it if this user already reacted with that emoji. Idempotent.
+ */
+export async function toggleFeedReaction(
+  fixtureId: string,
+  eventKey: string,
+  emoji: string,
+  userAddress: string
+): Promise<void> {
+  const ins = (await sql`
+    insert into feed_reactions (fixture_id, event_key, emoji, user_address)
+    values (${fixtureId}, ${eventKey}, ${emoji}, ${userAddress})
+    on conflict do nothing
+    returning 1 as added
+  `) as { added: number }[];
+  if (ins.length === 0) {
+    await sql`
+      delete from feed_reactions
+      where fixture_id = ${fixtureId} and event_key = ${eventKey}
+        and emoji = ${emoji} and user_address = ${userAddress}
+    `;
+  }
 }
 
 /**
@@ -1158,13 +1261,22 @@ interface FeedRow {
  * stays cheap as events accumulate. Group-stage fixtures are excluded (the Hub
  * is knockout-only). Public — no user-specific data.
  */
-export async function getFeed(limit = 60): Promise<FeedItem[]> {
+export async function getFeed(limit = 60, wallet?: string): Promise<FeedItem[]> {
   const rows = (await sql`
     select
-      me.fixture_id, me.event_key, me.type, me.minute as ev_minute, me.payload, me.created_at,
+      me.fixture_id, me.event_key, me.type, me.minute as ev_minute, me.payload, me.created_at, me.seq,
       f.status, f.round, f.score_a, f.score_b, f.minute as match_minute, f.period, f.actual_winner,
       ta.id as a_id, ta.name as a_name, ta.code as a_code, ta.flag as a_flag,
-      tb.id as b_id, tb.name as b_name, tb.code as b_code, tb.flag as b_flag
+      tb.id as b_id, tb.name as b_name, tb.code as b_code, tb.flag as b_flag,
+      coalesce((
+        select json_agg(json_build_object('emoji', emoji, 'count', cnt, 'mine', mine) order by cnt desc)
+        from (
+          select emoji, count(*)::int as cnt, bool_or(user_address = ${wallet ?? ""}) as mine
+          from feed_reactions fr
+          where fr.fixture_id = me.fixture_id and fr.event_key = me.event_key
+          group by emoji
+        ) rx
+      ), '[]'::json) as reactions
     from match_events me
     join fixtures f on f.id = me.fixture_id
     join teams ta on ta.id = f.team_a_id
@@ -1183,7 +1295,10 @@ export async function getFeed(limit = 60): Promise<FeedItem[]> {
     limit ${limit}
   `) as FeedRow[];
 
-  return rows.map((r) => {
+  // seq disambiguates real events that share a created_at (batch sync insert);
+  // synthetic beats below are offset in time so they never tie with a real one.
+  const seqOf = new Map<string, number>();
+  const items: FeedItem[] = rows.map((r) => {
     const match: FeedMatch = {
       fixtureId: r.fixture_id,
       round: r.round,
@@ -1196,14 +1311,229 @@ export async function getFeed(limit = 60): Promise<FeedItem[]> {
       teamA: { id: r.a_id, name: r.a_name, code: r.a_code, flag: r.a_flag },
       teamB: { id: r.b_id, name: r.b_name, code: r.b_code, flag: r.b_flag },
     };
+    const id = `${r.fixture_id}:${r.event_key}`;
+    seqOf.set(id, r.seq);
     return {
-      id: `${r.fixture_id}:${r.event_key}`,
+      id,
       fixtureId: r.fixture_id,
+      eventKey: r.event_key,
       type: r.type,
       minute: r.ev_minute,
       createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
       payload: r.payload ?? {},
       match,
+      reactions: r.reactions ?? [],
     };
   });
+
+  // ── Narrative beats + running score ────────────────────────────────────
+  // TxLINE streams play-by-play but no clean kickoff / half-time / full-time
+  // signal, and carries no per-user outcome. We synthesize those from fixture +
+  // goal + picks data so every tracked match reads as a story in the flat feed:
+  //   your result (newest) → full-time → …action… → half-time → kickoff (oldest).
+  const kind = (i: FeedItem) => (i.payload as { kind?: string }).kind;
+  const shift = (iso: string, ms: number) => new Date(Date.parse(iso) + ms).toISOString();
+  const byFixture = new Map<string, FeedItem[]>();
+  for (const it of items) {
+    const g = byFixture.get(it.fixtureId);
+    if (g) g.push(it);
+    else byFixture.set(it.fixtureId, [it]);
+  }
+
+  // Goals by seq (fetched in full, so a goal outside the 60-row window still
+  // counts) → the running score at any point in a match.
+  const goalsByFixture = new Map<string, { seq: number; side: string }[]>();
+  const fixtureIds = [...byFixture.keys()];
+  if (fixtureIds.length) {
+    const goalRows = (await sql`
+      select fixture_id, seq, coalesce(payload->>'side', split_part(event_key, ':', 2)) as side
+      from match_events
+      where event_key like 'goal:%' and fixture_id = any(${fixtureIds}::text[])
+      order by fixture_id, seq
+    `) as { fixture_id: string; seq: number; side: string }[];
+    for (const g of goalRows) {
+      const arr = goalsByFixture.get(g.fixture_id) ?? [];
+      arr.push({ seq: g.seq, side: g.side });
+      goalsByFixture.set(g.fixture_id, arr);
+    }
+  }
+  const runningAt = (fixtureId: string, seq: number): { a: number; b: number } => {
+    let a = 0, b = 0;
+    for (const g of goalsByFixture.get(fixtureId) ?? []) {
+      if (g.seq <= seq) { if (g.side === "A") a++; else b++; }
+    }
+    return { a, b };
+  };
+
+  const synthetic: FeedItem[] = [];
+  const synthChrono = new Map<string, number>(); // where each synthetic beat sits in-match
+  const ftFixtures: string[] = []; // synthetic FT beats that can carry reactions
+  for (const [fixtureId, group] of byFixture) {
+    const match = group[0].match;
+    const times = group.map((g) => Date.parse(g.createdAt));
+    const maxIso = new Date(Math.max(...times)).toISOString();
+    const minIso = new Date(Math.min(...times)).toISOString();
+    const hasFt = group.some((g) => g.type === "status" && kind(g) === "ft");
+    const hasHt = group.some((g) => g.type === "status" && kind(g) === "ht");
+    const hasStart = group.some(
+      (g) => g.type === "lineup" || (g.type === "status" && kind(g) === "kickoff"),
+    );
+
+    // Full-time — its own match copy keeps the FINAL score (reals get running
+    // scores stamped below, so we synthesize before that mutation).
+    if (match.status === "finished" && !hasFt) {
+      ftFixtures.push(fixtureId);
+      const goalMins = group
+        .filter((g) => (g.type === "goal" || g.type === "penalty") && typeof g.minute === "number")
+        .map((g) => g.minute as number);
+      const id = `${fixtureId}:status:ft`;
+      synthetic.push({
+        id, fixtureId, eventKey: "status:ft", type: "status",
+        minute: null, createdAt: shift(maxIso, 1000),
+        payload: { kind: "ft", ...(goalMins.length ? { lastGoalMin: Math.max(...goalMins) } : {}) },
+        match: { ...match }, reactions: [],
+      });
+      synthChrono.set(id, 1e9);
+    }
+
+    // The break: a half-time card ("first half ends, 2–1") plus a "second half
+    // begins" divider just above it — synthesized at the 1st/2nd-half boundary
+    // once the match has passed 45', showing the score as it stood at the break.
+    const firstHalf = group.filter((g) => typeof g.minute === "number" && (g.minute as number) <= 45);
+    const reachedHt = group.some((g) => typeof g.minute === "number" && (g.minute as number) > 45);
+    if (reachedHt && firstHalf.length) {
+      const boundarySeq = Math.max(...firstHalf.map((g) => seqOf.get(g.id) ?? 0));
+      // Where half-time sits: a real HT beat's own seq (correctly after first-half
+      // added time), else just past the last first-half card. The "second half
+      // begins" divider sits directly on top of it, so the two read as one clean
+      // pair at the break — half-time subs and everything else stay above the pair.
+      const realHt = group.find((g) => g.type === "status" && kind(g) === "ht");
+      const htChrono = realHt ? (seqOf.get(realHt.id) ?? boundarySeq + 0.5) : boundarySeq + 0.5;
+      const { a, b } = runningAt(fixtureId, Math.floor(htChrono)); // score at the break
+      if (!hasHt) {
+        const id = `${fixtureId}:status:ht`;
+        synthetic.push({
+          id, fixtureId, eventKey: "status:ht", type: "status",
+          minute: null, createdAt: shift(minIso, 500),
+          payload: { kind: "ht" },
+          match: { ...match, scoreA: a, scoreB: b }, reactions: [],
+        });
+        synthChrono.set(id, htChrono);
+      }
+      const hasSecond = group.some((g) => g.type === "status" && kind(g) === "secondhalf");
+      if (!hasSecond) {
+        const id = `${fixtureId}:status:secondhalf`;
+        synthetic.push({
+          id, fixtureId, eventKey: "status:secondhalf", type: "status",
+          minute: null, createdAt: shift(minIso, 600),
+          payload: { kind: "secondhalf" },
+          match: { ...match, scoreA: a, scoreB: b }, reactions: [],
+        });
+        synthChrono.set(id, htChrono + 0.01); // directly above the half-time card
+      }
+    }
+
+    // Kickoff — the start bookend, only when TxLINE never sent a lineup/kickoff.
+    if (!hasStart) {
+      const id = `${fixtureId}:status:kickoff`;
+      synthetic.push({
+        id, fixtureId, eventKey: "status:kickoff", type: "status",
+        minute: null, createdAt: shift(minIso, -1000),
+        payload: { kind: "kickoff" },
+        match: { ...match, scoreA: 0, scoreB: 0 }, reactions: [],
+      });
+      synthChrono.set(id, -1);
+    }
+  }
+
+  // Personal "did I win it" beat — lands just above full-time for each finished
+  // match the viewer had a resolved pick on.
+  if (wallet) {
+    const finishedIds = [...byFixture.entries()]
+      .filter(([, g]) => g[0].match.status === "finished")
+      .map(([id]) => id);
+    if (finishedIds.length) {
+      const picks = (await sql`
+        select fixture_id, pick, correct from picks
+        where user_address = ${wallet} and resolved = true
+          and fixture_id = any(${finishedIds}::text[])
+      `) as { fixture_id: string; pick: "A" | "B"; correct: boolean }[];
+      for (const p of picks) {
+        const group = byFixture.get(p.fixture_id)!;
+        const maxIso = new Date(Math.max(...group.map((g) => Date.parse(g.createdAt)))).toISOString();
+        const id = `${p.fixture_id}:mypick`;
+        synthetic.push({
+          id, fixtureId: p.fixture_id, eventKey: `mypick:${p.fixture_id}`, type: "mypick",
+          minute: null, createdAt: shift(maxIso, 2000),
+          payload: { pick: p.pick, correct: p.correct },
+          match: { ...group[0].match }, reactions: [],
+        });
+        synthChrono.set(id, 1e9 + 1);
+      }
+    }
+  }
+
+  // Reactions round-trip for synthetic full-time cards (keyed on status:ft).
+  if (ftFixtures.length) {
+    const rx = (await sql`
+      select fixture_id, emoji, count(*)::int as cnt,
+             bool_or(user_address = ${wallet ?? ""}) as mine
+      from feed_reactions
+      where event_key = 'status:ft' and fixture_id = any(${ftFixtures}::text[])
+      group by fixture_id, emoji
+    `) as { fixture_id: string; emoji: string; cnt: number; mine: boolean }[];
+    const rmap = new Map<string, FeedReaction[]>();
+    for (const r of rx) {
+      const arr = rmap.get(r.fixture_id) ?? [];
+      arr.push({ emoji: r.emoji, count: r.cnt, mine: r.mine });
+      rmap.set(r.fixture_id, arr);
+    }
+    for (const s of synthetic) {
+      if (s.eventKey === "status:ft" && rmap.has(s.fixtureId)) {
+        s.reactions = rmap.get(s.fixtureId)!.sort((a, b) => b.count - a.count);
+      }
+    }
+  }
+
+  // Stamp each real card with the score AS IT STOOD at that moment (not the
+  // fixture's final score); goal cards also carry it (sa/sb) so the commentary
+  // can read "levels it up" vs "extends the lead". Runs AFTER synthesis so the
+  // full-time card's copy keeps the final score.
+  for (const it of items) {
+    const { a, b } = runningAt(it.fixtureId, seqOf.get(it.id) ?? 0);
+    it.match = { ...it.match, scoreA: a, scoreB: b };
+    if (it.type === "goal" || it.type === "penalty") {
+      it.payload = { ...it.payload, sa: a, sb: b };
+    }
+  }
+
+  // ── Order: pure newest-first, time climbs bottom → top ─────────────────
+  // Nothing is pinned. Every card sorts by when it happened, newest at the top:
+  // your result → full-time → latest action → … → kickoff → lineup at the very
+  // bottom (the lineup is published first, so it's the OLDEST card, not a header
+  // on top). Matches are grouped and ordered by most-recent activity so each one
+  // stays readable as a story. seq is the reliable in-match order; synthetic
+  // beats slot around it (kickoff oldest, full-time / your result newest).
+  const chronoOf = new Map<string, number>();
+  for (const [id, s] of seqOf) chronoOf.set(id, s);
+  for (const s of synthetic) chronoOf.set(s.id, synthChrono.get(s.id) ?? 0);
+  const groups = new Map<string, FeedItem[]>();
+  for (const it of [...items, ...synthetic]) {
+    const g = groups.get(it.fixtureId);
+    if (g) g.push(it);
+    else groups.set(it.fixtureId, [it]);
+  }
+  const blocks = [...groups.values()];
+  for (const list of blocks) {
+    list.sort((a, b) => (chronoOf.get(b.id) ?? 0) - (chronoOf.get(a.id) ?? 0));
+  }
+  blocks.sort((A, B) => {
+    const liveOf = (L: FeedItem[]) =>
+      L.some((i) => i.match.status === "live" || i.match.status === "upcoming") ? 1 : 0;
+    const lv = liveOf(B) - liveOf(A);
+    if (lv !== 0) return lv;
+    const recency = (L: FeedItem[]) => Math.max(...L.map((i) => Date.parse(i.createdAt)));
+    return recency(B) - recency(A);
+  });
+  return blocks.flat().slice(0, limit);
 }

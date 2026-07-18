@@ -471,7 +471,7 @@ function ChatMessage({
         <div className="relative inline-block max-w-[88%] align-top">
           <button
             onClick={canWrite ? onOpenPalette : undefined}
-            className="text-left bg-[#0A0E1A] border border-white/5 rounded-[4px_14px_14px_14px] px-2.5 py-1.5 mt-0.5 cursor-default"
+            className={`text-left bg-[#0A0E1A] border border-white/5 rounded-[4px_14px_14px_14px] px-2.5 py-1.5 mt-0.5 ${canWrite ? "cursor-pointer" : "cursor-default"}`}
           >
             {item.quoted && (
               <span className="block border-l-[3px] border-[#FF4E00] bg-[#FF4E00]/6 rounded-md px-2.5 py-1 mb-1.5">
@@ -492,26 +492,14 @@ function ChatMessage({
             {item.body && <span className="text-[13px] text-slate-200 leading-snug">{item.body}</span>}
           </button>
 
-          {/* PC hover toolbar — anchored top-left, opening RIGHTWARD into the
-              empty space beside a left-aligned bubble, so it never clips on the
-              left/top edge of the scroll box (short bubbles used to cut it off). */}
-          {canWrite && (
-            <div className="hidden md:group-hover:flex absolute -top-3 left-2 items-center gap-0.5 bg-[#151B2E] border border-white/10 rounded-xl px-1 py-0.5 shadow-xl z-20">
-              {["🔥", "😂", "👏"].map((e) => (
-                <button key={e} onClick={() => onReact(e)} className="text-[15px] px-1 rounded hover:bg-white/5 cursor-pointer">{e}</button>
-              ))}
-              <span className="w-px h-4 bg-white/10 mx-0.5" />
-              <button onClick={onOpenPalette} className="text-[#A2A7AF] hover:text-white px-1 cursor-pointer"><Plus className="w-3.5 h-3.5" /></button>
-              <button onClick={onReply} className="text-[#A2A7AF] hover:text-white px-1 cursor-pointer"><CornerUpLeft className="w-3.5 h-3.5" /></button>
-              {canDelete && (
-                <button onClick={onDelete} className="text-[#A2A7AF] hover:text-red-400 px-1 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
-              )}
-            </div>
-          )}
-
+          {/* Tap the bubble to open the reaction palette — works the same on PC
+              and mobile (no hover). Reply + delete live here too. */}
           {paletteOpen && canWrite && (
             <div className="absolute z-20 bottom-full left-0 mb-1.5 flex items-center gap-1.5">
               <Palette onPick={onReact} />
+              <button onClick={onReply} className="bg-[#151B2E] border border-white/10 rounded-2xl p-2 text-[#A2A7AF] hover:text-white shadow-2xl cursor-pointer" aria-label="Reply">
+                <CornerUpLeft className="w-4 h-4" />
+              </button>
               {canDelete && (
                 <button onClick={onDelete} className="bg-[#151B2E] border border-white/10 rounded-2xl p-2 text-[#A2A7AF] hover:text-red-400 shadow-2xl cursor-pointer" aria-label="Delete message">
                   <Trash2 className="w-4 h-4" />

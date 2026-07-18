@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createUser } from "@/lib/db/queries";
+import { createUser, UsernameTakenError } from "@/lib/db/queries";
 import { resolveFromPrivy, bindPrivyUser, AUTH_ENFORCED } from "@/lib/auth/server-auth";
 import type { AvatarConfig } from "@/src/types";
 
@@ -57,6 +57,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ user }, { status: 201 });
   } catch (err) {
+    if (err instanceof UsernameTakenError) {
+      return NextResponse.json({ error: "username_taken" }, { status: 409 });
+    }
     console.error("POST /api/users failed:", err);
     return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
   }

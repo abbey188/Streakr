@@ -31,8 +31,17 @@ export default function OnboardingIdentityPage() {
     if (!pending || !identity.walletAddress || savingRef.current) return;
     savingRef.current = true;
     (async () => {
-      await app.createProfile(pending);
-      router.push("/play");
+      try {
+        await app.createProfile(pending);
+        router.push("/play");
+      } catch {
+        // Username was taken in the race between the builder's check and save
+        // (rare — the builder blocks taken names up front). Drop back so they
+        // can pick another instead of getting stuck.
+        savingRef.current = false;
+        setPending(null);
+        app.triggerToast("That username was just taken — pick another.");
+      }
     })();
   }, [pending, identity.walletAddress, app, router]);
 

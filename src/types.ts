@@ -89,14 +89,23 @@ export interface RosterPlayer {
 
 /** One moment in the Live Feed. `payload` carries type-specific detail
  *  (side, scorer/player, on/off, outcome, penalty, cardType). */
+/** A global reaction on a feed moment — aggregated across all users. */
+export interface FeedReaction {
+  emoji: string;
+  count: number;
+  mine: boolean;
+}
+
 export interface FeedItem {
   id: string; // stable: `${fixtureId}:${eventKey}`
   fixtureId: string;
+  eventKey: string; // the moment's stable key (for reactions)
   type: string; // goal | penalty | penalty_missed | yellow | red | sub | var | shot
   minute?: number | null;
   createdAt: string; // ISO — orders the feed + powers "x min ago"
   payload: Record<string, unknown>;
   match: FeedMatch;
+  reactions: FeedReaction[];
 }
 
 export interface Badge {
@@ -187,4 +196,5 @@ export interface Notification {
   icon: string;
   read: boolean;
   timestamp: string; // relative display string, e.g. "2h ago"
+  groupId?: string;  // set for `squad` notifications → tap opens that Squad Room
 }

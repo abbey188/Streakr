@@ -9,7 +9,9 @@ import { INITIAL_LEADERBOARD, INITIAL_ACTIVITY } from "@/src/data/fixtures";
 import { useIdentity } from "@/lib/identity/context";
 import {
   fetchMe, createUser, updateAvatar as apiUpdateAvatar, makePick as apiMakePick,
-  fetchFixtures, fetchFeed, joinGroup,
+  fetchFixtures, fetchFeed, joinGroup, isUsernameTakenError,
+  toggleFeedReaction as apiToggleFeedReaction,
+  fetchSquadUnread, markSquadRead as apiMarkSquadRead,
 } from "@/lib/api/client";
 
 /**
@@ -46,6 +48,7 @@ interface AppState {
   feed: FeedItem[];
   leaderboard: GroupMember[];
   activity: ActivityItem[];
+  squadUnread: Record<string, number>; // groupId → unread squad-chat count
 
   // Ephemeral UI
   toastMessage: string;
@@ -64,6 +67,8 @@ interface AppState {
   closeShareSheet: () => void;
   openMomentShare: (item: FeedItem) => void;
   closeMomentShare: () => void;
+  reactToFeed: (item: FeedItem, emoji: string) => void;
+  markSquadRead: (groupId: string) => void; // clear a squad's unread badge on open
 }
 
 const DEFAULT_AVATAR: AvatarConfig = {
@@ -109,6 +114,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [activeShareSheet, setActiveShareSheet] = useState<"streak" | "invite" | null>(null);
   const [shareGroupInfo, setShareGroupInfo] = useState<ShareGroupInfo | null>(null);
   const [momentToShare, setMomentToShare] = useState<FeedItem | null>(null);
+  const [squadUnread, setSquadUnread] = useState<Record<string, number>>({});
   const [showTour, setShowTour] = useState(false);
   // Set when a new user joins via an invite link — on tour dismissal we route
   // them to Groups so they land in the squad they were invited to.
@@ -158,6 +164,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           setPoints(user.points);
           setUserEmail(user.email ?? identity.email ?? "");
           setProfileStatus("ready");
+          // Demo: the CleanSheet99 account replays the guided tour on every
+          // sign-in (it shows on /play once they land there) so it's always ready
+          // to showcase. No effect for any other user.
+          if (user.avatar?.username?.toLowerCase() === "cleansheet99") setShowTour(true);
         } else {
           setUserEmail(identity.email ?? "");
           setProfileStatus("none"); // authenticated, needs onboarding
@@ -188,9 +198,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       // The Live Feed rides the same adaptive cadence — one unified live-data
       // core, so the Hub feed is fresh app-wide. Keep last-good on a failed poll
       // (don't flicker the feed to empty mid-match); a successful [] still clears.
-      fetchFeed()
+      fetchFeed(60, wallet)
         .then((items) => { if (!cancelled) setFeed(items); })
         .catch(() => { /* keep last-good feed on failure */ });
+      // Unread squad-chat counts for the Squads badges (nav + per-squad).
+      fetchSquadUnread(wallet)
+        .then((m) => { if (!cancelled) setSquadUnread(m); })
+        .catch(() => {});
     };
     load();
     let tick = 0;
@@ -256,7 +270,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             email: identity.email,
             avatar: config,
           });
-        } catch {
+        } catch (e) {
+          // A taken username must NOT be swallowed — the caller re-prompts and we
+          // stay off "ready" so the user isn't dropped into a half-created state.
+          if (isUsernameTakenError(e)) throw e;
           triggerToast("Saved locally (DB sync will retry).");
         }
       }
@@ -292,8 +309,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       );
       triggerToast("Avatar Identity updated!");
       if (identity.walletAddress) {
-        apiUpdateAvatar(identity.walletAddress, newAvatar).catch(() => {
-          triggerToast("Avatar saved locally (DB sync will retry).");
+        apiUpdateAvatar(identity.walletAddress, newAvatar).catch((e) => {
+          if (isUsernameTakenError(e)) triggerToast("That username's already taken — try another.");
+          else triggerToast("Avatar saved locally (DB sync will retry).");
         });
       }
     },
@@ -346,14 +364,48 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const openMomentShare = useCallback((item: FeedItem) => setMomentToShare(item), []);
   const closeMomentShare = useCallback(() => setMomentToShare(null), []);
 
+  // Global feed reaction — optimistic toggle, then persist. A failed write is
+  // reconciled by the next feed poll, so we don't roll back on error.
+  const reactToFeed = useCallback((item: FeedItem, emoji: string) => {
+    const wallet = identity.walletAddress;
+    if (!wallet) return;
+    setFeed((prev) =>
+      prev.map((f) => {
+        if (f.id !== item.id) return f;
+        const ex = f.reactions.find((r) => r.emoji === emoji);
+        let reactions;
+        if (!ex) reactions = [...f.reactions, { emoji, count: 1, mine: true }];
+        else if (ex.mine)
+          reactions = f.reactions
+            .map((r) => (r.emoji === emoji ? { ...r, count: r.count - 1, mine: false } : r))
+            .filter((r) => r.count > 0);
+        else reactions = f.reactions.map((r) => (r.emoji === emoji ? { ...r, count: r.count + 1, mine: true } : r));
+        return { ...f, reactions };
+      })
+    );
+    apiToggleFeedReaction(item.fixtureId, item.eventKey, emoji, wallet).catch(() => {});
+  }, [identity.walletAddress]);
+
+  const markSquadRead = useCallback((groupId: string) => {
+    setSquadUnread((prev) => {
+      if (!prev[groupId]) return prev;
+      const next = { ...prev };
+      delete next[groupId];
+      return next;
+    });
+    const wallet = identity.walletAddress;
+    if (wallet) apiMarkSquadRead(groupId, wallet).catch(() => {});
+  }, [identity.walletAddress]);
+
   const value: AppState = {
     profileStatus,
     avatar, streak, personalBest, points, userEmail,
-    fixtures, feed, leaderboard, activity,
+    fixtures, feed, leaderboard, activity, squadUnread,
     toastMessage, activeShareSheet, shareGroupInfo, showTour, dismissTour,
     momentToShare,
     triggerToast, makePick, updateUserAvatar, createProfile,
-    openShareSheet, closeShareSheet, openMomentShare, closeMomentShare,
+    openShareSheet, closeShareSheet, openMomentShare, closeMomentShare, reactToFeed,
+    markSquadRead,
   };
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

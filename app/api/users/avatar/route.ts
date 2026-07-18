@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateUserAvatar } from "@/lib/db/queries";
+import { updateUserAvatar, UsernameTakenError } from "@/lib/db/queries";
 import { authWallet } from "@/lib/auth/server-auth";
 import type { AvatarConfig } from "@/src/types";
 
@@ -29,6 +29,9 @@ export async function PATCH(req: NextRequest) {
     const user = await updateUserAvatar(auth.wallet, body.avatar);
     return NextResponse.json({ user });
   } catch (err) {
+    if (err instanceof UsernameTakenError) {
+      return NextResponse.json({ error: "username_taken" }, { status: 409 });
+    }
     console.error("PATCH /api/users/avatar failed:", err);
     return NextResponse.json({ error: "Failed to update avatar" }, { status: 500 });
   }

@@ -13,8 +13,9 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const raw = Number(req.nextUrl.searchParams.get("limit"));
   const limit = Number.isFinite(raw) && raw > 0 ? Math.min(raw, 100) : 60;
+  const wallet = req.nextUrl.searchParams.get("wallet") ?? undefined;
   try {
-    const feed = await getFeed(limit);
+    const feed = await getFeed(limit, wallet);
     return NextResponse.json({ feed });
   } catch (err) {
     console.error("GET /api/feed failed:", err);

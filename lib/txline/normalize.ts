@@ -601,6 +601,16 @@ export function deriveMatchEvents(entries: RawScoreEntry[]): PersistedMatchEvent
     put("lineup", { seq: luSeq, type: "lineup", minute: 0, confirmed: true, payload: { A: roster.A, B: roster.B } });
   }
 
+  // Attach the last regulation goal's minute to the full-time beat, so the client
+  // can tell the "late winner" story ("…a 90+2' winner sent them through").
+  const ftBeat = byKey.get("status:ft");
+  if (ftBeat) {
+    const goalMins = [...byKey.values()]
+      .filter((e) => (e.type === "goal" || e.type === "penalty") && e.minute <= 125)
+      .map((e) => e.minute);
+    if (goalMins.length) ftBeat.payload = { ...ftBeat.payload, lastGoalMin: Math.max(...goalMins) };
+  }
+
   // A goal's own strike also arrives as a shot-on-target — drop those so a goal
   // never doubles as a "forces a save" beat (same side, within a minute).
   const goalAt = new Set(

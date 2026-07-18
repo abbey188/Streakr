@@ -54,6 +54,10 @@ alter table users add column if not exists privy_user_id text;
 create unique index if not exists users_privy_user_id_key
   on users (privy_user_id) where privy_user_id is not null;
 
+-- Usernames are unique CASE-INSENSITIVELY: "John" and "john" can't both exist.
+-- (The plain `username unique` is case-sensitive; this is the authoritative guard.)
+create unique index if not exists users_username_lower_idx on users (lower(username));
+
 -- ─── fixtures ─────────────────────────────────────────────────────────
 -- Synced from TxLINE (handoff §7). Composes into the `Fixture` shape.
 -- `actual_winner` is who ADVANCES (incl. extra time / penalties), not the
@@ -302,3 +306,16 @@ create table if not exists push_subscriptions (
   created_at    timestamptz not null default now()
 );
 create index if not exists push_subscriptions_user_idx on push_subscriptions (user_address);
+
+-- Global reactions on a Live Feed moment (fixture_id + event_key = the moment).
+-- One row per (moment, emoji, user) so a user reacts once per emoji; aggregated
+-- into counts for the feed. Public/global (not squad-scoped).
+create table if not exists feed_reactions (
+  fixture_id    text not null,
+  event_key     text not null,
+  emoji         text not null,
+  user_address  text not null,
+  created_at    timestamptz default now(),
+  primary key (fixture_id, event_key, emoji, user_address)
+);
+create index if not exists feed_reactions_moment_idx on feed_reactions (fixture_id, event_key);

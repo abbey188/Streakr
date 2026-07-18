@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ActivityItem, Notification as NotificationItem } from "../types";
 import AvatarRenderer from "./AvatarRenderer";
 import PushNudge from "./PushNudge";
@@ -22,6 +23,7 @@ export default function ScreenInbox({
   notifications = [],
   onClearNotifications,
 }: ScreenInboxProps) {
+  const router = useRouter();
   const [tab, setTab] = useState<"general" | "group">("general");
   // Group activity is a shared milestone feed (not per-user rows), so "clearing"
   // it is a local hide (per device), mirroring the results strip.
@@ -145,10 +147,16 @@ export default function ScreenInbox({
                 else if (n.type === "group") accent = "border-indigo-500/30 bg-indigo-500/5";
                 else if (n.type === "squad") accent = "border-[#FF4E00]/25 bg-[#FF4E00]/5";
                 else if (n.type === "announcement") accent = "border-teal-500/30 bg-teal-500/5";
+                // A squad notification taps straight into that squad's chat.
+                const toChat = n.type === "squad" && n.groupId
+                  ? () => router.push(`/groups?open=${n.groupId}&squad=1`)
+                  : undefined;
                 return (
                   <div
                     key={n.id}
-                    className={`bg-[#151B2E] border-2 ${accent} rounded-3xl p-4 shadow-md flex items-start gap-3 relative overflow-hidden transition-all duration-200 hover:border-white/15`}
+                    onClick={toChat}
+                    role={toChat ? "button" : undefined}
+                    className={`bg-[#151B2E] border-2 ${accent} rounded-3xl p-4 shadow-md flex items-start gap-3 relative overflow-hidden transition-all duration-200 hover:border-white/15 ${toChat ? "cursor-pointer active:scale-[0.99]" : ""}`}
                   >
                     <div className="w-10 h-10 rounded-xl bg-[#0A0E1A] border border-white/5 flex items-center justify-center flex-shrink-0 text-xl">
                       {n.icon}
@@ -159,6 +167,9 @@ export default function ScreenInbox({
                         <span className="text-[9px] font-mono text-[#A2A7AF] font-medium flex-shrink-0">{n.timestamp}</span>
                       </div>
                       <p className="text-xs text-slate-300 leading-relaxed">{n.body}</p>
+                      {toChat && (
+                        <span className="inline-block text-[9px] font-mono font-bold uppercase tracking-wider text-[#FF4E00]">Open chat →</span>
+                      )}
                     </div>
                     {!n.read && (
                       // Left edge, vertically centred — reads as an "unread" row marker

@@ -1,4 +1,103 @@
-import type { FeedItem, MomentAttachment } from "@/src/types";
+import type { FeedItem, FeedMatch, MomentAttachment } from "@/src/types";
+
+// ─── deterministic variety ───────────────────────────────────────────────────
+// The feed should read like commentary, not a template — so we vary the phrasing.
+// But the same moment must read the same on every refresh, so we pick a variant
+// deterministically from a stable seed (the event key / fixture id), never at
+// random. Same event → same words; different events → different words.
+function seededHash(seed: string): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (Math.imul(h, 31) + seed.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+function variant(options: string[], seed: string): string {
+  return options[seededHash(seed) % options.length];
+}
+
+/**
+ * A one-line, editorial match-end summary — derived deterministically from the
+ * result (margin, period, winning-goal minute), NOT a fact. Gives full-time a
+ * voice the incumbents don't have: "Argentina snatch it — a 90' winner sends
+ * them past England, 2–1." null until we know who advanced.
+ */
+export function matchSummary(m: FeedMatch, lastGoalMin?: number): string | null {
+  if (!m.winner) return null;
+  const win = m.winner === "A" ? m.teamA : m.teamB;
+  const lose = m.winner === "A" ? m.teamB : m.teamA;
+  const winScore = (m.winner === "A" ? m.scoreA : m.scoreB) ?? 0;
+  const loseScore = (m.winner === "A" ? m.scoreB : m.scoreA) ?? 0;
+  const margin = winScore - loseScore;
+  const period = (m.period ?? "").toUpperCase();
+  const isFinal = /final/i.test(m.round) && !/semi|third/i.test(m.round);
+  const isThird = /third/i.test(m.round);
+  const dest = isFinal ? "are World Champions" : isThird ? "take third place" : "are through";
+  const score = `${winScore}–${loseScore}`;
+  const seed = m.fixtureId;
+
+  if (period.includes("PEN")) {
+    return variant(
+      [
+        `${win.name} hold their nerve from the spot — they ${dest}.`,
+        `It goes the distance, but ${win.name} win the shootout — they ${dest}.`,
+        `${win.name} keep their cool on penalties to knock out ${lose.name}.`,
+      ],
+      seed,
+    );
+  }
+  const aet = period.includes("AET") || (period.includes("ET") && !period.includes("PEN"));
+
+  // A goalless win only happens on penalties/AET; guard the score-based lines.
+  if (margin === 0) {
+    return `${win.name} outlast ${lose.name}${aet ? " after extra time" : ""} — they ${dest}.`;
+  }
+
+  // A late one-goal winner is the story — lean into it.
+  if (margin === 1 && lastGoalMin != null && lastGoalMin >= 80 && !aet) {
+    return variant(
+      [
+        `${win.name} snatch it — a ${lastGoalMin}' winner sends them past ${lose.name}, ${score}.`,
+        `Drama late on: a ${lastGoalMin}'-minute strike wins it for ${win.name}, ${score}.`,
+        `${win.name} break ${lose.name} hearts — a ${lastGoalMin}' goal, ${score}, and they ${dest}.`,
+      ],
+      seed,
+    );
+  }
+  const tail = aet ? " after extra time" : "";
+  if (margin >= 3) {
+    return variant(
+      [`${win.name} run riot — ${score} past ${lose.name}, and they ${dest}.`,
+       `${win.name} tear ${lose.name} apart, ${score}${tail} — they ${dest}.`],
+      seed,
+    );
+  }
+  if (margin === 2) {
+    return variant(
+      [`${win.name} see off ${lose.name} ${score}${tail} — they ${dest}.`,
+       `A composed ${score} for ${win.name}${tail}, and they ${dest}.`],
+      seed,
+    );
+  }
+  return variant(
+    [`${win.name} edge ${lose.name} ${score}${tail} — they ${dest}.`,
+     `${win.name} find a way past ${lose.name}, ${score}${tail} — they ${dest}.`,
+     `Fine margins: ${win.name} take it ${score}${tail} and ${dest}.`],
+    seed,
+  );
+}
+
+// ─── goal commentary ─────────────────────────────────────────────────────────
+// Reads the running score (sa/sb, AFTER the goal) to say what the goal DID —
+// opened the scoring, levelled it, put them ahead, extended, or a consolation.
+function goalLine(cls: string, teamName: string, seed: string): string {
+  const bank: Record<string, string[]> = {
+    opener: ["opens the scoring", "breaks the deadlock", "strikes first", "gets the opener"],
+    goAhead: [`puts ${teamName} ahead`, `nudges ${teamName} in front`, `edges ${teamName} in front`, `fires ${teamName} ahead`],
+    equaliser: ["levels it up", "draws it level", "hits back to equalise", "restores parity"],
+    extend: ["extends the lead", "stretches it further", "turns the screw", "piles on the pressure"],
+    consolation: ["pulls one back", `gets ${teamName} on the board`, "reduces the arrears"],
+  };
+  return variant(bank[cls] ?? ["finds the net"], seed);
+}
 
 /**
  * Shared moment phrasing + styling — the single source of truth for how a match
@@ -19,22 +118,45 @@ type Payload = {
   side?: string; scorer?: string; player?: string; on?: string; off?: string;
   outcome?: string; penalty?: boolean; cardType?: string; keeper?: string;
   reviewType?: string; possA?: number; possB?: number;
+  sa?: number; sb?: number; // running score AFTER this event (goals only)
 };
 
-/** How a moment reads. Deterministic from (type, payload, team). */
-export function momentPhrase(type: string, payload: Record<string, unknown>, teamName: string): MomentPhrase {
+/**
+ * How a moment reads. Deterministic from (type, payload, team). `seed` (the
+ * moment's stable key) drives the phrasing variety so the same moment always
+ * reads the same, but different moments don't sound copy-pasted.
+ */
+export function momentPhrase(type: string, payload: Record<string, unknown>, teamName: string, seed = ""): MomentPhrase {
   const p = payload as Payload;
   switch (type) {
     case "goal":
-      return p.scorer
-        ? { icon: "⚽", label: p.penalty ? "Penalty" : "Goal", subject: p.scorer, predicate: p.penalty ? "converts from the spot" : "finds the net" }
-        : { icon: "⚽", label: p.penalty ? "Penalty" : "Goal", subject: teamName, predicate: p.penalty ? "score from the spot" : "score" };
-    case "penalty":
-      return { icon: "⚽", label: "Penalty", subject: p.scorer ?? teamName, predicate: "scores from the spot" };
+    case "penalty": {
+      const isPen = type === "penalty" || p.penalty === true;
+      const subject = p.scorer ?? teamName;
+      // Classify the goal from the running score (AFTER the strike) so the words
+      // describe what it did to the game, not just "scores".
+      let predicate: string;
+      if (typeof p.sa === "number" && typeof p.sb === "number" && (p.side === "A" || p.side === "B")) {
+        const scorerAfter = p.side === "A" ? p.sa : p.sb;
+        const otherAfter = p.side === "A" ? p.sb : p.sa;
+        const scorerBefore = scorerAfter - 1;
+        let cls: string;
+        if (scorerBefore === 0 && otherAfter === 0) cls = "opener";
+        else if (scorerAfter === otherAfter) cls = "equaliser";
+        else if (scorerBefore === otherAfter) cls = "goAhead";
+        else if (scorerAfter > otherAfter) cls = "extend";
+        else cls = "consolation";
+        predicate = goalLine(cls, teamName, seed || `${p.side}${scorerAfter}${otherAfter}`);
+      } else {
+        predicate = isPen ? "converts from the spot" : p.scorer ? "finds the net" : "find the net";
+      }
+      return { icon: "⚽", label: isPen ? "Penalty" : "Goal", subject, predicate, context: isPen ? "from the spot" : undefined };
+    }
     case "penalty_missed":
       return { icon: "🥅", label: "Penalty", subject: p.player ?? teamName, predicate: `sees the penalty ${p.outcome ?? "saved"}` };
     case "yellow":
-      return { icon: "🟨", label: "Yellow card", subject: p.player ?? teamName, predicate: "goes into the book" };
+      return { icon: "🟨", label: "Yellow card", subject: p.player ?? teamName,
+        predicate: variant(["goes into the book", "is booked", "picks up a yellow", "is cautioned"], seed) };
     case "red":
       return { icon: "🟥", label: "Red card", subject: p.player ?? teamName, predicate: p.cardType === "SecondYellow" ? "sent off — second yellow" : "is shown red" };
     case "sub":
@@ -53,9 +175,12 @@ export function momentPhrase(type: string, payload: Record<string, unknown>, tea
     }
     case "shot":
       if (p.outcome === "Woodwork")
-        return { icon: "🎯", label: "Woodwork", subject: p.player ?? teamName, predicate: "rattles the woodwork" };
+        return { icon: "🎯", label: "Woodwork", subject: p.player ?? teamName,
+          predicate: variant(["rattles the woodwork", "strikes the post", "clips the bar"], seed) };
       return { icon: "🎯", label: "Shot on target", subject: p.player ?? teamName,
-        predicate: p.keeper ? `forces ${p.keeper} into a save` : "forces a save" };
+        predicate: p.keeper
+          ? variant([`forces ${p.keeper} into a save`, `tests ${p.keeper}`, `stings the gloves of ${p.keeper}`, `brings a save out of ${p.keeper}`], seed)
+          : variant(["forces a save", "tests the keeper", "goes close"], seed) };
     case "lineup":
       return { icon: "📋", label: "Lineups", predicate: "Both XIs are in — tap for the roster" };
     case "momentum": {
@@ -84,7 +209,8 @@ export function momentPhrase(type: string, payload: Record<string, unknown>, tea
       return { icon: "⏱️", label: "Added time", predicate: `${mins} ${mins === 1 ? "minute" : "minutes"} added` };
     }
     case "corner":
-      return { icon: "🚩", label: "Corner", subject: teamName, predicate: "win a corner" };
+      return { icon: "🚩", label: "Corner", subject: teamName,
+        predicate: variant(["win a corner", "force a corner", "earn a corner", "swing one in from the corner"], seed) };
     case "freekick":
       return { icon: "🧱", label: "Free kick", subject: teamName,
         predicate: (payload as { dangerous?: boolean }).dangerous ? "win a dangerous free kick" : "win a free kick" };
@@ -120,7 +246,7 @@ export function buildMomentAttachment(item: FeedItem): MomentAttachment {
   const m = item.match;
   const side = (item.payload as Payload).side;
   const teamName = side === "A" ? m.teamA.name : side === "B" ? m.teamB.name : m.teamA.name;
-  const ph = momentPhrase(item.type, item.payload, teamName);
+  const ph = momentPhrase(item.type, item.payload, teamName, item.eventKey);
   // Momentum has no visual bar in chat, so fold the possession % into the text.
   let text = momentText(ph);
   if (item.type === "momentum") {

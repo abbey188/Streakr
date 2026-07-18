@@ -96,6 +96,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // A live match glows the Hub nav icon to pull you into the feed (the icon
   // itself never changes — this is a live-state cue, not a swap).
   const anyLive = app.fixtures.some((f) => f.status === "live");
+  // Total unread squad-chat messages across all your squads → the Squads badge.
+  const squadTotal = Object.values(app.squadUnread).reduce((a, b) => a + b, 0);
 
   return (
     <div className="min-h-dvh bg-[#0A0E1A] text-white flex flex-col lg:flex-row font-sans selection:bg-[#FF4E00] selection:text-white antialiased overflow-hidden relative">
@@ -168,6 +170,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     {item.href === "/inbox" && unreadCount > 0 && (
                       <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF4E00] text-white text-[10px] font-black flex items-center justify-center not-italic">
                         {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                    {item.href === "/groups" && squadTotal > 0 && (
+                      <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-[#FF4E00] text-white text-[10px] font-black flex items-center justify-center not-italic">
+                        {squadTotal > 9 ? "9+" : squadTotal}
                       </span>
                     )}
                   </Link>
@@ -246,6 +253,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   {item.href === "/inbox" && unreadCount > 0 && (
                     <span className="absolute top-0 right-[22%] min-w-[15px] h-[15px] px-0.5 rounded-full bg-[#FF4E00] text-white text-[8.8px] font-black flex items-center justify-center">
                       {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                  {item.href === "/groups" && squadTotal > 0 && (
+                    <span className="absolute top-0 right-[22%] min-w-[15px] h-[15px] px-0.5 rounded-full bg-[#FF4E00] text-white text-[8.8px] font-black flex items-center justify-center">
+                      {squadTotal > 9 ? "9+" : squadTotal}
                     </span>
                   )}
                   <span className="text-[9px] font-bold mt-1 tracking-tight">{item.label}</span>

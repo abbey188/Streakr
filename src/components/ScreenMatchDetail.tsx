@@ -8,15 +8,13 @@ import { fetchMatchDetail, type MatchDetailResponse } from "@/lib/api/client";
 import { useAppState } from "@/lib/state/app-state";
 import { formatMinute } from "@/lib/live-clock";
 import CountryFlag from "./CountryFlag";
+import EventIcon from "./EventIcon";
 
 interface ScreenMatchDetailProps {
   fixtureId: string;
   onBack: () => void;
 }
 
-const EVENT_ICON: Record<string, string> = {
-  goal: "⚽", penalty: "🥅", yellow: "🟨", red: "🟥", sub: "🔁", var: "📺", corner: "🚩", freekick: "🎯", shot: "💥",
-};
 const EVENT_LABEL: Record<string, string> = {
   goal: "Goal", penalty: "Penalty", yellow: "Yellow card", red: "Red card", sub: "Substitution", var: "VAR", corner: "Corner", freekick: "Free kick", shot: "Shot",
 };
@@ -53,9 +51,15 @@ function TeamFormRow({ code, name, form }: { code: string; name: string; form: F
   );
 }
 
+// Leader's bar is green, the other side's is grey — scan who's winning each stat
+// at a glance. Bars grow from the centre outward. A tie leaves both grey.
+const STAT_GREEN = "#22c55e";
+const STAT_GREY = "#475569";
 function StatRow({ label, a, b }: { label: string; a: number; b: number }) {
   const total = a + b || 1;
   const aPct = Math.round((a / total) * 100);
+  const aLeads = a > b;
+  const bLeads = b > a;
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs font-black">
@@ -63,12 +67,12 @@ function StatRow({ label, a, b }: { label: string; a: number; b: number }) {
         <span className="text-[9px] font-mono text-[#A2A7AF] uppercase tracking-wider">{label}</span>
         <span className="text-white font-mono w-8 text-right">{b}</span>
       </div>
-      <div className="flex items-center gap-1 h-1.5">
-        <div className="flex-1 bg-[#0A0E1A] rounded-full overflow-hidden flex justify-end">
-          <div className="h-full bg-[#FF4E00] rounded-full" style={{ width: `${aPct}%` }} />
+      <div className="flex items-center gap-1">
+        <div className="flex-1 h-1.5 bg-[#0A0E1A] rounded-full overflow-hidden flex justify-end">
+          <div className="h-1.5 rounded-full" style={{ width: `${aPct}%`, background: aLeads ? STAT_GREEN : STAT_GREY }} />
         </div>
-        <div className="flex-1 bg-[#0A0E1A] rounded-full overflow-hidden">
-          <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${100 - aPct}%` }} />
+        <div className="flex-1 h-1.5 bg-[#0A0E1A] rounded-full overflow-hidden">
+          <div className="h-1.5 rounded-full" style={{ width: `${100 - aPct}%`, background: bLeads ? STAT_GREEN : STAT_GREY }} />
         </div>
       </div>
     </div>
@@ -168,7 +172,12 @@ export default function ScreenMatchDetail({ fixtureId, onBack }: ScreenMatchDeta
                     {s.homeScore}<span className="text-[#A2A7AF] mx-1">-</span>{s.awayScore}
                   </span>
                 ) : (
-                  <span className="text-lg font-mono font-bold text-[#A2A7AF]">{detail.kickoffTime}</span>
+                  // Upcoming: kickoff time is in the pill above, so the centre shows
+                  // a small "VS" chip (like the Play pick card) — the teams stay the
+                  // focus, not a big number.
+                  <span className="text-[10px] font-mono font-bold text-[#A2A7AF] bg-[#0A0E1A] border border-white/5 px-2.5 py-0.5 rounded-full uppercase">
+                    VS
+                  </span>
                 )}
                 {showPens && (
                   // Secondary scoreline: numbers stacked under the main score (never
@@ -230,7 +239,7 @@ export default function ScreenMatchDetail({ fixtureId, onBack }: ScreenMatchDeta
           </div>
 
           {tab === "timeline" ? (
-            <div className="space-y-2">
+            <div>
               {detail.events.length === 0 ? (
                 <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-6 text-center text-[10px] font-mono text-[#A2A7AF] uppercase tracking-wider">
                   {s.status === "upcoming"
@@ -238,22 +247,44 @@ export default function ScreenMatchDetail({ fixtureId, onBack }: ScreenMatchDeta
                     : "Underway — no key events yet. Goals, cards & subs appear here."}
                 </div>
               ) : (
-                detail.events.map((e: MatchEvent) => (
-                  <motion.div
-                    key={e.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-[#151B2E] border border-white/5 rounded-2xl px-3 py-2.5 flex items-center gap-3"
-                  >
-                    <span className="text-[10px] font-mono font-black text-[#A2A7AF] w-8 text-center flex-shrink-0">{e.minute}'</span>
-                    <span className="text-base flex-shrink-0">{EVENT_ICON[e.type] ?? "•"}</span>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-xs font-black text-white">{EVENT_LABEL[e.type] ?? e.type}</span>
-                      {e.detail && <span className="text-[10px] text-[#A2A7AF] ml-1.5">{e.detail}</span>}
-                    </div>
-                    <CountryFlag name={e.team === "A" ? detail.teamA.name : detail.teamB.name} className="w-5 h-3.5 flex-shrink-0" width={40} />
-                  </motion.div>
-                ))
+                // Broadcast-style centre-spine: minute on the line, each event
+                // branching to its team's side. Icons come from the shared EventIcon.
+                <div className="relative py-1">
+                  <div className="absolute left-1/2 top-1 bottom-1 w-px bg-white/8 -translate-x-1/2" />
+                  {detail.events.map((e: MatchEvent) => {
+                    const isA = e.team === "A";
+                    const isGoal = e.type === "goal" || e.type === "penalty";
+                    const label = EVENT_LABEL[e.type] ?? e.type;
+                    const content = (
+                      <div className={`flex items-center gap-2 min-w-0 ${isA ? "justify-end text-right" : ""}`}>
+                        {!isA && <EventIcon type={e.type} size={18} className="flex-shrink-0" />}
+                        <div className="min-w-0">
+                          <span className="text-xs font-black text-white block leading-tight">{label}</span>
+                          {e.detail && <span className="text-[10px] text-[#A2A7AF] block truncate leading-tight">{e.detail}</span>}
+                        </div>
+                        {isA && <EventIcon type={e.type} size={18} className="flex-shrink-0" />}
+                      </div>
+                    );
+                    return (
+                      <motion.div
+                        key={e.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative flex items-center py-2.5"
+                      >
+                        <div className={`flex-1 min-w-0 ${isA ? "pr-3" : ""}`}>{isA && content}</div>
+                        <span
+                          className={`relative z-10 flex-shrink-0 min-w-[42px] text-center text-[10px] font-mono font-black px-2 py-1 rounded-full ${
+                            isGoal ? "bg-white text-[#0A0E1A]" : "bg-[#1C233D] text-[#A2A7AF] border border-white/10"
+                          }`}
+                        >
+                          {e.minute}'
+                        </span>
+                        <div className={`flex-1 min-w-0 ${!isA ? "pl-3" : ""}`}>{!isA && content}</div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           ) : (

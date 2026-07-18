@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import AvatarRenderer, { SKIN_TONES, KITS, EXPRESSIONS_MAP } from "./AvatarRenderer";
 import CountryFlag from "./CountryFlag";
 import { AvatarConfig } from "../types";
+import { checkUsername } from "@/lib/api/client";
 import { motion } from "motion/react";
 import {
   Check, AlertCircle, RefreshCw, Sparkles, User, Smile, Paintbrush, Crown, Hash, PenTool, Flag,
@@ -81,45 +82,57 @@ export default function AvatarCustomizer({
 
   const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
   const [isUsernameValid, setIsUsernameValid] = useState<boolean | null>(null);
+  const [checking, setChecking] = useState(false);
   const [validationMsg, setValidationMsg] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("expression");
 
-  const generateSuggestions = () => {
+  const initialUsername = initialConfig?.username ?? "";
+
+  // Suggestions only offer names that are actually FREE — check a shuffled batch
+  // and keep the first few available ones (append a suffix so we rarely run dry).
+  const generateSuggestions = useCallback(async () => {
     const shuffled = [...PRESET_USERNAMES].sort(() => 0.5 - Math.random());
-    setUsernameSuggestions(shuffled.slice(0, 3));
-  };
+    const candidates = shuffled.slice(0, 6).map((n) => `${n}${Math.floor(Math.random() * 90) + 10}`);
+    const results = await Promise.all(
+      candidates.map(async (n) => ({ n, ok: (await checkUsername(n)).available }))
+    );
+    setUsernameSuggestions(results.filter((r) => r.ok).map((r) => r.n).slice(0, 3));
+  }, []);
 
   useEffect(() => {
     generateSuggestions();
-  }, []);
+  }, [generateSuggestions]);
 
-  // Validate username on type.
+  // Validate username on type: format first, then a debounced availability check
+  // (case-insensitive). Keeping your own current name is always fine.
   useEffect(() => {
-    if (!username) {
-      setIsUsernameValid(null);
-      setValidationMsg("");
-      return;
-    }
-    if (username.length < 3) {
-      setIsUsernameValid(false);
-      setValidationMsg("Must be at least 3 characters");
-    } else if (username.length > 15) {
-      setIsUsernameValid(false);
-      setValidationMsg("Too long (max 15)");
-    } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      setIsUsernameValid(false);
-      setValidationMsg("Alphanumeric & underscores only");
-    } else {
-      setIsUsernameValid(true);
-      setValidationMsg("Username available!");
-    }
-  }, [username]);
+    const u = username.trim();
+    if (!u) { setIsUsernameValid(null); setChecking(false); setValidationMsg(""); return; }
+    if (u.length < 3) { setIsUsernameValid(false); setChecking(false); setValidationMsg("Must be at least 3 characters"); return; }
+    if (u.length > 15) { setIsUsernameValid(false); setChecking(false); setValidationMsg("Too long (max 15)"); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(u)) { setIsUsernameValid(false); setChecking(false); setValidationMsg("Alphanumeric & underscores only"); return; }
+    if (u.toLowerCase() === initialUsername.toLowerCase()) { setIsUsernameValid(true); setChecking(false); setValidationMsg("Username available!"); return; }
+
+    setChecking(true);
+    setIsUsernameValid(null);
+    setValidationMsg("Checking availability…");
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const { available } = await checkUsername(u);
+      if (cancelled) return;
+      setChecking(false);
+      setIsUsernameValid(available);
+      setValidationMsg(available ? "Username available!" : "Username taken — try another");
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [username, initialUsername]);
+
+  const canConfirm = isUsernameValid === true && !checking;
 
   const handleConfirm = () => {
-    const finalUsername =
-      username.trim() || PRESET_USERNAMES[Math.floor(Math.random() * PRESET_USERNAMES.length)];
+    if (!canConfirm) return; // must have a valid, available username
     onConfirm({
-      username: finalUsername,
+      username: username.trim(),
       skinTone: selectedSkin,
       kitPrimary: selectedKit.primary,
       kitSecondary: selectedKit.secondary,
@@ -192,10 +205,12 @@ export default function AvatarCustomizer({
               {username ? (
                 <p
                   className={`text-[10px] font-bold flex items-center gap-1 leading-none ${
-                    isUsernameValid === true ? "text-emerald-400" : "text-red-400"
+                    checking ? "text-[#A2A7AF]" : isUsernameValid === true ? "text-emerald-400" : "text-red-400"
                   }`}
                 >
-                  {isUsernameValid === true ? (
+                  {checking ? (
+                    <span className="w-2 h-2 rounded-full bg-[#A2A7AF] animate-pulse" />
+                  ) : isUsernameValid === true ? (
                     <Check className="w-3.5 h-3.5" />
                   ) : (
                     <AlertCircle className="w-3.5 h-3.5" />
@@ -428,13 +443,14 @@ export default function AvatarCustomizer({
           {/* Primary action */}
           <div className="pt-1">
             <motion.button
-              whileTap={{ scale: 0.98 }}
+              whileTap={canConfirm ? { scale: 0.98 } : undefined}
               onClick={handleConfirm}
-              className="w-full bg-[#FF4E00] hover:bg-orange-600 text-white font-black italic text-sm py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#FF4E00]/10 transition-all duration-200"
+              disabled={!canConfirm}
+              className="w-full bg-[#FF4E00] hover:bg-orange-600 text-white font-black italic text-sm py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#FF4E00]/10 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#FF4E00]"
               id="customizer-submit-btn"
             >
               <Sparkles className="w-4 h-4 fill-white" />
-              {confirmLabel}
+              {checking ? "Checking username…" : !username.trim() ? "Pick a username" : confirmLabel}
             </motion.button>
           </div>
         </div>

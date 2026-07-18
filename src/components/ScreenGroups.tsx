@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { GroupMember } from "../types";
 import type { GroupSummary, GlobalLeaderboardEntry, LeaderboardType } from "@/lib/api/client";
 import AvatarRenderer from "./AvatarRenderer";
@@ -7,6 +8,7 @@ import CountryFlag from "./CountryFlag";
 import SquadRoom from "./SquadRoom";
 import { Users, Plus, ChevronUp, ChevronDown, Minus, Crown, Share2, Flame, ArrowLeft, Award, MessageCircle } from "lucide-react";
 import { motion } from "motion/react";
+import { useAppState } from "@/lib/state/app-state";
 
 interface ScreenGroupsProps {
   currentUserMember: GroupMember;
@@ -104,6 +106,32 @@ export default function ScreenGroups({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Deep-link: /groups?open=<id>&squad=1 (e.g. after sharing a moment to a squad)
+  // selects that squad and drops straight into its Squad Room once groups load.
+  const router = useRouter();
+  const app = useAppState();
+  const [pendingOpen, setPendingOpen] = useState<{ id: string; squad: boolean } | null>(null);
+  const [pendingSquad, setPendingSquad] = useState(false);
+  // Set only when we arrived here via the share deep-link — makes the Squad Room's
+  // back button return to the feed (where the share started) instead of the list.
+  const [enteredViaShare, setEnteredViaShare] = useState(false);
+  const openHandled = useRef(false);
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const id = p.get("open");
+    if (id) setPendingOpen({ id, squad: p.get("squad") === "1" });
+  }, []);
+  useEffect(() => {
+    if (!pendingOpen || openHandled.current) return;
+    const g = myGroups.find((x) => x.id === pendingOpen.id);
+    if (!g) return; // squads still loading — wait for the next refresh
+    openHandled.current = true;
+    setSelectedGroup(g);
+    if (pendingOpen.squad) { setPendingSquad(true); setEnteredViaShare(true); }
+    setPendingOpen(null);
+    window.history.replaceState(null, "", "/groups"); // clear the deep-link
+  }, [pendingOpen, myGroups]);
+
   // While the full-screen chat is open, lock the document so iOS can't scroll
   // the page under the keyboard (which is what shifted the fixed overlay and
   // pushed the composer to the top). Standard iOS scroll-lock: pin the body,
@@ -150,6 +178,21 @@ export default function ScreenGroups({
       .finally(() => { if (!cancelled) setLoadingMembers(false); });
     return () => { cancelled = true; };
   }, [selectedGroup, loadGroupMembers]);
+
+  // The effect above resets squadOpen whenever the selected group changes, so a
+  // deep-link that asked for the Squad Room opens it here, AFTER that reset.
+  useEffect(() => {
+    if (pendingSquad && selectedGroup) {
+      setSquadOpen(true);
+      setPendingSquad(false);
+    }
+  }, [pendingSquad, selectedGroup]);
+
+  // Opening a squad's chat clears its unread badge (marks its notifications read).
+  useEffect(() => {
+    if (squadOpen && selectedGroup) app.markSquadRead(selectedGroup.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [squadOpen, selectedGroup]);
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,6 +280,11 @@ export default function ScreenGroups({
               <p className="text-xs font-black text-white leading-tight">Squad Room</p>
               <p className="text-[10px] text-[#A2A7AF] leading-snug mt-0.5">Chat with your squad — goals, banter, and the crown.</p>
             </div>
+            {(app.squadUnread[selectedGroup.id] ?? 0) > 0 && (
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF4E00] text-white text-[11px] font-black flex items-center justify-center flex-shrink-0 not-italic">
+                {app.squadUnread[selectedGroup.id] > 9 ? "9+" : app.squadUnread[selectedGroup.id]}
+              </span>
+            )}
             <ArrowLeft className="w-4 h-4 text-[#A2A7AF] rotate-180 flex-shrink-0" />
           </button>
 
@@ -288,7 +336,7 @@ export default function ScreenGroups({
            <div className="flex flex-col w-full max-w-2xl h-full lg:h-[96vh] bg-[#0A0E1A] overflow-hidden lg:rounded-3xl lg:border lg:border-white/10 lg:shadow-2xl">
             {/* Stationary header — one line, thin: back · emoji · name · Squad Room */}
             <div className="border-b border-white/5 px-3 py-2.5 flex items-center gap-2 flex-shrink-0">
-              <button onClick={() => setSquadOpen(false)} className="p-1.5 -ml-1 hover:bg-white/5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer flex-shrink-0">
+              <button onClick={() => { if (enteredViaShare) router.back(); else setSquadOpen(false); }} className="p-1.5 -ml-1 hover:bg-white/5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer flex-shrink-0">
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <span className="not-italic text-base flex-shrink-0">{selectedGroup.emoji}</span>
@@ -370,9 +418,16 @@ export default function ScreenGroups({
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end flex-shrink-0">
-                  <span className="text-[8.8px] font-mono font-black text-[#A2A7AF] uppercase tracking-wider">Members</span>
-                  <span className="text-sm font-mono font-black text-[#FF4E00]">{group.memberCount}</span>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  {(app.squadUnread[group.id] ?? 0) > 0 && (
+                    <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF4E00] text-white text-[11px] font-black flex items-center justify-center not-italic">
+                      {app.squadUnread[group.id] > 9 ? "9+" : app.squadUnread[group.id]}
+                    </span>
+                  )}
+                  <div className="flex flex-col items-end">
+                    <span className="text-[8.8px] font-mono font-black text-[#A2A7AF] uppercase tracking-wider">Members</span>
+                    <span className="text-sm font-mono font-black text-[#FF4E00]">{group.memberCount}</span>
+                  </div>
                 </div>
               </motion.div>
             ))

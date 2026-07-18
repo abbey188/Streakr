@@ -107,6 +107,31 @@ export async function createUser(input: {
   return user;
 }
 
+/** The `error` string a 409 returns (surfaced by jsonOrThrow) when a name is taken. */
+export const USERNAME_TAKEN = "username_taken";
+export function isUsernameTakenError(e: unknown): boolean {
+  return e instanceof Error && e.message === USERNAME_TAKEN;
+}
+
+export interface UsernameCheck {
+  available: boolean;
+  reason?: "invalid" | "taken";
+}
+
+/** Case-insensitive availability check. Pass `wallet` when editing your own
+ *  profile so your current name doesn't read as taken. Fails open on error. */
+export async function checkUsername(name: string, wallet?: string): Promise<UsernameCheck> {
+  try {
+    const q = new URLSearchParams({ u: name });
+    if (wallet) q.set("wallet", wallet);
+    const res = await apiFetch(`/api/username/check?${q.toString()}`);
+    if (!res.ok) return { available: true };
+    return (await res.json()) as UsernameCheck;
+  } catch {
+    return { available: true }; // write path is authoritative
+  }
+}
+
 /** Update the mascot/avatar from the profile editor. */
 export async function updateAvatar(
   walletAddress: string,
@@ -134,10 +159,26 @@ export async function fetchFixtures(walletAddress?: string): Promise<Fixture[]> 
  *  (like fetchFixtures) so the poller can keep the last-good feed instead of
  *  flickering to the empty state on a transient hiccup mid-match. A successful
  *  empty response ([]) still legitimately clears the feed. */
-export async function fetchFeed(limit = 60): Promise<FeedItem[]> {
-  const res = await apiFetch(`/api/feed?limit=${limit}`);
+export async function fetchFeed(limit = 60, wallet?: string): Promise<FeedItem[]> {
+  const q = `/api/feed?limit=${limit}${wallet ? `&wallet=${encodeURIComponent(wallet)}` : ""}`;
+  const res = await apiFetch(q);
   const { feed } = await jsonOrThrow<{ feed: FeedItem[] }>(res);
   return feed;
+}
+
+/** Toggle a global reaction on a feed moment. Best-effort (fire-and-forget). */
+export async function toggleFeedReaction(
+  fixtureId: string,
+  eventKey: string,
+  emoji: string,
+  walletAddress: string
+): Promise<void> {
+  const res = await apiFetch("/api/feed/react", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fixtureId, eventKey, emoji, walletAddress }),
+  });
+  if (!res.ok) throw new Error("react failed");
 }
 
 export type PickResult = { ok: boolean; reason?: string };
@@ -320,6 +361,22 @@ export async function fetchUnreadCount(walletAddress: string): Promise<number> {
   const res = await apiFetch(`/api/me/notifications/unread?wallet=${encodeURIComponent(walletAddress)}`);
   const { count } = await jsonOrThrow<{ count: number }>(res);
   return count;
+}
+
+/** Unread squad-chat messages per squad (groupId → count) for the badges. */
+export async function fetchSquadUnread(walletAddress: string): Promise<Record<string, number>> {
+  const res = await apiFetch(`/api/me/squad-unread?wallet=${encodeURIComponent(walletAddress)}`);
+  const { counts } = await jsonOrThrow<{ counts: Record<string, number> }>(res);
+  return counts ?? {};
+}
+
+/** Mark a squad's chat notifications read (on opening its Squad Room). */
+export async function markSquadRead(groupId: string, walletAddress: string): Promise<void> {
+  await apiFetch(`/api/groups/${groupId}/chat-read`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ walletAddress }),
+  });
 }
 
 /** The user's per-type notification opt-outs ({} = all on). */

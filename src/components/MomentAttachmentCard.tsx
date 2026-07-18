@@ -1,8 +1,8 @@
 import React from "react";
-import { Activity, ArrowLeftRight, Crosshair } from "lucide-react";
 import type { MomentAttachment } from "../types";
 import { momentTone } from "@/lib/social/moment";
 import CountryFlag from "./CountryFlag";
+import EventIcon from "./EventIcon";
 
 /**
  * A shared Live-Feed moment rendered as a compact card — used in the share
@@ -13,11 +13,8 @@ import CountryFlag from "./CountryFlag";
 export default function MomentAttachmentCard({ att, className = "" }: { att: MomentAttachment; className?: string }) {
   return (
     <div className={`flex gap-2.5 items-start bg-[#0A0E1A] border border-white/10 rounded-xl p-2.5 ${className}`}>
-      <div className="w-7 h-7 rounded-lg grid place-items-center text-[14px] bg-[#151B2E] border border-white/5 flex-shrink-0">
-        {att.type === "momentum" ? <Activity className="w-3.5 h-3.5 text-[#FF4E00]" strokeWidth={2.5} />
-          : att.type === "sub" ? <ArrowLeftRight className="w-3.5 h-3.5 text-[#5EC26A]" strokeWidth={2.5} />
-          : att.type === "freekick" ? <Crosshair className="w-3.5 h-3.5 text-slate-400" strokeWidth={2.5} />
-          : att.icon}
+      <div className="w-7 h-7 rounded-lg grid place-items-center bg-[#151B2E] border border-white/5 flex-shrink-0">
+        <EventIcon type={att.type} payload={att as unknown as Record<string, unknown>} size={15} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 flex-wrap">

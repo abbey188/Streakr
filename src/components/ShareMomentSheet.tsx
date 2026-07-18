@@ -63,8 +63,10 @@ export default function ShareMomentSheet({ item }: { item: FeedItem }) {
     setSending(true);
     try {
       await sendSquadMessage(selected, identity.walletAddress, take.trim(), undefined, att);
-      app.triggerToast(`Shared to ${selectedGroup?.name ?? "your squad"} 🔥`);
       app.closeMomentShare();
+      // Drop the user straight into the squad they just shared to (no toast — the
+      // transition into the chat is the confirmation).
+      router.push(`/groups?open=${selected}&squad=1`);
     } catch {
       app.triggerToast("Couldn't share — try again.");
       setSending(false);
