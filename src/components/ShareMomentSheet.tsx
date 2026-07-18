@@ -85,7 +85,7 @@ export default function ShareMomentSheet({ item }: { item: FeedItem }) {
       >
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-black italic uppercase tracking-tight text-white">Share to squad</h3>
-          <button onClick={app.closeMomentShare} aria-label="Close" className="text-[#8E9299] hover:text-white transition">
+          <button onClick={app.closeMomentShare} aria-label="Close" className="text-[#A2A7AF] hover:text-white transition">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -93,13 +93,13 @@ export default function ShareMomentSheet({ item }: { item: FeedItem }) {
         <MomentAttachmentCard att={att} />
 
         {loading ? (
-          <p className="text-xs text-[#8E9299] mt-4 text-center py-3">Loading your squads…</p>
+          <p className="text-xs text-[#A2A7AF] mt-4 text-center py-3">Loading your squads…</p>
         ) : groups.length === 0 ? (
           <div className="mt-4 text-center py-4">
-            <p className="text-xs text-[#8E9299]">You&apos;re not in a squad yet.</p>
+            <p className="text-xs text-[#A2A7AF]">You&apos;re not in a squad yet.</p>
             <button
               onClick={() => { app.closeMomentShare(); router.push("/groups"); }}
-              className="mt-2 text-xs font-black italic text-[#FF4E00] hover:underline"
+              className="mt-2 text-xs font-black text-[#FF4E00] hover:underline"
             >
               Join or create one →
             </button>
@@ -112,11 +112,11 @@ export default function ShareMomentSheet({ item }: { item: FeedItem }) {
                   <button
                     key={g.id}
                     onClick={() => setSelected(g.id)}
-                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold italic transition ${
-                      selected === g.id
-                        ? "bg-[#FF4E00]/15 border-[#FF4E00]/40 text-white"
-                        : "bg-[#151B2E] border-white/5 text-[#8E9299] hover:text-white"
-                    }`}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition ${
+ selected === g.id
+ ? "bg-[#FF4E00]/15 border-[#FF4E00]/40 text-white"
+ : "bg-[#151B2E] border-white/5 text-[#A2A7AF] hover:text-white"
+ }`}
                   >
                     <span>{g.emoji || "🛡️"}</span>
                     <span className="whitespace-nowrap">{g.name}</span>
@@ -131,14 +131,14 @@ export default function ShareMomentSheet({ item }: { item: FeedItem }) {
               placeholder="Add your take… (optional)"
               rows={2}
               maxLength={500}
-              className="mt-3 w-full bg-[#151B2E] border border-white/10 rounded-xl px-3 py-2.5 text-slate-100 placeholder:text-[#8E9299]/60 focus:outline-none focus:border-[#FF4E00]/40 resize-none"
+              className="mt-3 w-full bg-[#151B2E] border border-white/10 rounded-xl px-3 py-2.5 text-slate-100 placeholder:text-[#A2A7AF]/60 focus:outline-none focus:border-[#FF4E00]/40 resize-none"
               style={{ fontSize: "16px" }}
             />
 
             <button
               onClick={send}
               disabled={sending || !selected}
-              className="mt-2 w-full bg-[#FF4E00] text-white font-black italic uppercase text-xs py-3 rounded-xl disabled:opacity-60 hover:bg-[#ff5e15] transition"
+              className="mt-2 w-full bg-[#FF4E00] text-white font-black uppercase text-xs py-3 rounded-xl disabled:opacity-60 hover:bg-[#ff5e15] transition"
             >
               {sending ? "Sending…" : `Send to ${selectedGroup?.name ?? "squad"}`}
             </button>

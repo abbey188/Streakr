@@ -132,14 +132,14 @@ export default function ScreenProfile({
                 </div>
               </div>
 
-              <h3 className="text-xl font-black italic text-white mb-2">@{avatar.username}</h3>
+              <h3 className="text-xl font-black text-white mb-2">@{avatar.username}</h3>
 
               {/* 3-Column Key stats */}
               <div className="grid grid-cols-3 gap-2 mt-5">
                 {/* Active Streak */}
                 <div className="bg-[#0A0E1A] border border-[#FF4E00]/10 rounded-2xl p-2.5 flex flex-col items-center justify-center">
                   <Flame className="w-5 h-5 text-[#FF4E00] fill-[#FF4E00]/20 mb-1" />
-                  <span className="text-[9px] font-black italic text-[#8E9299] uppercase tracking-wider block text-center leading-tight">
+                  <span className="text-[9px] font-black text-[#A2A7AF] uppercase tracking-wider block text-center leading-tight">
                     Active Streak
                   </span>
                   <span className="text-lg font-black font-mono text-[#FF4E00] mt-0.5">
@@ -150,7 +150,7 @@ export default function ScreenProfile({
                 {/* Personal Best */}
                 <div className="bg-[#0A0E1A] border border-yellow-500/10 rounded-2xl p-2.5 flex flex-col items-center justify-center">
                   <Trophy className="w-5 h-5 text-yellow-500 mb-1" />
-                  <span className="text-[9px] font-black italic text-[#8E9299] uppercase tracking-wider block text-center leading-tight">
+                  <span className="text-[9px] font-black text-[#A2A7AF] uppercase tracking-wider block text-center leading-tight">
                     Personal Best
                   </span>
                   <span className="text-lg font-black font-mono text-yellow-400 mt-0.5">
@@ -161,7 +161,7 @@ export default function ScreenProfile({
                 {/* Total Points */}
                 <div className="bg-[#0A0E1A] border border-indigo-500/10 rounded-2xl p-2.5 flex flex-col items-center justify-center">
                   <Award className="w-5 h-5 text-indigo-400 mb-1" />
-                  <span className="text-[9px] font-black italic text-[#8E9299] uppercase tracking-wider block text-center leading-tight">
+                  <span className="text-[9px] font-black text-[#A2A7AF] uppercase tracking-wider block text-center leading-tight">
                     Total Points
                   </span>
                   <span className="text-lg font-black font-mono text-indigo-400 mt-0.5">
@@ -173,7 +173,7 @@ export default function ScreenProfile({
               <div className="flex flex-col gap-2 mt-4">
                 <button
                   onClick={onOpenStreakShare}
-                  className="w-full bg-gradient-to-r from-[#FF4E00] to-orange-500 hover:from-orange-600 hover:to-orange-550 text-white font-black italic text-xs py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer shadow-[0_4px_12px_rgba(255,78,0,0.2)]"
+                  className="w-full bg-gradient-to-r from-[#FF4E00] to-orange-500 hover:from-orange-600 hover:to-orange-550 text-white font-black text-xs py-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer shadow-[0_4px_12px_rgba(255,78,0,0.2)]"
                   id="profile-share-streak-btn"
                 >
                   <Share2 className="w-3.5 h-3.5" />
@@ -182,7 +182,7 @@ export default function ScreenProfile({
 
                 <button
                   onClick={() => setShowEditor(true)}
-                  className="w-full bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 text-slate-300 hover:text-white font-black italic text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  className="w-full bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 text-slate-300 hover:text-white font-black text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
                   id="profile-edit-pfp-btn"
                 >
                   Customize Avatar Outfit
@@ -194,10 +194,10 @@ export default function ScreenProfile({
           {/* Right Column: Badges */}
           <div className="lg:col-span-2 space-y-3">
             <div className="flex items-center justify-between pl-1">
-              <h4 className="text-[10px] font-mono font-black text-[#8E9299] uppercase tracking-widest">
+              <h4 className="text-[10px] font-mono font-black text-[#A2A7AF] uppercase tracking-widest">
                 Badges
               </h4>
-              <span className="text-[9px] font-mono font-bold text-[#8E9299]">
+              <span className="text-[9px] font-mono font-bold text-[#A2A7AF]">
                 <span className="text-[#FF4E00]">{earnedBadges.size}</span> / {BADGES.length} earned
               </span>
             </div>
@@ -217,19 +217,19 @@ export default function ScreenProfile({
                     <div className="flex items-center justify-between">
                       <span className="text-2xl">{badge.icon}</span>
                       {isEarned ? (
-                        <span className="text-[8px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase">
+                        <span className="text-[8.8px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase">
                           Earned
                         </span>
                       ) : (
-                        <span className="text-[8px] font-bold bg-[#0A0E1A] text-slate-500 border border-white/5 px-2 py-0.5 rounded-full uppercase">
+                        <span className="text-[8.8px] font-bold bg-[#0A0E1A] text-slate-500 border border-white/5 px-2 py-0.5 rounded-full uppercase">
                           Locked
                         </span>
                       )}
                     </div>
 
                     <div>
-                      <h5 className="text-xs font-black italic text-white mt-2">{badge.name}</h5>
-                      <p className="text-[9px] text-[#8E9299] leading-tight mt-0.5">
+                      <h5 className="text-xs font-black text-white mt-2">{badge.name}</h5>
+                      <p className="text-[9px] text-[#A2A7AF] leading-tight mt-0.5">
                         {badge.description}
                       </p>
                     </div>
@@ -254,7 +254,7 @@ export default function ScreenProfile({
           >
             {/* Sticky header */}
             <div className="sticky top-0 bg-[#0A0E1A]/90 backdrop-blur-md border-b border-white/5 px-5 py-4 flex items-center justify-between z-10">
-              <span className="text-xs font-mono font-bold text-[#8E9299] uppercase tracking-wider">
+              <span className="text-xs font-mono font-bold text-[#A2A7AF] uppercase tracking-wider">
                 Identity Customizer
               </span>
               <button
@@ -306,13 +306,13 @@ export default function ScreenProfile({
               <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-5 space-y-4 shadow-xl">
                 <div className="flex items-center gap-2 text-[#FF4E00]">
                   <User className="w-4 h-4" />
-                  <h4 className="text-xs font-black italic uppercase tracking-wider text-slate-200">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">
                     Account Identity
                   </h4>
                 </div>
                 <div className="space-y-3.5 border-t border-white/5 pt-3">
                   <div>
-                    <span className="text-[8px] font-mono font-bold text-[#8E9299] uppercase tracking-wider block">
+                    <span className="text-[8.8px] font-mono font-bold text-[#A2A7AF] uppercase tracking-wider block">
                       Connected Email / Login
                     </span>
                     <span className="text-xs font-mono font-black text-white block mt-1">
@@ -320,7 +320,7 @@ export default function ScreenProfile({
                     </span>
                   </div>
                   <div>
-                    <span className="text-[8px] font-mono font-bold text-[#8E9299] uppercase tracking-wider block">
+                    <span className="text-[8.8px] font-mono font-bold text-[#A2A7AF] uppercase tracking-wider block">
                       League Username
                     </span>
                     <span className="text-sm font-black text-white block mt-0.5">
@@ -337,18 +337,18 @@ export default function ScreenProfile({
                   <svg className="w-4 h-4 fill-emerald-400" viewBox="0 0 397 311" xmlns="http://www.w3.org/2000/svg">
                     <path d="M64.71 0h326.62l-64.44 55.43H3.45L64.71 0zM3.45 127.7h327.18l64.44 55.42H64.71L3.45 127.7zm61.26 127.71h326.62l-64.44 55.43H3.45l61.26-55.43z" />
                   </svg>
-                  <h4 className="text-xs font-black italic uppercase tracking-wider text-slate-200">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">
                     Embedded Solana Wallet
                   </h4>
                 </div>
                 
                 <div className="border-t border-white/5 pt-3.5 space-y-3">
                   <div>
-                    <span className="text-[8px] font-mono font-bold text-[#8E9299] uppercase tracking-wider block">
+                    <span className="text-[8.8px] font-mono font-bold text-[#A2A7AF] uppercase tracking-wider block">
                       Solana Wallet Address
                     </span>
                     <div className="flex items-center justify-between gap-2 mt-1.5 bg-[#0A0E1A] p-2.5 rounded-xl border border-white/5">
-                      <span className="text-[10px] font-mono text-[#8E9299] block font-bold truncate">
+                      <span className="text-[10px] font-mono text-[#A2A7AF] block font-bold truncate">
                         {walletAddress
                           ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-6)}`
                           : "Wallet not connected"}
@@ -368,10 +368,10 @@ export default function ScreenProfile({
                     </div>
                   </div>
                   <div className="flex justify-between items-center bg-emerald-500/5 p-2.5 rounded-xl border border-emerald-500/10">
-                    <span className="text-[8px] font-mono text-emerald-400 font-bold uppercase tracking-wider">
+                    <span className="text-[8.8px] font-mono text-emerald-400 font-bold uppercase tracking-wider">
                       Status: Connected & Secured
                     </span>
-                    <span className="text-[8px] font-mono text-[#8E9299] uppercase">
+                    <span className="text-[8.8px] font-mono text-[#A2A7AF] uppercase">
                       Solana Mainnet
                     </span>
                   </div>
@@ -382,11 +382,11 @@ export default function ScreenProfile({
               <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-5 space-y-4 shadow-xl">
                 <div className="flex items-center gap-2 text-[#FF4E00]">
                   <Bell className="w-4 h-4" />
-                  <h4 className="text-xs font-black italic uppercase tracking-wider text-slate-200">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">
                     Notifications
                   </h4>
                 </div>
-                <p className="text-[9px] text-[#8E9299] leading-relaxed -mt-2">
+                <p className="text-[9px] text-[#A2A7AF] leading-relaxed -mt-2">
                   Turn on push to get alerts on your device, then choose what you&apos;re pinged about.
                 </p>
 
@@ -409,7 +409,7 @@ export default function ScreenProfile({
                             <span className="text-xs font-bold text-slate-300 block">
                               {t.label}
                             </span>
-                            <span className="text-[8.5px] text-[#8E9299] block mt-0.5 leading-tight">
+                            <span className="text-[8.5px] text-[#A2A7AF] block mt-0.5 leading-tight">
                               {t.description}
                             </span>
                           </div>
@@ -432,7 +432,7 @@ export default function ScreenProfile({
               {/* Sign out */}
               <button
                 onClick={onSignOut}
-                className="w-full bg-[#151B2E] hover:bg-red-950/30 border border-white/5 hover:border-red-500/30 text-slate-300 hover:text-red-400 font-black italic text-xs py-3.5 rounded-2xl flex items-center justify-center gap-2 transition cursor-pointer shadow-xl"
+                className="w-full bg-[#151B2E] hover:bg-red-950/30 border border-white/5 hover:border-red-500/30 text-slate-300 hover:text-red-400 font-black text-xs py-3.5 rounded-2xl flex items-center justify-center gap-2 transition cursor-pointer shadow-xl"
                 id="profile-sign-out-btn"
               >
                 <LogOut className="w-4 h-4" />
@@ -444,11 +444,11 @@ export default function ScreenProfile({
                 <div className="bg-[#151B2E] border border-red-500/15 rounded-3xl p-5 space-y-3 shadow-xl">
                   <div className="flex items-center gap-2 text-red-400">
                     <AlertTriangle className="w-4 h-4" />
-                    <h4 className="text-xs font-black italic uppercase tracking-wider text-slate-200">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">
                       Delete Account
                     </h4>
                   </div>
-                  <p className="text-[9px] text-[#8E9299] leading-relaxed">
+                  <p className="text-[9px] text-[#A2A7AF] leading-relaxed">
                     Permanently delete your account and all your data — picks, streaks,
                     groups, and login. This can&apos;t be undone.
                   </p>
@@ -456,7 +456,7 @@ export default function ScreenProfile({
                   {!confirmDelete ? (
                     <button
                       onClick={() => setConfirmDelete(true)}
-                      className="w-full bg-[#0A0E1A] hover:bg-red-950/40 border border-red-500/20 hover:border-red-500/40 text-red-400 font-black italic text-xs py-3 rounded-2xl flex items-center justify-center gap-2 transition cursor-pointer"
+                      className="w-full bg-[#0A0E1A] hover:bg-red-950/40 border border-red-500/20 hover:border-red-500/40 text-red-400 font-black text-xs py-3 rounded-2xl flex items-center justify-center gap-2 transition cursor-pointer"
                       id="profile-delete-account-btn"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -471,14 +471,14 @@ export default function ScreenProfile({
                         <button
                           onClick={() => setConfirmDelete(false)}
                           disabled={deleting}
-                          className="flex-1 bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-300 font-black italic text-xs py-3 rounded-2xl transition cursor-pointer disabled:opacity-40"
+                          className="flex-1 bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-300 font-black text-xs py-3 rounded-2xl transition cursor-pointer disabled:opacity-40"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={handleDeleteAccount}
                           disabled={deleting}
-                          className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black italic text-xs py-3 rounded-2xl flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-60"
+                          className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black text-xs py-3 rounded-2xl flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-60"
                         >
                           {deleting ? "Deleting…" : "Delete forever"}
                         </button>
@@ -494,16 +494,16 @@ export default function ScreenProfile({
                   href="/terms"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] font-mono uppercase tracking-wider text-[#8E9299] hover:text-white transition"
+                  className="text-[10px] font-mono uppercase tracking-wider text-[#A2A7AF] hover:text-white transition"
                 >
                   Terms of Service
                 </a>
-                <span className="text-[#8E9299]/40">·</span>
+                <span className="text-[#A2A7AF]/40">·</span>
                 <a
                   href="/privacy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] font-mono uppercase tracking-wider text-[#8E9299] hover:text-white transition"
+                  className="text-[10px] font-mono uppercase tracking-wider text-[#A2A7AF] hover:text-white transition"
                 >
                   Privacy Policy
                 </a>

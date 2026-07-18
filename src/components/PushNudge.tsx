@@ -46,21 +46,21 @@ export default function PushNudge() {
             the better way to play. The install/enable mechanics differ inside
             the modal; the promise does not. */}
         <div className="flex-grow min-w-0 z-10">
-          <p className="text-xs font-black italic text-white leading-tight">Never miss a Streak</p>
-          <p className="text-[10px] text-[#8E9299] leading-snug mt-0.5">
+          <p className="text-xs font-black text-white leading-tight">Never miss a Streak</p>
+          <p className="text-[10px] text-[#A2A7AF] leading-snug mt-0.5">
             Pick reminders, live goals and group alerts — Streakr, one tap from your home screen.
           </p>
         </div>
         <button
           onClick={() => setPromptOpen(true)}
-          className="z-10 flex-shrink-0 bg-[#FF4E00] hover:bg-orange-600 text-white font-black italic text-[10px] px-3 py-2 rounded-xl transition cursor-pointer shadow"
+          className="z-10 flex-shrink-0 bg-[#FF4E00] hover:bg-orange-600 text-white font-black text-[10px] px-3 py-2 rounded-xl transition cursor-pointer shadow"
         >
           Add it
         </button>
         <button
           onClick={dismiss}
           aria-label="Dismiss"
-          className="z-10 flex-shrink-0 p-1 text-[#8E9299]/60 hover:text-white transition cursor-pointer"
+          className="z-10 flex-shrink-0 p-1 text-[#A2A7AF]/60 hover:text-white transition cursor-pointer"
         >
           <X className="w-3.5 h-3.5" />
         </button>

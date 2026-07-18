@@ -90,7 +90,7 @@ export default function ScreenInbox({
           <button
             onClick={clearCurrent}
             disabled={currentCount === 0}
-            className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[#8E9299] hover:text-red-400 disabled:opacity-30 disabled:hover:text-[#8E9299] disabled:cursor-default transition cursor-pointer flex-shrink-0"
+            className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-[#A2A7AF] hover:text-red-400 disabled:opacity-30 disabled:hover:text-[#A2A7AF] disabled:cursor-default transition cursor-pointer flex-shrink-0"
           >
             <Trash2 className="w-3.5 h-3.5" /> Clear
           </button>
@@ -102,15 +102,15 @@ export default function ScreenInbox({
                 <button
                   key={t}
                   onClick={() => setTab(t)}
-                  className={`flex-1 py-1.5 rounded-xl text-[10px] font-black italic uppercase tracking-wider transition cursor-pointer ${
-                    active ? "bg-[#FF4E00] text-white shadow" : "text-[#8E9299] hover:text-white"
-                  }`}
+                  className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer ${
+ active ? "bg-[#FF4E00] text-white shadow" : "text-[#A2A7AF] hover:text-white"
+ }`}
                 >
                   <span className="inline-flex items-center justify-center gap-1.5">
                     {t === "general" ? "General" : "Squad"}
                     {badge > 0 && (
                       <span
-                        className={`min-w-[15px] h-[15px] px-1 rounded-full text-[8px] font-black not-italic inline-flex items-center justify-center leading-none ${
+                        className={`min-w-[15px] h-[15px] px-1 rounded-full text-[8.8px] font-black not-italic inline-flex items-center justify-center leading-none ${
                           active ? "bg-white text-[#FF4E00]" : "bg-[#FF4E00] text-white"
                         }`}
                       >
@@ -128,8 +128,8 @@ export default function ScreenInbox({
         {tab === "general" && (
           notifications.length === 0 ? (
             <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-6 text-center space-y-1">
-              <p className="text-xs font-black italic text-slate-300">You&apos;re all caught up</p>
-              <p className="text-[10px] text-[#8E9299] leading-relaxed max-w-[260px] mx-auto">
+              <p className="text-xs font-black text-slate-300">You&apos;re all caught up</p>
+              <p className="text-[10px] text-[#A2A7AF] leading-relaxed max-w-[260px] mx-auto">
                 Goals, pick results, crowns, and your group&apos;s milestones will show up here.
               </p>
             </div>
@@ -155,8 +155,8 @@ export default function ScreenInbox({
                     </div>
                     <div className="flex-grow min-w-0 space-y-1">
                       <div className="flex justify-between items-center gap-2">
-                        <span className="text-xs font-black italic text-white truncate">{n.title}</span>
-                        <span className="text-[9px] font-mono text-[#8E9299] font-medium flex-shrink-0">{n.timestamp}</span>
+                        <span className="text-xs font-black text-white truncate pr-0.5">{n.title}</span>
+                        <span className="text-[9px] font-mono text-[#A2A7AF] font-medium flex-shrink-0">{n.timestamp}</span>
                       </div>
                       <p className="text-xs text-slate-300 leading-relaxed">{n.body}</p>
                     </div>
@@ -176,8 +176,8 @@ export default function ScreenInbox({
         {tab === "group" && (
           visibleActivity.length === 0 ? (
             <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-6 text-center space-y-1">
-              <p className="text-xs font-black italic text-slate-300">Nothing from your squads yet</p>
-              <p className="text-[10px] text-[#8E9299] leading-relaxed max-w-[260px] mx-auto">
+              <p className="text-xs font-black text-slate-300">Nothing from your squads yet</p>
+              <p className="text-[10px] text-[#A2A7AF] leading-relaxed max-w-[260px] mx-auto">
                 When a groupmate hits a big streak or gets crowned Round Champion, it&apos;ll show up here.
               </p>
             </div>
@@ -209,8 +209,8 @@ export default function ScreenInbox({
                       </div>
                       <div className="flex-grow min-w-0 space-y-1">
                         <div className="flex justify-between items-center gap-2">
-                          <span className={`text-xs font-black italic truncate ${item.isMine ? "text-[#FF4E00]" : "text-white"}`}>{item.isMine ? "You" : `@${item.username}`}</span>
-                          <span className="text-[9px] font-mono text-[#8E9299] font-medium flex-shrink-0">{item.timestamp}</span>
+                          <span className={`text-xs font-black truncate pr-0.5 ${item.isMine ? "text-[#FF4E00]" : "text-white"}`}>{item.isMine ? "You" : `@${item.username}`}</span>
+                          <span className="text-[9px] font-mono text-[#A2A7AF] font-medium flex-shrink-0">{item.timestamp}</span>
                         </div>
                         <p className="text-xs text-slate-300 leading-relaxed">
                           <span className="pr-1.5">{typeIcon}</span>

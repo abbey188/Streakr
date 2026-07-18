@@ -89,7 +89,7 @@ function ChampionRow({ r, rank }: { r: TournamentRacer; rank: number }) {
         r.isCurrentUser ? "bg-[#FF4E00]/10 border-[#FF4E00]/30" : "bg-[#0A0E1A] border-white/5"
       }`}
     >
-      <span className={`w-6 text-center text-sm font-black italic ${rank === 1 ? "text-amber-300" : "text-[#8E9299]"}`}>
+      <span className={`w-6 text-center text-sm font-black italic ${rank === 1 ? "text-amber-300" : "text-[#A2A7AF]"}`}>
         {rank === 1 ? "👑" : rank}
       </span>
       <div className="w-9 h-9 rounded-xl bg-[#151B2E] border border-white/5 p-0.5 flex items-center justify-center flex-shrink-0">
@@ -104,16 +104,16 @@ function ChampionRow({ r, rank }: { r: TournamentRacer; rank: number }) {
         />
       </div>
       <div className="flex-grow min-w-0">
-        <span className="text-xs font-black italic text-white truncate block">
+        <span className="text-xs font-black text-white truncate pr-0.5 block">
           @{r.username}{r.isCurrentUser && <span className="text-[#FF4E00]"> (you)</span>}
         </span>
-        <span className="text-[9px] font-mono text-[#8E9299]">
+        <span className="text-[9px] font-mono text-[#A2A7AF]">
           {r.personalBest}🔥 best · {r.correctCount} correct
         </span>
       </div>
       <div className="text-right flex-shrink-0">
         <span className="text-sm font-black text-amber-300 block leading-none">{r.points}</span>
-        <span className="text-[8px] font-mono text-[#8E9299] uppercase tracking-wide">points</span>
+        <span className="text-[8.8px] font-mono text-[#A2A7AF] uppercase tracking-wide">points</span>
       </div>
     </div>
   );
@@ -292,17 +292,17 @@ export default function ScreenHome({
               upperBodyOnly={true}
             />
             {/* Tiny edit badge */}
-            <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 bg-[#FF4E00] rounded-full border-2 border-[#0A0E1A] text-[8px] font-bold flex items-center justify-center text-white scale-90">
+            <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 bg-[#FF4E00] rounded-full border-2 border-[#0A0E1A] text-[8.8px] font-bold flex items-center justify-center text-white scale-90">
               ⚡
             </span>
           </button>
 
           {/* Username greeting */}
           <div>
-            <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block leading-none">
+            <span className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase tracking-widest block leading-none">
               Welcome back
             </span>
-            <span className="text-xs font-black italic text-slate-200">
+            <span className="text-xs font-black text-slate-200">
               @{avatar.username || "Fan_402"}
             </span>
           </div>
@@ -317,7 +317,7 @@ export default function ScreenHome({
             className="flex items-center gap-1.5 bg-[#FF4E00]/10 text-[#FF4E00] border border-[#FF4E00]/10 px-2.5 py-1 rounded-xl"
             id="hud-streak-flame"
           >
-            <Flame className={`w-4 h-4 fill-current ${streak > 0 ? "text-[#FF4E00] animate-pulse" : "text-[#8E9299]"}`} />
+            <Flame className={`w-4 h-4 fill-current ${streak > 0 ? "text-[#FF4E00] animate-pulse" : "text-[#A2A7AF]"}`} />
             <span className="text-xs font-black font-mono leading-none">{streak}</span>
           </motion.div>
 
@@ -346,7 +346,7 @@ export default function ScreenHome({
             {/* 0. Your latest results — proactive win/loss surfacing */}
             {myResults.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-[10px] font-mono font-black text-[#8E9299] uppercase tracking-widest pl-1.5">
+                <h3 className="text-[10px] font-mono font-black text-[#A2A7AF] uppercase tracking-widest pl-1.5">
                   Your Latest Results
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -356,23 +356,25 @@ export default function ScreenHome({
                     return (
                       <div
                         key={m.id}
-                        className={`flex items-center justify-between gap-2 p-3 rounded-2xl border ${
+                        className={`flex items-center justify-between gap-2 px-3 pt-5 pb-3 rounded-2xl border ${
                           correct ? "bg-emerald-500/5 border-emerald-500/30" : "bg-red-500/5 border-red-500/25"
                         }`}
                       >
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <CountryFlag name={pickTeam.name} className="w-6 h-4 flex-shrink-0" width={40} />
-                          <div className="min-w-0">
-                            <span className="text-xs font-black italic text-white truncate block">{pickTeam.name}</span>
-                            <span className="text-[9px] font-mono text-[#8E9299]">
-                              {m.teamA.code} {m.scoreA}–{m.scoreB} {m.teamB.code}
-                            </span>
+                        {/* Flag + name on one line, score beneath — the group vertically
+                            centered in the card so it reads balanced, not top-heavy. */}
+                        <div className="min-w-0 flex-1 flex flex-col justify-center">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <CountryFlag name={pickTeam.name} className="w-6 h-4 flex-shrink-0" width={40} />
+                            <span className="text-xs font-black text-white truncate pr-0.5">{pickTeam.name}</span>
                           </div>
+                          <span className="block text-[9px] font-mono text-[#A2A7AF] mt-1 pl-8">
+                            {m.teamA.code} {m.scoreA}–{m.scoreB} {m.teamB.code}
+                          </span>
                         </div>
                         <span
-                          className={`text-[10px] font-black italic px-2.5 py-1 rounded-lg flex items-center gap-1 flex-shrink-0 ${
-                            correct ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
-                          }`}
+                          className={`text-[10px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1 flex-shrink-0 ${
+ correct ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
+ }`}
                         >
                           {correct ? <CheckCircle2 className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
                           {correct ? "Correct" : "Missed"}
@@ -380,7 +382,7 @@ export default function ScreenHome({
                         <button
                           onClick={() => dismissResult(m.id)}
                           aria-label="Dismiss result"
-                          className="flex-shrink-0 p-1 -mr-1 text-[#8E9299] hover:text-white transition cursor-pointer"
+                          className="flex-shrink-0 p-1 -mr-1 text-[#A2A7AF] hover:text-white transition cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -428,9 +430,9 @@ export default function ScreenHome({
                             <span className="text-[9px] font-mono text-red-400 font-bold tracking-wider uppercase bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
                               Match Live • {liveMinuteLabel(match, now)}
                             </span>
-                            <span className="flex items-center gap-1 text-[9px] font-mono text-[#8E9299] font-bold uppercase">
+                            <span className="flex items-center gap-1 text-[9px] font-mono text-[#A2A7AF] font-bold uppercase">
                               {match.round}
-                              <ChevronRight className="w-3.5 h-3.5 text-[#8E9299] group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                              <ChevronRight className="w-3.5 h-3.5 text-[#A2A7AF] group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                             </span>
                           </div>
 
@@ -440,7 +442,7 @@ export default function ScreenHome({
                             <div className="flex flex-col items-center text-center w-[38%] min-w-0">
                               <CountryFlag name={match.teamA.name} className="w-9 h-6 mb-1.5" />
                               <span className="text-[10px] xs:text-xs sm:text-sm font-black text-white whitespace-nowrap uppercase tracking-tight">{match.teamA.name}</span>
-                              <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase">{match.teamA.code}</span>
+                              <span className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase">{match.teamA.code}</span>
                             </div>
 
                             {/* Score Display */}
@@ -456,7 +458,7 @@ export default function ScreenHome({
                             <div className="flex flex-col items-center text-center w-[38%] min-w-0">
                               <CountryFlag name={match.teamB.name} className="w-9 h-6 mb-1.5" />
                               <span className="text-[10px] xs:text-xs sm:text-sm font-black text-white whitespace-nowrap uppercase tracking-tight">{match.teamB.name}</span>
-                              <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase">{match.teamB.code}</span>
+                              <span className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase">{match.teamB.code}</span>
                             </div>
                           </div>
                         </div>
@@ -476,7 +478,7 @@ export default function ScreenHome({
                                 </span>
                                 <ChevronRight className="w-4 h-4 text-white" />
                               </button>
-                              <p className="mt-1.5 text-[8px] font-mono text-[#8E9299]/70 uppercase tracking-wider text-center">
+                              <p className="mt-1.5 text-[8.8px] font-mono text-[#A2A7AF]/70 uppercase tracking-wider text-center">
                                 Open till the first goal, a red card, or halftime
                               </p>
                             </>
@@ -485,7 +487,7 @@ export default function ScreenHome({
                             <div className="flex items-center gap-2 bg-[#0A0E1A] border border-[#FF4E00]/20 px-3.5 py-2.5 rounded-2xl w-full justify-between shadow-inner">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                                <span className="text-[10px] text-[#8E9299] font-bold uppercase tracking-wider">Your Pick:</span>
+                                <span className="text-[10px] text-[#A2A7AF] font-bold uppercase tracking-wider">Your Pick:</span>
                                 <span className="text-xs font-black text-[#FF4E00] truncate">{pickName}</span>
                               </div>
                               <button
@@ -500,7 +502,7 @@ export default function ScreenHome({
                             <div className="flex items-center gap-2 bg-[#0A0E1A] border border-white/5 px-3.5 py-2.5 rounded-2xl w-full justify-between shadow-inner">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                                <span className="text-[10px] text-[#8E9299] font-bold uppercase tracking-wider">Your Pick:</span>
+                                <span className="text-[10px] text-[#A2A7AF] font-bold uppercase tracking-wider">Your Pick:</span>
                                 <span className="text-xs font-black text-[#FF4E00] truncate">{pickName}</span>
                               </div>
                               <span className="text-[9px] font-mono font-bold bg-[#FF4E00]/10 text-[#FF4E00] border border-[#FF4E00]/20 px-2 py-0.5 rounded-full flex-shrink-0">
@@ -510,7 +512,7 @@ export default function ScreenHome({
                           ) : (
                             // ④ CLOSED, not picked
                             <div className="flex items-center gap-2 bg-[#0A0E1A]/45 border border-white/5 px-3.5 py-2.5 rounded-2xl w-full justify-between shadow-inner opacity-80">
-                              <span className="text-[10px] text-[#8E9299] font-bold uppercase tracking-wider">
+                              <span className="text-[10px] text-[#A2A7AF] font-bold uppercase tracking-wider">
                                 Picks closed{closeReason ? ` · ${closeReason}` : ""}
                               </span>
                               <span className="text-[9px] font-mono font-bold bg-white/5 text-slate-400 border border-white/5 px-2 py-0.5 rounded-full uppercase flex-shrink-0">
@@ -536,7 +538,7 @@ export default function ScreenHome({
                 <div key={grp.key} className="space-y-3">
                   <h4 className="text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest pl-1 flex items-center gap-2">
                     {grp.label}
-                    <span className="text-[#8E9299] font-normal">· {grp.fixtures.length}</span>
+                    <span className="text-[#A2A7AF] font-normal">· {grp.fixtures.length}</span>
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {grp.fixtures.map((match) => {
@@ -577,7 +579,7 @@ export default function ScreenHome({
                       <div>
                         {/* Header Row */}
                         <div className="flex justify-between items-center mb-3">
-                          <span className="text-[9px] font-mono text-[#8E9299] font-bold uppercase tracking-wider">
+                          <span className="text-[9px] font-mono text-[#A2A7AF] font-bold uppercase tracking-wider">
                             {cardRound(match.round)} • {kickoffLabel(match)}
                           </span>
                         </div>
@@ -588,12 +590,12 @@ export default function ScreenHome({
                           <div className="flex flex-col items-center text-center w-[40%]">
                             <CountryFlag name={match.teamA.name} className="w-9 h-6 mb-1.5" />
                             <span className="text-xs font-black text-white truncate w-full">{match.teamA.name}</span>
-                            <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase">{match.teamA.code}</span>
+                            <span className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase">{match.teamA.code}</span>
                           </div>
 
                           {/* VS divider */}
                           <div className="flex flex-col items-center">
-                            <span className="text-[10px] font-mono font-bold text-[#8E9299] bg-[#0A0E1A] border border-white/5 px-2.5 py-0.5 rounded-full uppercase">
+                            <span className="text-[10px] font-mono font-bold text-[#A2A7AF] bg-[#0A0E1A] border border-white/5 px-2.5 py-0.5 rounded-full uppercase">
                               VS
                             </span>
                           </div>
@@ -602,7 +604,7 @@ export default function ScreenHome({
                           <div className="flex flex-col items-center text-center w-[40%]">
                             <CountryFlag name={match.teamB.name} className="w-9 h-6 mb-1.5" />
                             <span className="text-xs font-black text-white truncate w-full">{match.teamB.name}</span>
-                            <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase">{match.teamB.code}</span>
+                            <span className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase">{match.teamB.code}</span>
                           </div>
                         </div>
 
@@ -635,7 +637,7 @@ export default function ScreenHome({
                               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                               Make your pick
                             </span>
-                            <ChevronRight className="w-4 h-4 text-[#8E9299]" />
+                            <ChevronRight className="w-4 h-4 text-[#A2A7AF]" />
                           </button>
                         )}
                       </div>
@@ -662,7 +664,6 @@ export default function ScreenHome({
               <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-[#FF4E00]/10 rounded-full blur-xl pointer-events-none" />
               <div className="flex items-start justify-between gap-2 z-10 relative">
                 <div className="space-y-1">
-                  <span className="text-[8px] font-mono font-bold uppercase tracking-widest text-[#FF4E00] block">Knockout Stage</span>
                   <h4 className="text-sm font-black italic text-white uppercase tracking-tight">The Road to the Final</h4>
                 </div>
                 <Trophy className="w-8 h-8 text-[#FF4E00]/80 flex-shrink-0" />
@@ -682,7 +683,7 @@ export default function ScreenHome({
                   const label =
                     s.status === "done" ? "text-emerald-400"
                     : s.status === "live" ? "text-[#FF4E00]"
-                    : isCurrent ? "text-slate-300" : "text-[#8E9299]";
+                    : isCurrent ? "text-slate-300" : "text-[#A2A7AF]";
                   return (
                     <React.Fragment key={s.round}>
                       <button
@@ -722,13 +723,13 @@ export default function ScreenHome({
                   </span>
                 </button>
               </div>
-              <p className="mt-2 text-[8px] font-mono text-[#8E9299]/70 uppercase tracking-wider text-center z-10 relative">
+              <p className="mt-2 text-[8.8px] font-mono text-[#A2A7AF]/70 uppercase tracking-wider text-center z-10 relative">
                 Tap a round for its champion · tap the <span className="text-amber-300/80">crown</span> for The Streakr
               </p>
 
               {/* Current round + CTA */}
               <div className="mt-3 flex items-center justify-between z-10 relative">
-                <p className="text-[10px] text-[#8E9299] leading-relaxed">
+                <p className="text-[10px] text-[#A2A7AF] leading-relaxed">
                   {currentStage.status === "live"
                     ? <><span className="text-[#FF4E00] font-bold">{currentStage.round}</span> is live — {currentStage.done}/{currentStage.total} decided.</>
                     : currentStage.status === "done"
@@ -738,7 +739,7 @@ export default function ScreenHome({
                 <button
                   type="button"
                   onClick={() => setRaceRound(currentStage.round)}
-                  className="text-[10px] font-black italic text-[#FF4E00] flex items-center gap-0.5 hover:gap-1.5 transition-all cursor-pointer flex-shrink-0"
+                  className="text-[10px] font-black text-[#FF4E00] flex items-center gap-0.5 hover:gap-1.5 transition-all cursor-pointer flex-shrink-0"
                 >
                   {CHAMPION_ROUNDS.has(currentStage.round) ? "Champion race" : "View round"}
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -754,10 +755,10 @@ export default function ScreenHome({
                     <Globe className="w-4 h-4 text-[#FF4E00]" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-black italic text-slate-200 uppercase tracking-tight">
+                    <h4 className="text-xs font-black text-slate-200 uppercase tracking-tight">
                       Global Leaderboard
                     </h4>
-                    <span className="text-[8px] font-mono font-bold text-[#8E9299] uppercase tracking-wider block">
+                    <span className="text-[8.8px] font-mono font-bold text-[#A2A7AF] uppercase tracking-wider block">
                       Live world rankings
                     </span>
                   </div>
@@ -776,21 +777,21 @@ export default function ScreenHome({
               <div className="flex gap-1.5 bg-[#0A0E1A] p-1 rounded-2xl border border-white/5">
                 <button
                   onClick={() => setGlobalSortBy("streak")}
-                  className={`flex-grow py-1.5 rounded-xl text-[9px] font-black italic uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 ${
-                    globalSortBy === "streak"
-                      ? "bg-[#FF4E00]/10 text-[#FF4E00]"
-                      : "text-[#8E9299] hover:text-white"
-                  }`}
+                  className={`flex-grow py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 ${
+ globalSortBy === "streak"
+ ? "bg-[#FF4E00]/10 text-[#FF4E00]"
+ : "text-[#A2A7AF] hover:text-white"
+ }`}
                 >
                   <Flame className="w-3 h-3 fill-current" /> Active Streak
                 </button>
                 <button
                   onClick={() => setGlobalSortBy("points")}
-                  className={`flex-grow py-1.5 rounded-xl text-[9px] font-black italic uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 ${
-                    globalSortBy === "points"
-                      ? "bg-indigo-500/10 text-indigo-400"
-                      : "text-[#8E9299] hover:text-white"
-                  }`}
+                  className={`flex-grow py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 ${
+ globalSortBy === "points"
+ ? "bg-indigo-500/10 text-indigo-400"
+ : "text-[#A2A7AF] hover:text-white"
+ }`}
                 >
                   <Award className="w-3 h-3" /> Points
                 </button>
@@ -798,7 +799,7 @@ export default function ScreenHome({
 
               {/* Compact Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-2.5 w-3 h-3 text-[#8E9299]" />
+                <Search className="absolute left-3 top-2.5 w-3 h-3 text-[#A2A7AF]" />
                 <input
                   type="text"
                   placeholder="Search by username…"
@@ -831,7 +832,7 @@ export default function ScreenHome({
                           ) : member.rank === 3 ? (
                             <span className="text-xs">🥉</span>
                           ) : (
-                            <span className="text-[9px] font-mono font-bold text-[#8E9299]">#{member.rank}</span>
+                            <span className="text-[9px] font-mono font-bold text-[#A2A7AF]">#{member.rank}</span>
                           )}
                         </div>
 
@@ -849,7 +850,7 @@ export default function ScreenHome({
 
                         {/* Username — canonical flex truncation (span grows itself) */}
                         {member.flag && <CountryFlag name={member.flag} className="w-4 h-3 flex-shrink-0" width={40} />}
-                        <span className="text-[11px] font-black italic text-slate-200 truncate flex-1 min-w-0 pr-1.5">
+                        <span className="text-[11px] font-black text-slate-200 truncate flex-1 min-w-0 pr-1.5">
                           @{member.username}
                         </span>
                         {member.isCurrentUser && (
@@ -864,7 +865,7 @@ export default function ScreenHome({
                         {globalSortBy === "streak" ? (
                           <span className="font-mono font-black text-xs text-[#FF4E00]">🔥 {member.streak}</span>
                         ) : (
-                          <span className="font-mono font-black text-xs text-indigo-400">{member.points.toLocaleString()} <span className="text-[8px] text-[#8E9299]">PTS</span></span>
+                          <span className="font-mono font-black text-xs text-indigo-400">{member.points.toLocaleString()} <span className="text-[8.8px] text-[#A2A7AF]">PTS</span></span>
                         )}
                       </div>
                     </div>
@@ -877,10 +878,10 @@ export default function ScreenHome({
                 const myRank = getGlobalStandings().find((m) => m.isCurrentUser)?.rank;
                 return (
                   <div className="bg-gradient-to-r from-[#11243A]/60 to-[#151B2E] border border-[#FF4E00]/10 rounded-2xl p-2.5 flex items-center justify-between gap-2 text-[10px]">
-                    <span className="font-black italic text-slate-300 whitespace-nowrap flex-shrink-0">
+                    <span className="font-black text-slate-300 whitespace-nowrap flex-shrink-0">
                       Your Rank: <span className="text-[#FF4E00]">{myRank ? `#${myRank}` : "—"}</span>
                     </span>
-                    <span className="font-mono text-[#8E9299] whitespace-nowrap flex-shrink-0 flex items-center gap-2">
+                    <span className="font-mono text-[#A2A7AF] whitespace-nowrap flex-shrink-0 flex items-center gap-2">
                       <span className="text-[#FF4E00]">🔥 {streak}</span>
                       <span>{points.toLocaleString()} PTS</span>
                     </span>
@@ -897,8 +898,9 @@ export default function ScreenHome({
             picks (moved off the Hub, which is now live-only). */}
         {onSeePastMatches && (
           <button
+            id="home-past-matches"
             onClick={onSeePastMatches}
-            className="mt-6 w-full flex items-center justify-center gap-2 bg-[#FF4E00] text-white rounded-2xl py-3.5 text-xs font-black italic uppercase tracking-wide hover:bg-[#ff5e15] transition"
+            className="mt-6 w-full flex items-center justify-center gap-2 bg-[#FF4E00] text-white rounded-2xl py-3.5 text-xs font-black uppercase tracking-wide hover:bg-[#ff5e15] transition"
           >
             See past matches →
           </button>
@@ -938,7 +940,7 @@ export default function ScreenHome({
               <h2 className="text-2xl font-black italic tracking-tighter text-white uppercase">
                 WHO ADVANCES?
               </h2>
-              <p className="text-xs text-[#8E9299] mt-2 max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs text-[#A2A7AF] mt-2 max-w-sm mx-auto leading-relaxed">
                 No draws — includes extra time and penalties. You can lock in right up to the <span className="text-white font-bold">first goal, a red card, or halftime</span>, whichever comes first. Get in early!
               </p>
             </div>
@@ -959,7 +961,7 @@ export default function ScreenHome({
                     <span className="text-xl font-black text-white group-hover:text-[#FF4E00] transition-colors">
                       {activePickFixture.teamA.name}
                     </span>
-                    <span className="text-[10px] font-mono font-bold text-[#8E9299] uppercase block">
+                    <span className="text-[10px] font-mono font-bold text-[#A2A7AF] uppercase block">
                       Code: {activePickFixture.teamA.code}
                     </span>
                   </div>
@@ -983,7 +985,7 @@ export default function ScreenHome({
                     <span className="text-xl font-black text-white group-hover:text-[#FF4E00] transition-colors">
                       {activePickFixture.teamB.name}
                     </span>
-                    <span className="text-[10px] font-mono font-bold text-[#8E9299] uppercase block">
+                    <span className="text-[10px] font-mono font-bold text-[#A2A7AF] uppercase block">
                       Code: {activePickFixture.teamB.code}
                     </span>
                   </div>
@@ -996,7 +998,7 @@ export default function ScreenHome({
             </div>
 
             {/* Bottom Disclaimer — lifted off the very edge */}
-            <div className="text-center text-[10px] text-[#8E9299] max-w-xs mx-auto flex-shrink-0 pt-2 pb-4 uppercase font-bold tracking-wide">
+            <div className="text-center text-[10px] text-[#A2A7AF] max-w-xs mx-auto flex-shrink-0 pt-2 pb-4 uppercase font-bold tracking-wide">
               Picks can be altered at any time until kickoff. Tapping either button locks the selection instantly.
             </div>
           </motion.div>
@@ -1047,7 +1049,7 @@ export default function ScreenHome({
                     <h2 className="text-base font-black italic text-white uppercase tracking-tight">
                       Global Leaderboard
                     </h2>
-                    <p className="text-[9px] font-mono text-[#8E9299] uppercase tracking-wider block">
+                    <p className="text-[9px] font-mono text-[#A2A7AF] uppercase tracking-wider block">
                       Live world rankings
                     </p>
                   </div>
@@ -1066,21 +1068,21 @@ export default function ScreenHome({
                 <div className="flex gap-2 bg-[#0A0E1A] p-1 rounded-2xl border border-white/5">
                   <button
                     onClick={() => setGlobalSortBy("streak")}
-                    className={`flex-grow py-2.5 rounded-xl text-[10px] font-black italic uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 ${
-                      globalSortBy === "streak"
-                        ? "bg-[#FF4E00]/10 text-[#FF4E00] border border-[#FF4E00]/20"
-                        : "text-[#8E9299] hover:text-white"
-                    }`}
+                    className={`flex-grow py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 ${
+ globalSortBy === "streak"
+ ? "bg-[#FF4E00]/10 text-[#FF4E00] border border-[#FF4E00]/20"
+ : "text-[#A2A7AF] hover:text-white"
+ }`}
                   >
                     <Flame className="w-3.5 h-3.5 fill-current" /> Active Streak
                   </button>
                   <button
                     onClick={() => setGlobalSortBy("points")}
-                    className={`flex-grow py-2.5 rounded-xl text-[10px] font-black italic uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 ${
-                      globalSortBy === "points"
-                        ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
-                        : "text-[#8E9299] hover:text-white"
-                    }`}
+                    className={`flex-grow py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 ${
+ globalSortBy === "points"
+ ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+ : "text-[#A2A7AF] hover:text-white"
+ }`}
                   >
                     <Award className="w-3.5 h-3.5" /> Points
                   </button>
@@ -1088,7 +1090,7 @@ export default function ScreenHome({
 
                 {/* Big Search Input */}
                 <div className="relative">
-                  <Search className="absolute left-4 top-3.5 w-4 h-4 text-[#8E9299]" />
+                  <Search className="absolute left-4 top-3.5 w-4 h-4 text-[#A2A7AF]" />
                   <input
                     type="text"
                     placeholder="Search by username…"
@@ -1135,7 +1137,7 @@ export default function ScreenHome({
                             ) : member.rank === 3 ? (
                               <span className="text-xl">🥉</span>
                             ) : (
-                              <span className="text-xs font-mono font-black text-[#8E9299]">#{member.rank}</span>
+                              <span className="text-xs font-mono font-black text-[#A2A7AF]">#{member.rank}</span>
                             )}
                           </div>
 
@@ -1169,12 +1171,12 @@ export default function ScreenHome({
                           {globalSortBy === "streak" ? (
                             <div className="flex flex-col items-end leading-none gap-1">
                               <span className="text-base font-mono font-black text-[#FF4E00]">🔥 {member.streak}</span>
-                              <span className="text-[8px] font-mono text-[#8E9299] uppercase tracking-wide">{member.points.toLocaleString()} pts</span>
+                              <span className="text-[8.8px] font-mono text-[#A2A7AF] uppercase tracking-wide">{member.points.toLocaleString()} pts</span>
                             </div>
                           ) : (
                             <div className="flex flex-col items-end leading-none gap-1">
                               <span className="text-base font-mono font-black text-indigo-400">{member.points.toLocaleString()}</span>
-                              <span className="text-[8px] font-mono text-[#8E9299] uppercase tracking-wide">{member.streak} streak</span>
+                              <span className="text-[8.8px] font-mono text-[#A2A7AF] uppercase tracking-wide">{member.streak} streak</span>
                             </div>
                           )}
                         </div>
@@ -1184,8 +1186,8 @@ export default function ScreenHome({
                 ) : (
                   <div className="text-center py-12 bg-[#151B2E]/20 rounded-3xl border border-white/5">
                     <span className="text-3xl">🔍</span>
-                    <h4 className="text-xs font-black italic uppercase text-slate-400 mt-3">No Arena results found</h4>
-                    <p className="text-[9px] text-[#8E9299] mt-1 max-w-[200px] mx-auto leading-relaxed uppercase font-bold tracking-wider">
+                    <h4 className="text-xs font-black uppercase text-slate-400 mt-3">No Arena results found</h4>
+                    <p className="text-[9px] text-[#A2A7AF] mt-1 max-w-[200px] mx-auto leading-relaxed uppercase font-bold tracking-wider">
                       Verify username and try again
                     </p>
                   </div>
@@ -1198,26 +1200,33 @@ export default function ScreenHome({
                 return (
                   <div className="bg-[#1C233D] border-t border-white/10 p-4.5 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 bg-[#FF4E00]/10 border border-[#FF4E00]/20 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
-                        🔥
+                      <div className="w-10 h-10 bg-[#FF4E00]/10 border border-[#FF4E00]/20 rounded-xl p-0.5 flex items-center justify-center flex-shrink-0">
+                        <AvatarRenderer
+                          skinTone={avatar?.skinTone}
+                          kitPrimary={avatar?.kitPrimary}
+                          kitSecondary={avatar?.kitSecondary}
+                          expression={avatar?.expression}
+                          size="sm"
+                          upperBodyOnly={true}
+                        />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-[8px] font-mono font-black text-[#8E9299] uppercase tracking-widest block leading-none">
+                        <span className="text-[8.8px] font-mono font-black text-[#A2A7AF] uppercase tracking-widest block leading-none">
                           Your Current Ranking
                         </span>
-                        <span className="text-xs font-black italic text-white uppercase tracking-tight block mt-1 whitespace-nowrap">
+                        <span className="text-xs font-black text-white uppercase tracking-tight block mt-1 whitespace-nowrap">
                           Rank <span className="text-[#FF4E00]">{myRank ? `#${myRank}` : "—"}</span> in the world
                         </span>
                       </div>
                     </div>
 
                     <div className="text-right flex-shrink-0">
-                      <span className="text-[9px] font-mono text-[#8E9299] uppercase block leading-none">
+                      <span className="text-[9px] font-mono text-[#A2A7AF] uppercase block leading-none">
                         Streak / Points
                       </span>
                       <span className="text-xs font-mono font-black block mt-1 whitespace-nowrap">
                         <span className="text-[#FF4E00]">🔥 {streak}</span>
-                        <span className="text-[#8E9299]"> · </span>
+                        <span className="text-[#A2A7AF]"> · </span>
                         <span className="text-indigo-400">{points.toLocaleString()} PTS</span>
                       </span>
                     </div>
@@ -1270,7 +1279,7 @@ export default function ScreenHome({
                     <h2 className="text-base font-black italic text-white uppercase tracking-tight">
                       {raceRound} Champion
                     </h2>
-                    <p className="text-[9px] font-mono text-[#8E9299] uppercase tracking-wider block">
+                    <p className="text-[9px] font-mono text-[#A2A7AF] uppercase tracking-wider block">
                       Most correct picks this round
                     </p>
                   </div>
@@ -1287,7 +1296,7 @@ export default function ScreenHome({
               <div className="p-5 overflow-y-auto flex-grow space-y-3">
                 {/* Round-round eligibility note */}
                 {!CHAMPION_ROUNDS.has(raceRound) && (
-                  <div className="bg-[#0A0E1A] border border-white/5 rounded-2xl p-3 text-[10px] text-[#8E9299] leading-relaxed">
+                  <div className="bg-[#0A0E1A] border border-white/5 rounded-2xl p-3 text-[10px] text-[#A2A7AF] leading-relaxed">
                     The {raceRound} is decided by too few matches to crown a Round Champion — glory here comes as a prestige badge instead.
                   </div>
                 )}
@@ -1297,20 +1306,20 @@ export default function ScreenHome({
                   <div className="bg-gradient-to-r from-[#FF4E00]/15 to-amber-400/10 border border-[#FF4E00]/30 rounded-2xl p-4 flex items-center gap-3">
                     <Crown className="w-6 h-6 text-[#FF4E00] flex-shrink-0" />
                     <p className="text-xs text-slate-200 leading-relaxed">
-                      <span className="font-black italic text-white">@{raceData.crowned.username}</span> is crowned {raceRound} Champion with{" "}
+                      <span className="font-black text-white">@{raceData.crowned.username}</span> is crowned {raceRound} Champion with{" "}
                       <span className="font-black text-[#FF4E00]">{raceData.crowned.correctCount}</span> correct picks. 🏆
                     </p>
                   </div>
                 )}
 
                 {raceLoading && (
-                  <div className="py-10 text-center text-[11px] font-mono text-[#8E9299] uppercase tracking-widest">Loading the race…</div>
+                  <div className="py-10 text-center text-[11px] font-mono text-[#A2A7AF] uppercase tracking-widest">Loading the race…</div>
                 )}
 
                 {!raceLoading && raceData && raceData.racers.length === 0 && (
                   <div className="py-10 text-center space-y-2">
                     <Trophy className="w-10 h-10 text-white/15 mx-auto" />
-                    <p className="text-[11px] text-[#8E9299] leading-relaxed max-w-[240px] mx-auto">
+                    <p className="text-[11px] text-[#A2A7AF] leading-relaxed max-w-[240px] mx-auto">
                       No results in yet. Lock in your {raceRound} picks — the race begins when matches finish.
                     </p>
                   </div>
@@ -1325,7 +1334,7 @@ export default function ScreenHome({
                         : "bg-[#0A0E1A] border-white/5"
                     }`}
                   >
-                    <span className={`w-6 text-center text-sm font-black italic ${i === 0 ? "text-[#FF4E00]" : "text-[#8E9299]"}`}>
+                    <span className={`w-6 text-center text-sm font-black italic ${i === 0 ? "text-[#FF4E00]" : "text-[#A2A7AF]"}`}>
                       {i === 0 ? "🏆" : i + 1}
                     </span>
                     <div className="w-9 h-9 rounded-xl bg-[#151B2E] border border-white/5 p-0.5 flex items-center justify-center flex-shrink-0">
@@ -1340,16 +1349,16 @@ export default function ScreenHome({
                       />
                     </div>
                     <div className="flex-grow min-w-0">
-                      <span className="text-xs font-black italic text-white truncate block">
+                      <span className="text-xs font-black text-white truncate pr-0.5 block">
                         @{r.username}{r.isCurrentUser && <span className="text-[#FF4E00]"> (you)</span>}
                       </span>
-                      <span className="text-[9px] font-mono text-[#8E9299]">
+                      <span className="text-[9px] font-mono text-[#A2A7AF]">
                         {r.picksMade} picked · {r.streak}🔥 streak
                       </span>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <span className="text-sm font-black text-[#FF4E00] block leading-none">{r.correctCount}</span>
-                      <span className="text-[8px] font-mono text-[#8E9299] uppercase tracking-wide">correct</span>
+                      <span className="text-[8.8px] font-mono text-[#A2A7AF] uppercase tracking-wide">correct</span>
                     </div>
                   </div>
                 ))}
@@ -1381,7 +1390,7 @@ export default function ScreenHome({
                   </div>
                   <div>
                     <h2 className="text-base font-black italic text-white uppercase tracking-tight">The Streakr</h2>
-                    <p className="text-[9px] font-mono text-[#8E9299] uppercase tracking-wider block">
+                    <p className="text-[9px] font-mono text-[#A2A7AF] uppercase tracking-wider block">
                       {championData?.crowned ? "Champion of the tournament" : "The race for the crown"}
                     </p>
                   </div>
@@ -1399,37 +1408,37 @@ export default function ScreenHome({
                   <div className="bg-gradient-to-br from-amber-400/20 via-[#FF4E00]/10 to-transparent border border-amber-300/30 rounded-3xl p-5 text-center space-y-1.5">
                     <div className="text-4xl leading-none">👑</div>
                     <p className="text-[9px] font-mono text-amber-300/80 uppercase tracking-widest">Champion of the tournament</p>
-                    <p className="text-xl font-black italic text-white">@{championData.crowned.username}</p>
+                    <p className="text-xl font-black text-white">@{championData.crowned.username}</p>
                     <div className="flex items-center justify-center gap-5 pt-2">
                       <div>
                         <span className="text-lg font-black text-amber-300 block leading-none">{championData.crowned.points}</span>
-                        <span className="text-[8px] font-mono text-[#8E9299] uppercase tracking-wide">points</span>
+                        <span className="text-[8.8px] font-mono text-[#A2A7AF] uppercase tracking-wide">points</span>
                       </div>
                       <div>
                         <span className="text-lg font-black text-white block leading-none">{championData.crowned.personalBest}🔥</span>
-                        <span className="text-[8px] font-mono text-[#8E9299] uppercase tracking-wide">best streak</span>
+                        <span className="text-[8.8px] font-mono text-[#A2A7AF] uppercase tracking-wide">best streak</span>
                       </div>
                       <div>
                         <span className="text-lg font-black text-white block leading-none">{championData.crowned.correctCount}</span>
-                        <span className="text-[8px] font-mono text-[#8E9299] uppercase tracking-wide">correct</span>
+                        <span className="text-[8.8px] font-mono text-[#A2A7AF] uppercase tracking-wide">correct</span>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-[#0A0E1A] border border-white/5 rounded-2xl p-3 text-[10px] text-[#8E9299] leading-relaxed">
+                  <div className="bg-[#0A0E1A] border border-white/5 rounded-2xl p-3 text-[10px] text-[#A2A7AF] leading-relaxed">
                     One player is crowned <span className="text-white font-bold">The Streakr</span> when the Final whistle blows. Ranked by{" "}
                     <span className="text-[#FF4E00] font-bold">points</span> — every correct pick banks 10 × your current streak, so a long run pays far more than scattered hits.
                   </div>
                 )}
 
                 {championLoading && (
-                  <div className="py-10 text-center text-[11px] font-mono text-[#8E9299] uppercase tracking-widest">Loading the race…</div>
+                  <div className="py-10 text-center text-[11px] font-mono text-[#A2A7AF] uppercase tracking-widest">Loading the race…</div>
                 )}
 
                 {!championLoading && championData && championData.racers.length === 0 && (
                   <div className="py-10 text-center space-y-2">
                     <Crown className="w-10 h-10 text-white/15 mx-auto" />
-                    <p className="text-[11px] text-[#8E9299] leading-relaxed max-w-[240px] mx-auto">
+                    <p className="text-[11px] text-[#A2A7AF] leading-relaxed max-w-[240px] mx-auto">
                       No one on the board yet. Land a correct pick to enter the race for the crown.
                     </p>
                   </div>
@@ -1442,7 +1451,7 @@ export default function ScreenHome({
                   const meIdx = championData.racers.findIndex((r) => r.isCurrentUser);
                   return (
                     <>
-                      <p className="text-[9px] font-mono text-[#8E9299] uppercase tracking-widest pt-1">
+                      <p className="text-[9px] font-mono text-[#A2A7AF] uppercase tracking-widest pt-1">
                         {championData.crowned ? "Final standings" : "Leading the race"}
                       </p>
                       {championData.racers.slice(0, TOP_N).map((r, i) => (
@@ -1450,7 +1459,7 @@ export default function ScreenHome({
                       ))}
                       {meIdx >= TOP_N && (
                         <>
-                          <p className="text-center text-[#8E9299]/40 text-sm leading-none">···</p>
+                          <p className="text-center text-[#A2A7AF]/40 text-sm leading-none">···</p>
                           <ChampionRow r={championData.racers[meIdx]} rank={meIdx + 1} />
                         </>
                       )}

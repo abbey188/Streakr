@@ -9,6 +9,7 @@ interface ShareSheetsProps {
   avatar: AvatarConfig;
   streak: number;
   personalBest: number;
+  points: number;
   groupName: string;
   inviteCode: string;
   leaderboard: GroupMember[];
@@ -23,6 +24,7 @@ export default function ShareSheets({
   avatar,
   streak,
   personalBest,
+  points,
   groupName,
   inviteCode,
   leaderboard,
@@ -54,12 +56,12 @@ export default function ShareSheets({
   };
 
   // Real share links are built from the live origin, so they become valid the
-  // moment we deploy (localhost in dev, streakr.app in prod). Fallback keeps the
+  // moment we deploy (localhost in dev, streakr.click in prod). Fallback keeps the
   // card readable before the domain is live.
   const origin =
     typeof window !== "undefined" && window.location.origin
       ? window.location.origin
-      : "https://streakr.app";
+      : "https://streakr.click";
   const shareUrl =
     activeTab === "streak"
       ? `${origin}/play`
@@ -141,7 +143,7 @@ export default function ShareSheets({
             <button
               onClick={() => setActiveTab("streak")}
               className={`py-2 text-xs font-black rounded-lg transition-colors cursor-pointer ${
-                activeTab === "streak" ? "bg-[#2D364F] text-white shadow font-black italic" : "text-[#8E9299] hover:text-white"
+                activeTab === "streak" ? "bg-[#2D364F] text-white shadow font-black italic" : "text-[#A2A7AF] hover:text-white"
               }`}
             >
               🔥 Streak Card
@@ -149,14 +151,14 @@ export default function ShareSheets({
             <button
               onClick={() => setActiveTab("invite")}
               className={`py-2 text-xs font-black rounded-lg transition-colors cursor-pointer ${
-                activeTab === "invite" ? "bg-[#2D364F] text-white shadow font-black italic" : "text-[#8E9299] hover:text-white"
+                activeTab === "invite" ? "bg-[#2D364F] text-white shadow font-black italic" : "text-[#A2A7AF] hover:text-white"
               }`}
             >
               ✉️ Group Invite
             </button>
           </div>
         ) : (
-          <h4 className="text-xs font-black italic text-[#8E9299] tracking-wider uppercase">
+          <h4 className="text-xs font-black text-[#A2A7AF] tracking-wider uppercase">
             {isOnlyStreak ? "🔥 SHARE STREAK CARD" : "✉️ SHARE GROUP INVITE"}
           </h4>
         )}
@@ -192,10 +194,10 @@ export default function ShareSheets({
 
               {/* Top Row: Wordmark */}
               <div className="flex justify-between items-center z-10">
-                <span className="text-[8px] font-mono font-bold tracking-widest text-[#FF4E00] bg-[#FF4E00]/10 border border-[#FF4E00]/20 px-2 py-0.5 rounded-md uppercase">
+                <span className="text-[8.8px] font-mono font-bold tracking-widest text-[#FF4E00] bg-[#FF4E00]/10 border border-[#FF4E00]/20 px-2 py-0.5 rounded-md uppercase">
                   STREAKR PROOF
                 </span>
-                <span className="text-xs font-black italic tracking-widest text-white">
+                <span className="text-xs font-black tracking-widest text-white">
                   STREAKR
                 </span>
               </div>
@@ -218,39 +220,47 @@ export default function ShareSheets({
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-black italic text-white tracking-tight">@{avatar.username}</h4>
-                  <p className="text-[7px] font-mono text-[#8E9299] uppercase tracking-widest leading-none mt-0.5">
+                  <h4 className="text-sm font-black text-white tracking-tight">@{avatar.username}</h4>
+                  <p className="text-[7px] font-mono text-[#A2A7AF] uppercase tracking-widest leading-none mt-0.5">
                     WORLD CUP '26 DIVISION
                   </p>
                 </div>
               </div>
 
-              {/* Stats Panel (Active streak and Personal Best) */}
-              <div className="bg-[#0A0E1A]/80 border border-white/5 rounded-2xl p-2.5 z-10 grid grid-cols-2 gap-2 text-center mb-1">
+              {/* Stats Panel (Active streak, Personal Best, Points) */}
+              <div className="bg-[#0A0E1A]/80 border border-white/5 rounded-2xl p-2.5 z-10 grid grid-cols-3 gap-1 text-center mb-1">
                 <div className="border-r border-white/5 pr-1">
-                  <span className="text-[7px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block mb-0.5">
+                  <span className="text-[7px] font-mono font-bold text-[#A2A7AF] uppercase tracking-widest block mb-0.5">
                     Active Streak
                   </span>
-                  <span className="text-lg font-black font-mono tracking-tight text-[#FF4E00] block">
+                  <span className="text-base font-black font-mono tracking-tight text-[#FF4E00] block">
                     🔥 {streak}
                   </span>
                 </div>
-                <div className="pl-1">
-                  <span className="text-[7px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block mb-0.5">
-                    Personal Best
+                <div className="border-r border-white/5 px-1">
+                  <span className="text-[7px] font-mono font-bold text-[#A2A7AF] uppercase tracking-widest block mb-0.5">
+                    Best
                   </span>
-                  <span className="text-lg font-black font-mono tracking-tight text-amber-400 block">
+                  <span className="text-base font-black font-mono tracking-tight text-amber-400 block">
                     ⚡ {personalBest || streak}
+                  </span>
+                </div>
+                <div className="pl-1">
+                  <span className="text-[7px] font-mono font-bold text-[#A2A7AF] uppercase tracking-widest block mb-0.5">
+                    Points
+                  </span>
+                  <span className="text-base font-black font-mono tracking-tight text-indigo-400 block">
+                    {points.toLocaleString()}
                   </span>
                 </div>
               </div>
 
               {/* Bottom footer stamp */}
               <div className="flex justify-between items-center z-10 pt-2 border-t border-white/5">
-                <span className="text-[8px]">
+                <span className="text-[8.8px]">
                 </span>
-                <span className="text-[8px] font-mono text-[#8E9299]">
-                  streakr.app/play
+                <span className="text-[8.8px] font-mono text-[#A2A7AF]">
+                  streakr.click/play
                 </span>
               </div>
             </motion.div>
@@ -272,10 +282,10 @@ export default function ShareSheets({
 
               {/* Top Row: Group name */}
               <div className="flex justify-between items-center z-10">
-                <span className="text-[8px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md uppercase">
+                <span className="text-[8.8px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md uppercase">
                   SQUAD INVITE
                 </span>
-                <span className="text-xs font-black italic tracking-widest text-white">
+                <span className="text-xs font-black tracking-widest text-white">
                   STREAKR
                 </span>
               </div>
@@ -286,10 +296,10 @@ export default function ShareSheets({
                   {groupEmoji}
                 </div>
                 <div className="px-1 w-full">
-                  <span className="text-[7px] font-mono text-[#8E9299] uppercase tracking-widest leading-none block mb-1">
+                  <span className="text-[7px] font-mono text-[#A2A7AF] uppercase tracking-widest leading-none block mb-1">
                     SQUAD ROOM INVITATION
                   </span>
-                  <h3 className="text-xs font-black italic text-white uppercase tracking-tight break-words max-w-[240px] line-clamp-1">
+                  <h3 className="text-xs font-black text-white uppercase tracking-tight break-words max-w-[240px] line-clamp-1">
                     {groupName}
                   </h3>
                 </div>
@@ -297,13 +307,13 @@ export default function ShareSheets({
 
               {/* Leaderboard Snapshot */}
               <div className="bg-[#0A0E1A]/80 border border-white/5 rounded-2xl p-2 z-10 space-y-1 mb-1">
-                <span className="text-[7px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block text-center mb-0.5">
+                <span className="text-[7px] font-mono font-bold text-[#A2A7AF] uppercase tracking-widest block text-center mb-0.5">
                   Top Leaderboard
                 </span>
                 {topMembers.map((m, idx) => (
                   <div key={m.id} className="flex items-center justify-between text-[9px] px-2 py-0.5 bg-white/5 rounded-lg border border-white/5">
                     <span className="text-slate-300 font-bold truncate flex items-center gap-1">
-                      <span className="text-[#8E9299] font-mono">#{idx + 1}</span>
+                      <span className="text-[#A2A7AF] font-mono">#{idx + 1}</span>
                       <span className="truncate">@{m.username}</span>
                     </span>
                     <span className="text-[#FF4E00] font-mono font-black flex items-center gap-0.5">
@@ -316,14 +326,14 @@ export default function ShareSheets({
               {/* Bottom Join Code Banner */}
               <div className="flex justify-between items-center z-10 pt-2 border-t border-white/5">
                 <div>
-                  <span className="text-[7px] font-mono text-[#8E9299] block uppercase leading-none">
+                  <span className="text-[7px] font-mono text-[#A2A7AF] block uppercase leading-none">
                     Invite Code
                   </span>
-                  <span className="text-[11px] font-mono font-black text-[#FF4E00] mt-0.5 block italic">
+                  <span className="text-[11px] font-mono font-black text-[#FF4E00] mt-0.5 block ">
                     {inviteCode}
                   </span>
                 </div>
-                <div className="bg-[#FF4E00] text-white text-[8px] font-black italic px-2.5 py-1 rounded-lg shadow uppercase tracking-wider">
+                <div className="bg-[#FF4E00] text-white text-[8.8px] font-black px-2.5 py-1 rounded-lg shadow uppercase tracking-wider">
                   Join Squad
                 </div>
               </div>
@@ -334,7 +344,7 @@ export default function ShareSheets({
 
       {/* Interactive download & copy controls */}
       <div className="bg-[#151B2E] border border-white/5 p-4 rounded-3xl max-w-sm w-full mx-auto space-y-3 z-10 flex-shrink-0">
-        <h5 className="text-[10px] font-mono font-bold text-[#8E9299] uppercase tracking-widest text-center">
+        <h5 className="text-[10px] font-mono font-bold text-[#A2A7AF] uppercase tracking-widest text-center">
           Shareable Actions
         </h5>
 
@@ -343,7 +353,7 @@ export default function ShareSheets({
           <button
             onClick={handleDownload}
             disabled={busy}
-            className="w-1/2 bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 text-slate-300 hover:text-white font-black italic text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+            className="w-1/2 bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 text-slate-300 hover:text-white font-black text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
           >
             <Download className="w-4 h-4 text-[#FF4E00]" />
             {busy ? "Saving…" : "Download"}
@@ -357,7 +367,7 @@ export default function ShareSheets({
                 activeTab === "streak" ? "Streak link copied!" : "Invite link copied!"
               )
             }
-            className="w-1/2 bg-[#FF4E00] hover:bg-orange-650 text-white font-black italic text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition shadow cursor-pointer"
+            className="w-1/2 bg-[#FF4E00] hover:bg-orange-650 text-white font-black text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition shadow cursor-pointer"
           >
             <Copy className="w-4 h-4" />
             Copy Link
@@ -368,7 +378,7 @@ export default function ShareSheets({
         <button
           onClick={handleShareToX}
           disabled={busy}
-          className="w-full bg-black hover:bg-[#111] border border-white/10 text-white font-black italic text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+          className="w-full bg-black hover:bg-[#111] border border-white/10 text-white font-black text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50 disabled:cursor-wait"
           id="share-to-x"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true" className="w-3.5 h-3.5 fill-current">

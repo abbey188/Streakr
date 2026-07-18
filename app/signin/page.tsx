@@ -12,13 +12,16 @@ export default function SignInPage() {
   const app = useAppState();
   const router = useRouter();
 
-  // Once authenticated, route onward (wallet/profile resolution gates it).
+  // Once authenticated, route onward.
   useEffect(() => {
-    if (!identity.isAuthenticated) return;
+    if (!identity.isAuthenticated || identity.isLoading) return;
     if (app.profileStatus === "ready") router.replace("/play");
     else if (app.profileStatus === "none") router.replace("/onboarding/identity");
-    // 'loading' → wallet/profile still resolving; show splash below.
-  }, [identity.isAuthenticated, app.profileStatus, router]);
+    // New user: the embedded wallet is still provisioning (returning users
+    // already have one). Send them to onboarding NOW so they build their mascot
+    // while it finishes in the background, instead of staring at a splash.
+    else if (!identity.walletAddress) router.replace("/onboarding/identity");
+  }, [identity.isAuthenticated, identity.isLoading, identity.walletAddress, app.profileStatus, router]);
 
   // After sign-in we hold the universal splash through wallet + profile resolve.
   if (identity.isAuthenticated) return <LoadingSplash />;

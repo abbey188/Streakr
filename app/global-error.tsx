@@ -9,7 +9,6 @@ import { useEffect } from "react";
  */
 export default function GlobalError({
   error,
-  reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
@@ -17,6 +16,10 @@ export default function GlobalError({
   useEffect(() => {
     console.error("[global error boundary]", error);
   }, [error]);
+
+  // Root layout threw — the app is in a genuinely bad state, so recover with a
+  // full reload rather than Next's reset() (which only re-renders in place).
+  const retry = () => window.location.reload();
 
   return (
     <html lang="en">
@@ -54,11 +57,11 @@ export default function GlobalError({
         <h1 style={{ fontSize: 18, fontWeight: 900, fontStyle: "italic", textTransform: "uppercase", margin: 0 }}>
           Something went sideways
         </h1>
-        <p style={{ fontSize: 13, color: "#8E9299", maxWidth: 320, lineHeight: 1.5, margin: 0 }}>
+        <p style={{ fontSize: 13, color: "#A2A7AF", maxWidth: 320, lineHeight: 1.5, margin: 0 }}>
           A hiccup on our end. Your streak and picks are safe — give it another go.
         </p>
         <button
-          onClick={reset}
+          onClick={retry}
           style={{
             background: "#FF4E00",
             color: "#fff",

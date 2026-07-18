@@ -105,7 +105,7 @@ function ReactionChips({
           }`}
         >
           {r.emoji}
-          <span className={`text-[10px] font-mono font-bold tabular-nums ${r.mine ? "text-[#FF4E00]" : "text-[#8E9299]"}`}>
+          <span className={`text-[10px] font-mono font-bold tabular-nums ${r.mine ? "text-[#FF4E00]" : "text-[#A2A7AF]"}`}>
             {r.count}
           </span>
         </button>
@@ -301,7 +301,7 @@ export default function SquadRoom({
     });
   }
 
-  if (loading) return <div className="p-8 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-widest">Loading squad room…</div>;
+  if (loading) return <div className="p-8 text-center text-[10px] font-mono text-[#A2A7AF] uppercase tracking-widest">Loading squad room…</div>;
   if (error) return <div className="p-8 text-center text-[11px] text-red-400">{error}</div>;
 
   return (
@@ -310,8 +310,8 @@ export default function SquadRoom({
         {items.length === 0 && (
           <div className="py-10 text-center">
             <p className="text-2xl mb-3">💬</p>
-            <p className="text-sm font-black italic uppercase text-white">Quiet in here</p>
-            <p className="text-[11px] text-[#8E9299] mt-1.5 max-w-[30ch] mx-auto leading-relaxed">
+            <p className="text-sm font-black uppercase text-white">Quiet in here</p>
+            <p className="text-[11px] text-[#A2A7AF] mt-1.5 max-w-[30ch] mx-auto leading-relaxed">
               Say something to your squad. Streaks, results and crowns land here automatically too.
             </p>
           </div>
@@ -372,9 +372,9 @@ export default function SquadRoom({
                   <CornerUpLeft className="w-3.5 h-3.5 text-[#FF4E00] flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <div className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#FF4E00]">Reply to {replyTo.username}</div>
-                    <div className="text-[11px] text-[#8E9299] truncate">{replyTo.body}</div>
+                    <div className="text-[11px] text-[#A2A7AF] truncate">{replyTo.body}</div>
                   </div>
-                  <button onClick={() => setReplyTo(null)} className="text-[#8E9299] hover:text-white cursor-pointer flex-shrink-0" aria-label="Cancel reply">
+                  <button onClick={() => setReplyTo(null)} className="text-[#A2A7AF] hover:text-white cursor-pointer flex-shrink-0" aria-label="Cancel reply">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -386,7 +386,7 @@ export default function SquadRoom({
                 onKeyDown={(e) => { if (e.key === "Enter") sendRoot(); if (e.key === "Escape") setReplyTo(null); }}
                 onFocus={scrollToEnd}
                 placeholder="Message your squad…"
-                className="w-full bg-transparent px-3.5 py-2.5 text-[16px] text-white placeholder-[#8E9299] outline-none border-0"
+                className="w-full bg-transparent px-3.5 py-2.5 text-[16px] text-white placeholder-[#A2A7AF] outline-none border-0"
               />
             </div>
             <button
@@ -399,7 +399,7 @@ export default function SquadRoom({
             </button>
           </div>
         ) : (
-          <div className="text-center text-[11px] text-[#8E9299]">Sign in to join the conversation.</div>
+          <div className="text-center text-[11px] text-[#A2A7AF]">Sign in to join the conversation.</div>
         )}
       </div>
     </div>
@@ -436,11 +436,11 @@ function ChatMessage({
         <div className="min-w-0 flex-1">
           {!grouped && (
             <div className="flex items-baseline gap-2">
-              <span className="text-[12.5px] font-black italic text-[#8E9299]">{item.isMine ? "You" : `@${item.username}`}</span>
-              <span className="text-[8.5px] font-mono text-[#8E9299]">{timeLabel(item.timestamp)}</span>
+              <span className="text-[12.5px] font-black text-[#A2A7AF]">{item.isMine ? "You" : `@${item.username}`}</span>
+              <span className="text-[8.5px] font-mono text-[#A2A7AF]">{timeLabel(item.timestamp)}</span>
             </div>
           )}
-          <span className="inline-block mt-0.5 text-[12px] italic text-[#8E9299]/70">🚫 This message was deleted</span>
+          <span className="inline-block mt-0.5 text-[12px] italic text-[#A2A7AF]/70">🚫 This message was deleted</span>
         </div>
       </div>
     );
@@ -462,10 +462,10 @@ function ChatMessage({
       <div className="min-w-0 flex-1">
         {!grouped && (
           <div className="flex items-baseline gap-2">
-            <span className={`text-[12.5px] font-black italic ${item.isMine ? "text-[#FF4E00]" : "text-white"}`}>
+            <span className={`text-[12.5px] font-black ${item.isMine ? "text-[#FF4E00]" : "text-white"}`}>
               {item.isMine ? "You" : `@${item.username}`}
             </span>
-            <span className="text-[8.5px] font-mono text-[#8E9299]">{timeLabel(item.timestamp)}</span>
+            <span className="text-[8.5px] font-mono text-[#A2A7AF]">{timeLabel(item.timestamp)}</span>
           </div>
         )}
         <div className="relative inline-block max-w-[88%] align-top">
@@ -475,10 +475,10 @@ function ChatMessage({
           >
             {item.quoted && (
               <span className="block border-l-[3px] border-[#FF4E00] bg-[#FF4E00]/6 rounded-md px-2.5 py-1 mb-1.5">
-                <span className="block text-[11px] font-black italic text-[#FF4E00] leading-tight">
+                <span className="block text-[11px] font-black text-[#FF4E00] leading-tight">
                   {item.quoted.isMine ? "You" : `@${item.quoted.username}`}
                 </span>
-                <span className={`block text-[11px] truncate ${item.quoted.deleted ? "text-[#8E9299]/60 italic" : "text-[#8E9299]"}`}>
+                <span className={`block text-[11px] truncate ${item.quoted.deleted ? "text-[#A2A7AF]/60 italic" : "text-[#A2A7AF]"}`}>
                   {item.quoted.deleted ? "message deleted" : item.quoted.body}
                 </span>
               </span>
@@ -501,10 +501,10 @@ function ChatMessage({
                 <button key={e} onClick={() => onReact(e)} className="text-[15px] px-1 rounded hover:bg-white/5 cursor-pointer">{e}</button>
               ))}
               <span className="w-px h-4 bg-white/10 mx-0.5" />
-              <button onClick={onOpenPalette} className="text-[#8E9299] hover:text-white px-1 cursor-pointer"><Plus className="w-3.5 h-3.5" /></button>
-              <button onClick={onReply} className="text-[#8E9299] hover:text-white px-1 cursor-pointer"><CornerUpLeft className="w-3.5 h-3.5" /></button>
+              <button onClick={onOpenPalette} className="text-[#A2A7AF] hover:text-white px-1 cursor-pointer"><Plus className="w-3.5 h-3.5" /></button>
+              <button onClick={onReply} className="text-[#A2A7AF] hover:text-white px-1 cursor-pointer"><CornerUpLeft className="w-3.5 h-3.5" /></button>
               {canDelete && (
-                <button onClick={onDelete} className="text-[#8E9299] hover:text-red-400 px-1 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                <button onClick={onDelete} className="text-[#A2A7AF] hover:text-red-400 px-1 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
               )}
             </div>
           )}
@@ -513,7 +513,7 @@ function ChatMessage({
             <div className="absolute z-20 bottom-full left-0 mb-1.5 flex items-center gap-1.5">
               <Palette onPick={onReact} />
               {canDelete && (
-                <button onClick={onDelete} className="bg-[#151B2E] border border-white/10 rounded-2xl p-2 text-[#8E9299] hover:text-red-400 shadow-2xl cursor-pointer" aria-label="Delete message">
+                <button onClick={onDelete} className="bg-[#151B2E] border border-white/10 rounded-2xl p-2 text-[#A2A7AF] hover:text-red-400 shadow-2xl cursor-pointer" aria-label="Delete message">
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
@@ -580,11 +580,11 @@ function EventCard({
             {meta.chip}
           </span>
           <div className="text-[13px] text-slate-300 leading-snug">
-            <span className={`font-black italic ${item.isMine ? "text-[#FF4E00]" : "text-white"}`}>
+            <span className={`font-black ${item.isMine ? "text-[#FF4E00]" : "text-white"}`}>
               {item.isMine ? "You" : `@${item.username}`}
             </span>{" "}
             {eventPredicate(item.body, item.isMine)}
-            <span className="text-[8.5px] font-mono text-[#8E9299] ml-1.5">{timeLabel(item.timestamp)}</span>
+            <span className="text-[8.5px] font-mono text-[#A2A7AF] ml-1.5">{timeLabel(item.timestamp)}</span>
           </div>
         </div>
       </button>
@@ -593,7 +593,7 @@ function EventCard({
       <div className="flex items-center gap-2 mt-2.5 pl-[46px] flex-wrap relative">
         <ReactionChips reactions={item.reactions} onToggle={onReact} />
         {canWrite && (
-          <button onClick={onPalette} className="inline-flex items-center rounded-full px-1.5 py-0.5 border border-white/5 bg-[#0A0E1A] text-[#8E9299] hover:text-white hover:border-white/15 cursor-pointer" aria-label="Add reaction">
+          <button onClick={onPalette} className="inline-flex items-center rounded-full px-1.5 py-0.5 border border-white/5 bg-[#0A0E1A] text-[#A2A7AF] hover:text-white hover:border-white/15 cursor-pointer" aria-label="Add reaction">
             <Plus className="w-3.5 h-3.5" />
           </button>
         )}
@@ -613,7 +613,7 @@ function EventCard({
           <span className="text-[10px] font-mono font-bold text-[#FF4E00]">
             {replies.length > 0 ? `${replies.length} ${replies.length === 1 ? "reply" : "replies"}` : "Reply"}
           </span>
-          <ChevronDown className={`w-3 h-3 text-[#8E9299] transition-transform ${open ? "rotate-180" : ""}`} />
+          <ChevronDown className={`w-3 h-3 text-[#A2A7AF] transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
       </div>
 
@@ -627,13 +627,13 @@ function EventCard({
                   <div className="rounded-lg border border-white/5 flex-shrink-0"><Mascot avatar={r.avatar} px={22} /></div>
                   <div className="min-w-0">
                     <div className="flex items-baseline gap-2">
-                      <span className={`text-[11px] font-black italic ${r.isMine ? "text-[#FF4E00]" : "text-white"}`}>
+                      <span className={`text-[11px] font-black ${r.isMine ? "text-[#FF4E00]" : "text-white"}`}>
                         {r.isMine ? "You" : `@${r.username}`}
                       </span>
-                      <span className="text-[8px] font-mono text-[#8E9299]">{timeLabel(r.timestamp)}</span>
+                      <span className="text-[8.8px] font-mono text-[#A2A7AF]">{timeLabel(r.timestamp)}</span>
                     </div>
                     {r.deleted ? (
-                      <span className="mt-0.5 inline-block text-[11px] italic text-[#8E9299]/70">🚫 This message was deleted</span>
+                      <span className="mt-0.5 inline-block text-[11px] text-[#A2A7AF]/70">🚫 This message was deleted</span>
                     ) : (
                       <div className="mt-0.5 inline-block bg-[#0A0E1A] border border-white/5 rounded-[4px_12px_12px_12px] px-2.5 py-1.5 text-[12px] text-slate-200 leading-snug">{r.body}</div>
                     )}
@@ -649,7 +649,7 @@ function EventCard({
                 onChange={(e) => setReplyDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") onSendReply(); }}
                 placeholder={`Reply to ${item.isMine ? "your streak" : `@${item.username}`}…`}
-                className="flex-1 bg-[#0A0E1A] border border-white/10 focus:border-[#FF4E00]/50 rounded-xl px-3 py-2 text-[16px] text-white placeholder-[#8E9299]/70 outline-none"
+                className="flex-1 bg-[#0A0E1A] border border-white/10 focus:border-[#FF4E00]/50 rounded-xl px-3 py-2 text-[16px] text-white placeholder-[#A2A7AF]/70 outline-none"
               />
               <button onClick={onSendReply} disabled={!replyDraft.trim() || sending} className="w-8 h-8 rounded-lg bg-[#FF4E00] hover:bg-orange-600 text-white grid place-items-center flex-shrink-0 disabled:opacity-50 cursor-pointer" aria-label="Send reply">
                 <Send className="w-3.5 h-3.5" />

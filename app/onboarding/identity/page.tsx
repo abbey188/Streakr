@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AvatarConfig } from "@/src/types";
 import { useIdentity } from "@/lib/identity/context";
@@ -12,33 +12,35 @@ export default function OnboardingIdentityPage() {
   const identity = useIdentity();
   const app = useAppState();
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
+  // The chosen mascot, held until the embedded wallet is ready to persist against.
+  const [pending, setPending] = useState<AvatarConfig | null>(null);
+  const savingRef = useRef(false);
 
-  // Guard: must be authenticated; if a profile already exists, skip ahead.
+  // Guard: must be authenticated. A returning user (profile already exists) skips
+  // ahead — but never while a save is in flight.
   useEffect(() => {
     if (identity.isLoading) return;
-    if (!identity.isAuthenticated) {
-      router.replace("/");
-    } else if (app.profileStatus === "ready") {
-      router.replace("/play");
-    }
-  }, [identity.isLoading, identity.isAuthenticated, app.profileStatus, router]);
+    if (!identity.isAuthenticated) router.replace("/");
+    else if (app.profileStatus === "ready" && !pending) router.replace("/play");
+  }, [identity.isLoading, identity.isAuthenticated, app.profileStatus, pending, router]);
 
-  if (
-    saving ||
-    identity.isLoading ||
-    !identity.isAuthenticated ||
-    app.profileStatus === "ready" ||
-    app.profileStatus === "loading" // wallet still creating
-  ) {
-    return <LoadingSplash label={saving ? "Locking in your identity…" : undefined} />;
+  // The mascot builder is shown DURING wallet provisioning, so at confirm the
+  // embedded wallet may not exist yet. Persist the instant it lands — by the time
+  // someone has built their guy, it's almost always already done.
+  useEffect(() => {
+    if (!pending || !identity.walletAddress || savingRef.current) return;
+    savingRef.current = true;
+    (async () => {
+      await app.createProfile(pending);
+      router.push("/play");
+    })();
+  }, [pending, identity.walletAddress, app, router]);
+
+  // Splash only when we genuinely can't show the builder: session still resolving,
+  // not signed in, a save is committing, or a returning user bouncing to /play.
+  if (identity.isLoading || !identity.isAuthenticated || pending || app.profileStatus === "ready") {
+    return <LoadingSplash label={pending ? "Locking in your identity…" : undefined} />;
   }
 
-  const handleConfirm = async (config: AvatarConfig) => {
-    setSaving(true);
-    await app.createProfile(config);
-    router.push("/play");
-  };
-
-  return <ScreenIdentity onConfirm={handleConfirm} />;
+  return <ScreenIdentity onConfirm={setPending} />;
 }

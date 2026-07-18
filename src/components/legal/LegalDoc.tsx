@@ -17,13 +17,13 @@ export function LegalDoc({
       <div className="mx-auto max-w-3xl px-5 py-10 sm:py-14">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-[11px] font-mono font-black uppercase tracking-widest text-[#8E9299] hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-[11px] font-mono font-black uppercase tracking-widest text-[#A2A7AF] hover:text-white transition-colors"
         >
           ← {LEGAL.appName}
         </Link>
 
         <h1 className="mt-6 text-3xl sm:text-4xl font-black text-white tracking-tight">{title}</h1>
-        <p className="mt-2 text-[11px] font-mono uppercase tracking-widest text-[#8E9299]">
+        <p className="mt-2 text-[11px] font-mono uppercase tracking-widest text-[#A2A7AF]">
           Effective {LEGAL.effectiveDate} · Last updated {LEGAL.lastUpdated}
         </p>
 
@@ -31,7 +31,7 @@ export function LegalDoc({
 
         <div className="mt-8 space-y-8">{children}</div>
 
-        <footer className="mt-14 border-t border-white/10 pt-6 text-xs text-[#8E9299] space-y-2">
+        <footer className="mt-14 border-t border-white/10 pt-6 text-xs text-[#A2A7AF] space-y-2">
           <p>
             Questions about this document? Contact{" "}
             <span className="text-slate-300">{LEGAL.contactEmail}</span>.

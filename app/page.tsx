@@ -22,8 +22,11 @@ export default function RootPage() {
     if (identity.isLoading || !identity.isAuthenticated) return;
     if (app.profileStatus === "ready") router.replace("/play");
     else if (app.profileStatus === "none") router.replace("/onboarding/identity");
-    // 'loading' → wallet/profile resolving; landing stays until it settles.
-  }, [identity.isLoading, identity.isAuthenticated, app.profileStatus, router]);
+    // New user: no embedded wallet yet (it provisions in the background). Route
+    // to onboarding NOW so they build their mascot during provisioning rather
+    // than waiting on a splash. Returning users already have a wallet.
+    else if (!identity.walletAddress) router.replace("/onboarding/identity");
+  }, [identity.isLoading, identity.isAuthenticated, identity.walletAddress, app.profileStatus, router]);
 
   return (
     <ScreenLanding
@@ -33,6 +36,7 @@ export default function RootPage() {
         if (identity.isAuthenticated) {
           if (app.profileStatus === "ready") router.replace("/play");
           else if (app.profileStatus === "none") router.replace("/onboarding/identity");
+          else if (!identity.walletAddress) router.replace("/onboarding/identity");
           else router.replace("/signin");
         } else {
           router.push("/signin");

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Flame, User, ArrowRight, X, Award, Trophy, Tv, Users, Bell } from "lucide-react";
+import { Flame, User, ArrowRight, X, Award, Trophy, Tv, Users, Bell, History } from "lucide-react";
 
 // A sleek, minimalist custom vector soccer ball icon
 const BallIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -74,6 +74,13 @@ export default function ScreenTour({ onDismiss }: ScreenTourProps) {
     },
     {
       id: 4,
+      title: "Past Matches",
+      text: "Missed a game? Hit 'See past matches' to browse every finished tie — the final score, who went through, and whether your pick landed.",
+      selector: "#home-past-matches",
+      icon: History,
+    },
+    {
+      id: 5,
       title: "Global Leaderboard",
       text: "See how you stack up against the whole world — ranked by active streak or by lifetime points. Search anyone and find your rank.",
       selector: "#global-leaderboard-widget",
@@ -81,23 +88,23 @@ export default function ScreenTour({ onDismiss }: ScreenTourProps) {
       icon: Trophy,
     },
     {
-      id: 5,
+      id: 6,
       title: "The Hub",
-      text: "Live scores, minute-by-minute timelines, stats, possession and lineups for every match — follow the games as they happen.",
+      text: "Your live matchday feed — every goal, card, sub and momentum swing the moment it happens, straight from TxLINE. Tap a match for its timeline, stats and lineups, and share the big moments straight into your squad.",
       selector: "#nav-pc-hub",
       selectorMobile: "#nav-mobile-hub",
       icon: Tv,
     },
     {
-      id: 6,
+      id: 7,
       title: "Squads",
-      text: "Create or join a squad and battle your friends on a private leaderboard. Winning a round crowns a Squad Champion.",
-      selector: "#nav-pc-groups",
-      selectorMobile: "#nav-mobile-groups",
+      text: "Create or join a squad to battle friends on a private leaderboard — then talk it out in your Squad Room, where results, streaks, crowns and shared moments all land automatically. Win a round to be crowned Squad Champion.",
+      selector: "#nav-pc-squads",
+      selectorMobile: "#nav-mobile-squads",
       icon: Users,
     },
     {
-      id: 7,
+      id: 8,
       title: "Inbox",
       text: "Everything addressed to you: pick results, goals in your matches, badges you unlock, round-champion crowns and milestones from your squads.",
       selector: "#nav-pc-inbox",
@@ -105,7 +112,7 @@ export default function ScreenTour({ onDismiss }: ScreenTourProps) {
       icon: Bell,
     },
     {
-      id: 8,
+      id: 9,
       title: "Your Profile",
       text: "Customize your mascot, show off your badges, and fine-tune exactly which notifications you get. Your identity across every leaderboard.",
       selector: "#nav-pc-profile",
@@ -345,7 +352,7 @@ export default function ScreenTour({ onDismiss }: ScreenTourProps) {
                   {currentStep.title}
                 </h3>
               </div>
-              <span className="text-[9px] lg:text-[10px] font-mono font-black text-[#8E9299] bg-[#0A0E1A] px-2 py-0.5 lg:px-2.5 lg:py-1 rounded border border-white/5">
+              <span className="text-[9px] lg:text-[10px] font-mono font-black text-[#A2A7AF] bg-[#0A0E1A] px-2 py-0.5 lg:px-2.5 lg:py-1 rounded border border-white/5">
                 {step} / {steps.length}
               </span>
             </div>
@@ -372,7 +379,7 @@ export default function ScreenTour({ onDismiss }: ScreenTourProps) {
               {/* Action Trigger */}
               <button
                 onClick={handleNext}
-                className="bg-[#FF4E00] hover:bg-orange-600 text-white text-[11px] lg:text-xs font-black italic px-3.5 py-1.5 lg:px-4 lg:py-2 rounded-lg lg:rounded-xl flex items-center gap-1.5 shadow-lg shadow-[#FF4E00]/15 transition cursor-pointer"
+                className="bg-[#FF4E00] hover:bg-orange-600 text-white text-[11px] lg:text-xs font-black px-3.5 py-1.5 lg:px-4 lg:py-2 rounded-lg lg:rounded-xl flex items-center gap-1.5 shadow-lg shadow-[#FF4E00]/15 transition cursor-pointer"
               >
                 {step === steps.length ? "Let's Play!" : "Next Tip"}
                 <ArrowRight className="w-3 h-3 lg:w-3.5 lg:h-3.5" />
@@ -386,7 +393,7 @@ export default function ScreenTour({ onDismiss }: ScreenTourProps) {
       <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 lg:bottom-8 lg:right-8 z-50">
         <button
           onClick={onDismiss}
-          className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8E9299] hover:text-white flex items-center gap-1.5 py-2 px-4 bg-[#2D364F]/70 border border-white/5 rounded-full transition cursor-pointer shadow-lg hover:bg-[#2D364F]"
+          className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#A2A7AF] hover:text-white flex items-center gap-1.5 py-2 px-4 bg-[#2D364F]/70 border border-white/5 rounded-full transition cursor-pointer shadow-lg hover:bg-[#2D364F]"
         >
           Skip Tour <X className="w-3.5 h-3.5" />
         </button>

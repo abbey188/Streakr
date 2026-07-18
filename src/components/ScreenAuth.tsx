@@ -116,7 +116,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
               <h2 className="text-2xl lg:text-4xl font-black italic tracking-tighter text-white leading-tight uppercase">
                 Sign In To Start Your <span className="text-[#FF4E00] block mt-0.5 lg:inline">Streak</span>
               </h2>
-              <p className="text-xs sm:text-sm text-[#8E9299] mt-3 leading-relaxed max-w-md mx-auto lg:mx-0">
+              <p className="text-xs sm:text-sm text-[#A2A7AF] mt-3 leading-relaxed max-w-md mx-auto lg:mx-0">
                 Make your picks, win, climb the leaderboard, compete with friends in groups, and share your streak.
               </p>
             </div>
@@ -131,15 +131,15 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
                 <div className="flex items-center gap-3">
                   <CountryFlag name={temporaryPick.name} className="w-8 h-6" width={80} />
                   <div className="text-left">
-                    <span className="text-[8px] font-mono text-[#FF4E00] font-bold uppercase tracking-wider block">
+                    <span className="text-[8.8px] font-mono text-[#FF4E00] font-bold uppercase tracking-wider block">
                       Pending Choice
                     </span>
-                    <span className="text-xs font-black italic text-white">
+                    <span className="text-xs font-black text-white">
                       {temporaryPick.name} to Win
                     </span>
                   </div>
                 </div>
-                <span className="bg-[#FF4E00] text-white font-black italic text-[8px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
+                <span className="bg-[#FF4E00] text-white font-black text-[8.8px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
                   Locked In
                 </span>
               </motion.div>
@@ -198,7 +198,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
                   className="w-full bg-[#2D364F]/50 hover:bg-[#2D364F]/75 text-slate-300 border border-white/5 font-bold uppercase tracking-wider text-[10px] py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all"
                   id="auth-email-toggle"
                 >
-                  <Mail className="w-4 h-4 text-[#8E9299]" />
+                  <Mail className="w-4 h-4 text-[#A2A7AF]" />
                   Use email address instead
                 </motion.button>
               ) : (
@@ -211,7 +211,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
                   {(!awaitingCode || editingEmail) ? (
                     /* Step 1 — email entry */
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] font-mono uppercase tracking-wider text-[#8E9299] font-bold">
+                      <label className="text-[9px] font-mono uppercase tracking-wider text-[#A2A7AF] font-bold">
                         Enter Your Email
                       </label>
                       <div className="relative">
@@ -228,7 +228,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
                   ) : (
                     /* Step 2 — verification code entry */
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[9px] font-mono uppercase tracking-wider text-[#8E9299] font-bold">
+                      <label className="text-[9px] font-mono uppercase tracking-wider text-[#A2A7AF] font-bold">
                         Enter the 6-digit code sent to {email}
                       </label>
                       <div className="relative">
@@ -246,7 +246,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
                       <button
                         type="button"
                         onClick={() => { setEditingEmail(true); setCode(""); setAuthError(""); }}
-                        className="text-[9px] font-mono text-[#8E9299] hover:text-slate-300 transition self-start mt-0.5"
+                        className="text-[9px] font-mono text-[#A2A7AF] hover:text-slate-300 transition self-start mt-0.5"
                       >
                         ← Use a different email
                       </button>
@@ -261,7 +261,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
                     whileTap={{ scale: 0.97 }}
                     type="submit"
                     disabled={isSending || isVerifying}
-                    className="w-full bg-[#FF4E00] hover:bg-orange-600 text-white font-black italic text-xs py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow transition-all disabled:opacity-60"
+                    className="w-full bg-[#FF4E00] hover:bg-orange-600 text-white font-black text-xs py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow transition-all disabled:opacity-60"
                     id="auth-email-submit"
                   >
                     {isSending
@@ -279,7 +279,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
 
             {/* Consent — passive clickwrap. Links open in a new tab so a pending
                 pick isn't lost by navigating away mid-signup. */}
-            <p className="text-[10px] leading-relaxed text-[#8E9299] text-center pt-1">
+            <p className="text-[10px] leading-relaxed text-[#A2A7AF] text-center pt-1">
               By continuing, you agree to our{" "}
               <a
                 href="/terms"

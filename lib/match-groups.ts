@@ -25,6 +25,28 @@ export function kickoffWhen(f: Fixture): string {
   return `${day} · ${time}`;
 }
 
+/** Day-only label for a fixture: "Today" | "Tomorrow" | "Sat 18 Jul". Used by the
+ *  Hub banner, which shows the DATE for a match that's days away and switches to
+ *  the kickoff TIME once that day arrives. */
+export function kickoffDay(f: Fixture): string {
+  if (!f.kickoffAt) return f.kickoffTime;
+  const d = new Date(f.kickoffAt);
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const key = localDayKey(d);
+  if (key === localDayKey(now)) return "Today";
+  if (key === localDayKey(tomorrow)) return "Tomorrow";
+  // No weekday — keeps the Hub banner card on one line ("19 Jul", not "Sat 19 Jul").
+  return d.toLocaleDateString([], { day: "numeric", month: "short" });
+}
+
+/** Whether a fixture kicks off on the current local day. */
+export function isTodayFixture(f: Fixture): boolean {
+  if (!f.kickoffAt) return false;
+  return localDayKey(new Date(f.kickoffAt)) === localDayKey(new Date());
+}
+
 function localDayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }

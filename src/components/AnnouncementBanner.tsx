@@ -56,7 +56,7 @@ export default function AnnouncementBanner() {
     <div className={`flex items-start gap-3 rounded-2xl border ${style.ring} ${style.bg} p-3.5`}>
       <span className="text-lg leading-none flex-shrink-0 mt-0.5">{active.icon || "📣"}</span>
       <div className="min-w-0 flex-1">
-        <p className={`text-xs font-black italic uppercase tracking-tight ${style.accent}`}>{active.title}</p>
+        <p className={`text-xs font-black uppercase tracking-tight ${style.accent}`}>{active.title}</p>
         <p className="text-[11px] text-slate-300 leading-relaxed mt-0.5">{active.body}</p>
         {active.ctaLabel && active.ctaHref && (
           <a
@@ -70,7 +70,7 @@ export default function AnnouncementBanner() {
       <button
         onClick={dismiss}
         aria-label="Dismiss announcement"
-        className="flex-shrink-0 p-1 -mr-1 text-[#8E9299] hover:text-white transition cursor-pointer"
+        className="flex-shrink-0 p-1 -mr-1 text-[#A2A7AF] hover:text-white transition cursor-pointer"
       >
         <X className="w-3.5 h-3.5" />
       </button>

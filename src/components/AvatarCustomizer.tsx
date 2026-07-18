@@ -169,7 +169,7 @@ export default function AvatarCustomizer({
 
           {/* Username block */}
           <div className="space-y-2">
-            <label className="text-[10px] font-mono text-[#8E9299] font-black uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-[10px] font-mono text-[#A2A7AF] font-black uppercase tracking-wider flex items-center gap-1.5">
               <PenTool className="w-3.5 h-3.5 text-[#FF4E00]" /> Claim Your Unique Username
             </label>
 
@@ -178,13 +178,13 @@ export default function AvatarCustomizer({
               placeholder="Type your username..."
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className={`w-full bg-[#0A0E1A] border text-xs font-black italic rounded-xl px-3.5 py-3 outline-none transition ${
-                isUsernameValid === true
-                  ? "border-emerald-500 text-emerald-400"
-                  : isUsernameValid === false
-                  ? "border-red-500 text-red-400"
-                  : "border-white/5 focus:border-[#FF4E00] text-white"
-              }`}
+              className={`w-full bg-[#0A0E1A] border text-xs font-black rounded-xl px-3.5 py-3 outline-none transition ${
+ isUsernameValid === true
+ ? "border-emerald-500 text-emerald-400"
+ : isUsernameValid === false
+ ? "border-red-500 text-red-400"
+ : "border-white/5 focus:border-[#FF4E00] text-white"
+ }`}
               id="customizer-username-input"
             />
 
@@ -203,7 +203,7 @@ export default function AvatarCustomizer({
                   {validationMsg}
                 </p>
               ) : (
-                <span className="text-[9px] font-mono text-[#8E9299]">Or choose from suggested options:</span>
+                <span className="text-[9px] font-mono text-[#A2A7AF]">Or choose from suggested options:</span>
               )}
 
               <div className="flex flex-wrap gap-1.5 items-center">
@@ -219,7 +219,7 @@ export default function AvatarCustomizer({
                 <button
                   onClick={generateSuggestions}
                   title="Get new suggestions"
-                  className="p-1.5 bg-[#2D364F]/30 border border-white/5 rounded-lg text-[#8E9299] hover:text-white transition hover:bg-[#2D364F] cursor-pointer"
+                  className="p-1.5 bg-[#2D364F]/30 border border-white/5 rounded-lg text-[#A2A7AF] hover:text-white transition hover:bg-[#2D364F] cursor-pointer"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>
@@ -229,7 +229,7 @@ export default function AvatarCustomizer({
 
           {/* Customization tabs */}
           <div className="space-y-3 pt-1">
-            <label className="text-[10px] font-mono text-[#8E9299] font-black uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-[10px] font-mono text-[#A2A7AF] font-black uppercase tracking-wider flex items-center gap-1.5">
               <Paintbrush className="w-3.5 h-3.5 text-[#FF4E00]" /> Customize Fan Outfit & Expression
             </label>
 
@@ -246,7 +246,7 @@ export default function AvatarCustomizer({
                   key={id}
                   onClick={() => setActiveTab(id)}
                   className={`px-3.5 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg flex items-center gap-1.5 flex-shrink-0 cursor-pointer transition ${
-                    activeTab === id ? "bg-[#FF4E00] text-white shadow" : "text-[#8E9299] hover:text-white"
+                    activeTab === id ? "bg-[#FF4E00] text-white shadow" : "text-[#A2A7AF] hover:text-white"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" /> {label}
@@ -299,7 +299,7 @@ export default function AvatarCustomizer({
                           <div className="absolute top-0 bottom-0 left-1/3 w-2" style={{ backgroundColor: kit.secondary }} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[8px] min-[360px]:text-[8.5px] sm:text-[9.5px] font-black italic tracking-tight text-white leading-tight">
+                          <p className="text-[8.8px] min-[360px]:text-[9px] sm:text-[9.5px] font-black tracking-tight text-white leading-tight">
                             {kit.name}
                           </p>
                         </div>
@@ -322,7 +322,7 @@ export default function AvatarCustomizer({
                         }`}
                       >
                         <div className="w-7 h-7 rounded-full border border-white/20" style={{ backgroundColor: tone.color }} />
-                        <span className="text-[7.5px] min-[360px]:text-[8px] sm:text-[8.5px] font-bold text-slate-400 text-center leading-tight">
+                        <span className="text-[7.5px] min-[360px]:text-[8.8px] sm:text-[9px] font-bold text-slate-400 text-center leading-tight">
                           {tone.label}
                         </span>
                       </button>
@@ -334,7 +334,7 @@ export default function AvatarCustomizer({
               {activeTab === "number" && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 bg-[#0A0E1A]/80 p-2.5 rounded-xl border border-white/5">
-                    <span className="text-[9px] font-mono text-[#8E9299] uppercase tracking-wider font-bold">Custom No:</span>
+                    <span className="text-[9px] font-mono text-[#A2A7AF] uppercase tracking-wider font-bold">Custom No:</span>
                     <input
                       type="text"
                       maxLength={2}
@@ -346,7 +346,7 @@ export default function AvatarCustomizer({
                       }}
                       className="w-12 bg-[#0A0E1A] border border-white/10 text-center rounded-lg py-1 text-xs font-black text-[#FF4E00] outline-none focus:border-[#FF4E00]"
                     />
-                    <span className="text-[8px] text-[#8E9299] font-mono leading-tight">Type (0-99) or tap presets:</span>
+                    <span className="text-[8.8px] text-[#A2A7AF] font-mono leading-tight">Type (0-99) or tap presets:</span>
                   </div>
 
                   <div className="grid grid-cols-5 gap-1.5">
@@ -356,11 +356,11 @@ export default function AvatarCustomizer({
                         <button
                           key={num}
                           onClick={() => setSelectedJerseyNumber(num)}
-                          className={`py-1.5 text-[9px] font-black italic rounded-lg transition border cursor-pointer ${
-                            isActive
-                              ? "bg-[#FF4E00] border-[#FF4E00] text-white"
-                              : "bg-[#0A0E1A] border-white/5 text-slate-400 hover:text-white hover:border-white/15"
-                          }`}
+                          className={`py-1.5 text-[9px] font-black rounded-lg transition border cursor-pointer ${
+ isActive
+ ? "bg-[#FF4E00] border-[#FF4E00] text-white"
+ : "bg-[#0A0E1A] border-white/5 text-slate-400 hover:text-white hover:border-white/15"
+ }`}
                         >
                           {num === "none" ? "None" : `#${num}`}
                         </button>
@@ -382,7 +382,7 @@ export default function AvatarCustomizer({
                           isActive ? "border-[#FF4E00] bg-[#FF4E00]/5 scale-[1.02]" : "border-white/5 hover:border-white/20"
                         }`}
                       >
-                        <span className="text-[10px] font-black italic uppercase text-slate-200 tracking-wider pr-1">{opt.label}</span>
+                        <span className="text-[10px] font-black uppercase text-slate-200 tracking-wider pr-1">{opt.label}</span>
                       </button>
                     );
                   })}
@@ -391,14 +391,14 @@ export default function AvatarCustomizer({
 
               {activeTab === "nation" && (
                 <div className="space-y-2.5">
-                  <p className="text-[9px] font-mono text-[#8E9299] leading-relaxed">
+                  <p className="text-[9px] font-mono text-[#A2A7AF] leading-relaxed">
                     Rep a nation this World Cup — shown next to your name on leaderboards. Not required.
                   </p>
                   <div className="grid grid-cols-5 gap-1.5">
                     {/* Clear / none */}
                     <button
                       onClick={() => setSelectedNation("")}
-                      className={`aspect-square bg-[#0A0E1A] border-2 rounded-xl flex items-center justify-center text-[8px] font-bold uppercase text-slate-400 transition cursor-pointer ${
+                      className={`aspect-square bg-[#0A0E1A] border-2 rounded-xl flex items-center justify-center text-[8.8px] font-bold uppercase text-slate-400 transition cursor-pointer ${
                         !selectedNation ? "border-[#FF4E00]" : "border-white/5 hover:border-white/20"
                       }`}
                     >

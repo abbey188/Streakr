@@ -80,11 +80,11 @@ export default function PushToggle() {
       <div className="bg-[#0A0E1A] border border-[#FF4E00]/20 rounded-2xl p-3.5 space-y-2">
         <div className="flex items-center gap-2 text-[#FF4E00]">
           <Bell className="w-4 h-4" />
-          <span className="text-xs font-black italic uppercase tracking-wider text-slate-200">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-200">
             Push notifications
           </span>
         </div>
-        <p className="text-[10px] text-[#8E9299] leading-relaxed">
+        <p className="text-[10px] text-[#A2A7AF] leading-relaxed">
           To get alerts on iPhone, add Streakr to your Home Screen first: tap{" "}
           <Share className="inline w-3 h-3 -mt-0.5 text-slate-300" /> <strong className="text-slate-300">Share</strong>{" "}
           → <strong className="text-slate-300">Add to Home Screen</strong>, then open Streakr from your
@@ -112,7 +112,7 @@ export default function PushToggle() {
           <span className="text-xs font-bold text-slate-200 block">
             {on ? "Push notifications on" : "Push notifications"}
           </span>
-          <span className="text-[9px] text-[#8E9299] block mt-0.5 leading-tight">{subtitle}</span>
+          <span className="text-[9px] text-[#A2A7AF] block mt-0.5 leading-tight">{subtitle}</span>
           {error && <span className="text-[9px] text-red-400 block mt-1 leading-tight break-all">⚠ {error}</span>}
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function PushToggle() {
           <button
             onClick={enable}
             disabled={busy}
-            className="text-[10px] font-black italic text-white bg-[#FF4E00] hover:bg-orange-600 px-3 py-1.5 rounded-lg transition flex-shrink-0 cursor-pointer disabled:opacity-60 shadow"
+            className="text-[10px] font-black text-white bg-[#FF4E00] hover:bg-orange-600 px-3 py-1.5 rounded-lg transition flex-shrink-0 cursor-pointer disabled:opacity-60 shadow"
           >
             {busy ? "Enabling…" : error ? "Retry" : "Enable"}
           </button>

@@ -24,7 +24,7 @@ export default function PickConsensus({
 
   if (total < CONSENSUS_MIN) {
     return (
-      <div className="mt-3 text-center text-[9px] font-mono text-[#8E9299]/70 uppercase tracking-wider">
+      <div className="mt-3 text-center text-[9px] font-mono text-[#A2A7AF]/70 uppercase tracking-wider">
         {total === 0 ? "Be the first to call it" : `${total} pick${total > 1 ? "s" : ""} in — call it`}
       </div>
     );
@@ -36,11 +36,11 @@ export default function PickConsensus({
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between text-[9px] font-mono font-bold mb-1">
-        <span className={aPct >= bPct ? "text-[#FF4E00]" : "text-[#8E9299]"}>
+        <span className={aPct >= bPct ? "text-[#FF4E00]" : "text-[#A2A7AF]"}>
           {teamA.code} {aPct}%
         </span>
-        <span className="text-[#8E9299]/70 uppercase tracking-wider">{total} picks</span>
-        <span className={bPct > aPct ? "text-sky-400" : "text-[#8E9299]"}>
+        <span className="text-[#A2A7AF]/70 uppercase tracking-wider">{total} picks</span>
+        <span className={bPct > aPct ? "text-sky-400" : "text-[#A2A7AF]"}>
           {bPct}% {teamB.code}
         </span>
       </div>

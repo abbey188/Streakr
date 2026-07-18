@@ -195,9 +195,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     load();
     let tick = 0;
     const t = setInterval(() => {
-      const anyLive = fixturesRef.current.some((f) => f.status === "live");
+      const fx = fixturesRef.current;
+      const anyLive = fx.some((f) => f.status === "live");
+      // A kickoff within the next ~20 min (or a match that should have started but
+      // hasn't flipped yet) counts as "active" so we catch the upcoming→live moment.
+      const near = fx.some((f) => {
+        if (f.status !== "upcoming" || !f.kickoffAt) return false;
+        const ms = Date.parse(f.kickoffAt) - Date.now();
+        return ms < 20 * 60_000 && ms > -4 * 60 * 60_000;
+      });
       tick++;
-      if (anyLive || tick % 3 === 0) load(); // live → 15s; idle → every 3rd (~45s)
+      // ACTIVE (a match is live or imminent) → 15s so the Hub keeps broadcast pace.
+      // FULLY IDLE (nothing live, none near) → ~every 10 min, which is longer than
+      // Neon's 5-min autosuspend, so compute scales to zero between polls instead of
+      // being held awake 24/7. Idle fixtures/feed don't change, so nothing is lost.
+      if (anyLive || near) load();
+      else if (tick % 40 === 0) load();
     }, 15_000);
     const onVisible = () => { if (!document.hidden) load(); }; // fresh data on return
     document.addEventListener("visibilitychange", onVisible);

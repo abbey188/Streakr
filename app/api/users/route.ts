@@ -29,14 +29,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Authoritative identity from Privy (userId + embedded Solana wallet).
-    const identity = await resolveFromPrivy(req);
+    // Under enforcement, take the authoritative wallet from the VERIFIED Privy
+    // token (never the client body). When enforcement is OFF we skip these Privy
+    // network round-trips entirely — the privy_user_id binding self-heals on the
+    // first authed request once enforcement is switched on (see getAuthedWallet).
     let wallet = body.walletAddress;
+    let userId: string | undefined;
     if (AUTH_ENFORCED) {
+      const identity = await resolveFromPrivy(req);
       if (!identity?.wallet) {
         return NextResponse.json({ error: "unauthorized" }, { status: 401 });
       }
       wallet = identity.wallet; // ignore the client-claimed wallet under enforcement
+      userId = identity.userId;
     }
     if (!wallet) {
       return NextResponse.json({ error: "walletAddress is required" }, { status: 400 });
@@ -48,8 +53,7 @@ export async function POST(req: NextRequest) {
       email: body.email ?? null,
       avatar: body.avatar,
     });
-    // Map this user for future auth (idempotent; also fixes the "new user unmapped" gap).
-    if (identity?.userId) await bindPrivyUser(wallet, identity.userId);
+    if (userId) await bindPrivyUser(wallet, userId);
 
     return NextResponse.json({ user }, { status: 201 });
   } catch (err) {

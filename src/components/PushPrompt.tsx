@@ -103,7 +103,7 @@ export default function PushPrompt({
                   <h3 className="text-base font-black italic text-white uppercase tracking-tight leading-none">
                     Never miss a Streak
                   </h3>
-                  <p className="text-[9px] font-mono text-[#8E9299] uppercase tracking-wider mt-1">
+                  <p className="text-[9px] font-mono text-[#A2A7AF] uppercase tracking-wider mt-1">
                     Picks · goals · groups
                   </p>
                 </div>
@@ -118,7 +118,7 @@ export default function PushPrompt({
 
             <div className="p-5 space-y-4">
               {state === "loading" && (
-                <p className="py-6 text-center text-[11px] font-mono text-[#8E9299] uppercase tracking-widest">Checking…</p>
+                <p className="py-6 text-center text-[11px] font-mono text-[#A2A7AF] uppercase tracking-widest">Checking…</p>
               )}
 
               {/* Shared pitch — identical on every platform. Only the mechanics
@@ -130,7 +130,7 @@ export default function PushPrompt({
 
               {state === "needs-install" && (
                 <>
-                  <p className="text-[10px] font-mono text-[#8E9299] uppercase tracking-wider pt-1">
+                  <p className="text-[10px] font-mono text-[#A2A7AF] uppercase tracking-wider pt-1">
                     Add it in two taps
                   </p>
                   <ol className="space-y-2.5">
@@ -146,13 +146,13 @@ export default function PushPrompt({
                       </li>
                     ))}
                   </ol>
-                  <p className="text-[10px] text-[#8E9299] leading-relaxed flex items-start gap-1.5">
+                  <p className="text-[10px] text-[#A2A7AF] leading-relaxed flex items-start gap-1.5">
                     <Sparkles className="w-3 h-3 text-[#FF4E00] flex-shrink-0 mt-0.5" />
                     Then open Streakr from your home screen and switch alerts on.
                   </p>
                   <button
                     onClick={onClose}
-                    className="w-full bg-[#FF4E00] hover:bg-orange-600 text-white font-black italic text-xs py-3 rounded-2xl transition cursor-pointer shadow"
+                    className="w-full bg-[#FF4E00] hover:bg-orange-600 text-white font-black text-xs py-3 rounded-2xl transition cursor-pointer shadow"
                   >
                     Got it
                   </button>
@@ -165,14 +165,14 @@ export default function PushPrompt({
                   <button
                     onClick={enable}
                     disabled={busy}
-                    className="w-full bg-[#FF4E00] hover:bg-orange-600 text-white font-black italic text-xs py-3.5 rounded-2xl transition cursor-pointer shadow disabled:opacity-60"
+                    className="w-full bg-[#FF4E00] hover:bg-orange-600 text-white font-black text-xs py-3.5 rounded-2xl transition cursor-pointer shadow disabled:opacity-60"
                   >
                     {busy ? "Enabling…" : "Enable alerts"}
                   </button>
                   {canInstall() && (
                     <button
                       onClick={install}
-                      className="w-full bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-200 font-black italic text-[11px] py-3 rounded-2xl transition cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full bg-[#0A0E1A] hover:bg-white/5 border border-white/10 text-slate-200 font-black text-[11px] py-3 rounded-2xl transition cursor-pointer flex items-center justify-center gap-2"
                     >
                       <Smartphone className="w-3.5 h-3.5 text-[#FF4E00]" />
                       Add to home screen
@@ -186,8 +186,8 @@ export default function PushPrompt({
                   <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center">
                     <Check className="w-6 h-6 text-emerald-400" />
                   </div>
-                  <p className="text-xs font-black italic text-white">Alerts are on</p>
-                  <p className="text-[10px] text-[#8E9299]">We&apos;ll ping you the moment it matters.</p>
+                  <p className="text-xs font-black text-white">Alerts are on</p>
+                  <p className="text-[10px] text-[#A2A7AF]">We&apos;ll ping you the moment it matters.</p>
                 </div>
               )}
 

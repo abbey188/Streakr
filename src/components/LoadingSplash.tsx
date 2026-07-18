@@ -5,7 +5,8 @@ import { motion } from "motion/react";
 
 /**
  * The single universal "working" state — shown during session restore, wallet
- * creation, and profile/data loads. Kept consistent everywhere.
+ * provisioning, and profile/data loads. Kept consistent everywhere. Pass a
+ * `label` for a context-specific message (e.g. onboarding's "Locking in…").
  */
 export default function LoadingSplash({ label = "Loading your streak…" }: { label?: string }) {
   return (
@@ -18,7 +19,7 @@ export default function LoadingSplash({ label = "Loading your streak…" }: { la
       >
         <Flame className="w-8 h-8 text-white fill-white" />
       </motion.div>
-      <span className="text-[10px] font-mono text-[#8E9299] font-bold uppercase tracking-widest">
+      <span className="text-[10px] font-mono text-[#A2A7AF] font-bold uppercase tracking-widest">
         {label}
       </span>
     </div>

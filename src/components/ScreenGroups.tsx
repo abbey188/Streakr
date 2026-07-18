@@ -38,7 +38,7 @@ function MemberRow({
     <div className={`flex items-center justify-between gap-2 p-3.5 transition ${isCurrentUser ? "bg-[#FF4E00]/10" : "hover:bg-white/2"}`}>
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="flex flex-col items-center justify-center min-w-[28px] text-center flex-shrink-0">
-          <span className={`text-xs font-mono font-black ${member.rank === 1 ? "text-amber-400" : member.rank === 2 ? "text-slate-300" : "text-[#8E9299]"}`}>
+          <span className={`text-xs font-mono font-black ${member.rank === 1 ? "text-amber-400" : member.rank === 2 ? "text-slate-300" : "text-[#A2A7AF]"}`}>
             #{member.rank}
           </span>
           {member.change === "up" ? (
@@ -46,7 +46,7 @@ function MemberRow({
           ) : member.change === "down" ? (
             <ChevronDown className="w-3.5 h-3.5 text-red-500" />
           ) : (
-            <Minus className="w-3 h-3 text-slate-600" />
+            <Minus className="w-3 h-3 text-slate-500" />
           )}
         </div>
         <div className="w-9 h-9 rounded-xl bg-[#0A0E1A] border border-white/5 p-0.5 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -60,11 +60,11 @@ function MemberRow({
             upperBodyOnly={true}
           />
         </div>
-        <span className="text-xs font-black italic text-slate-200 flex items-center gap-1.5 min-w-0">
+        <span className="text-xs font-black text-slate-200 flex items-center gap-1.5 min-w-0">
           {member.avatar.nation && <CountryFlag name={member.avatar.nation} className="w-4 h-3 flex-shrink-0" width={40} />}
           <span className="truncate">@{member.username}</span>
           {isCurrentUser && (
-            <span className="text-[8px] font-black bg-[#FF4E00] text-white px-1.5 py-0.5 rounded uppercase leading-none flex-shrink-0">Me</span>
+            <span className="text-[8.8px] font-black bg-[#FF4E00] text-white px-1.5 py-0.5 rounded uppercase leading-none flex-shrink-0">Me</span>
           )}
           {member.rank === 1 && <Crown className="w-3 h-3 text-amber-400 fill-amber-400 flex-shrink-0" />}
         </span>
@@ -205,7 +205,7 @@ export default function ScreenGroups({
           </button>
           <div className="flex items-center gap-2 min-w-0">
             <span className="not-italic text-lg flex-shrink-0">{selectedGroup.emoji}</span>
-            <h2 className="text-sm font-black italic tracking-tighter uppercase text-white whitespace-nowrap">{selectedGroup.name}</h2>
+            <h2 className="text-sm font-black tracking-tighter uppercase text-white whitespace-nowrap">{selectedGroup.name}</h2>
           </div>
         </div>
 
@@ -213,13 +213,13 @@ export default function ScreenGroups({
           {/* Invite */}
           <div className="bg-[#151B2E] border border-white/5 p-4 rounded-3xl flex items-center justify-between shadow-lg">
             <div className="min-w-0 flex-1">
-              <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block leading-none">Squad Invite Code</span>
+              <span className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase tracking-widest block leading-none">Squad Invite Code</span>
               <p className="text-lg font-black italic text-[#FF4E00] tracking-tight mt-1.5 leading-none">{selectedGroup.inviteCode}</p>
-              <p className="text-[10px] text-[#8E9299] mt-1.5 font-mono">Share it to add your squad</p>
+              <p className="text-[10px] text-[#A2A7AF] mt-1.5 font-mono">Share it to add your squad</p>
             </div>
             <button
               onClick={() => onOpenInviteShare(selectedGroup.name, selectedGroup.inviteCode, groupMembers, selectedGroup.emoji)}
-              className="p-2.5 bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 rounded-2xl text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-black italic cursor-pointer ml-2 flex-shrink-0"
+              className="p-2.5 bg-[#0A0E1A] hover:bg-[#2D364F]/50 border border-white/5 rounded-2xl text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-black cursor-pointer ml-2 flex-shrink-0"
             >
               <Share2 className="w-4 h-4 text-[#FF4E00]" /> Invite
             </button>
@@ -234,27 +234,27 @@ export default function ScreenGroups({
               <MessageCircle className="w-4.5 h-4.5 text-[#FF4E00]" />
             </div>
             <div className="text-left min-w-0 flex-grow">
-              <p className="text-xs font-black italic text-white leading-tight">Squad Room</p>
-              <p className="text-[10px] text-[#8E9299] leading-snug mt-0.5">Chat with your squad — goals, banter, and the crown.</p>
+              <p className="text-xs font-black text-white leading-tight">Squad Room</p>
+              <p className="text-[10px] text-[#A2A7AF] leading-snug mt-0.5">Chat with your squad — goals, banter, and the crown.</p>
             </div>
-            <ArrowLeft className="w-4 h-4 text-[#8E9299] rotate-180 flex-shrink-0" />
+            <ArrowLeft className="w-4 h-4 text-[#A2A7AF] rotate-180 flex-shrink-0" />
           </button>
 
           {/* Leaderboard */}
           <div className="space-y-2">
             <div className="flex items-center justify-between pl-1">
-              <h4 className="text-[10px] font-mono font-black text-[#8E9299] uppercase tracking-widest">Leaderboard Standings</h4>
+              <h4 className="text-[10px] font-mono font-black text-[#A2A7AF] uppercase tracking-widest">Leaderboard Standings</h4>
               {selectedGroup.leaderboardType === "both" && (
                 <div className="flex gap-1 bg-[#0A0E1A] p-1 rounded-xl border border-white/5">
                   <button
                     onClick={() => setDetailMetric("streak")}
-                    className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "streak" ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#8E9299] hover:text-white"}`}
+                    className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "streak" ? "bg-[#FF4E00]/10 text-[#FF4E00]" : "text-[#A2A7AF] hover:text-white"}`}
                   >
                     <Flame className="w-3 h-3 fill-current" /> Streak
                   </button>
                   <button
                     onClick={() => setDetailMetric("points")}
-                    className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "points" ? "bg-indigo-500/10 text-indigo-400" : "text-[#8E9299] hover:text-white"}`}
+                    className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${detailMetric === "points" ? "bg-indigo-500/10 text-indigo-400" : "text-[#A2A7AF] hover:text-white"}`}
                   >
                     <Award className="w-3 h-3" /> Points
                   </button>
@@ -263,9 +263,9 @@ export default function ScreenGroups({
             </div>
             <div className="bg-[#151B2E] rounded-3xl border border-white/5 overflow-hidden divide-y divide-white/5 shadow-xl">
               {loadingMembers ? (
-                <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">Loading members…</div>
+                <div className="p-6 text-center text-[10px] font-mono text-[#A2A7AF] uppercase tracking-wider">Loading members…</div>
               ) : rankedMembers.length === 0 ? (
-                <div className="p-6 text-center text-[10px] font-mono text-[#8E9299] uppercase tracking-wider">No members yet — share the code!</div>
+                <div className="p-6 text-center text-[10px] font-mono text-[#A2A7AF] uppercase tracking-wider">No members yet — share the code!</div>
               ) : (
                 rankedMembers.map((m) => (
                   <MemberRow key={m.id} member={m} currentUsername={currentUserMember.username} metric={detailMetric} />
@@ -280,17 +280,20 @@ export default function ScreenGroups({
             keyboard on mobile. Covers everything, including the bottom nav. */}
         {squadOpen && mounted && createPortal(
           <div
-            className="fixed left-0 right-0 z-40 bg-[#0A0E1A] flex flex-col text-white font-sans"
+            className="fixed left-0 right-0 z-40 flex flex-col items-center lg:justify-center bg-[#0A0E1A] lg:bg-[#0A0E1A]/70 lg:backdrop-blur-md text-white font-sans"
             style={{ top: "var(--app-top, 0px)", height: "var(--app-h, 100dvh)", paddingTop: "env(safe-area-inset-top)" }}
           >
+           {/* Full-screen on mobile (keyboard-aware); on desktop a bounded, centered
+               panel floating over a blurred page — same treatment as the leaderboard. */}
+           <div className="flex flex-col w-full max-w-2xl h-full lg:h-[96vh] bg-[#0A0E1A] overflow-hidden lg:rounded-3xl lg:border lg:border-white/10 lg:shadow-2xl">
             {/* Stationary header — one line, thin: back · emoji · name · Squad Room */}
             <div className="border-b border-white/5 px-3 py-2.5 flex items-center gap-2 flex-shrink-0">
               <button onClick={() => setSquadOpen(false)} className="p-1.5 -ml-1 hover:bg-white/5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer flex-shrink-0">
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <span className="not-italic text-base flex-shrink-0">{selectedGroup.emoji}</span>
-              <h2 className="text-sm font-black italic tracking-tight uppercase text-white whitespace-nowrap truncate">{selectedGroup.name}</h2>
-              <span className="text-[9px] font-mono text-[#8E9299] uppercase tracking-widest flex-shrink-0">Squad Room</span>
+              <h2 className="text-sm font-black tracking-tight uppercase text-white whitespace-nowrap truncate pr-0.5">{selectedGroup.name}</h2>
+              <span className="text-[9px] font-mono text-[#A2A7AF] uppercase tracking-widest flex-shrink-0">Squad Room</span>
             </div>
             <div className="flex-1 min-h-0 p-3">
               <SquadRoom
@@ -299,6 +302,7 @@ export default function ScreenGroups({
                 me={{ username: currentUserMember.username, avatar: currentUserMember.avatar }}
               />
             </div>
+           </div>
           </div>,
           document.body
         )}
@@ -316,7 +320,7 @@ export default function ScreenGroups({
           </div>
           <h2 className="text-sm font-black italic tracking-tighter uppercase text-white">Squads</h2>
         </div>
-        <button onClick={() => setShowCreateModal(true)} className="text-[10px] font-black italic bg-[#FF4E00] hover:bg-orange-650 text-white px-3 py-1.5 rounded-xl flex items-center gap-1 transition cursor-pointer">
+        <button onClick={() => setShowCreateModal(true)} className="text-[10px] font-black bg-[#FF4E00] hover:bg-orange-650 text-white px-3 py-1.5 rounded-xl flex items-center gap-1 transition cursor-pointer">
           <Plus className="w-3.5 h-3.5" /> Create Squad
         </button>
       </div>
@@ -334,7 +338,7 @@ export default function ScreenGroups({
               onChange={(e) => { setJoinCode(e.target.value); setJoinError(""); }}
               className="flex-grow bg-[#0A0E1A] border border-white/10 focus:border-[#FF4E00] rounded-xl px-3.5 py-2 text-xs uppercase text-white placeholder-slate-650 outline-none"
             />
-            <button type="submit" disabled={joining} className="bg-[#FF4E00] hover:bg-orange-650 text-white text-xs font-black italic px-4 py-2 rounded-xl transition cursor-pointer flex-shrink-0 disabled:opacity-60">
+            <button type="submit" disabled={joining} className="bg-[#FF4E00] hover:bg-orange-650 text-white text-xs font-black px-4 py-2 rounded-xl transition cursor-pointer flex-shrink-0 disabled:opacity-60">
               {joining ? "…" : "Join"}
             </button>
           </form>
@@ -343,10 +347,10 @@ export default function ScreenGroups({
 
         {/* Groups list */}
         <div className="space-y-3">
-          <h4 className="text-[10px] font-mono font-black text-[#8E9299] uppercase tracking-widest pl-1">Your Squads</h4>
+          <h4 className="text-[10px] font-mono font-black text-[#A2A7AF] uppercase tracking-widest pl-1">Your Squads</h4>
           {myGroups.length === 0 ? (
             <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-6 text-center">
-              <p className="text-xs text-[#8E9299] leading-relaxed">No squads yet. Create one or join with a code to start a streak battle with friends.</p>
+              <p className="text-xs text-[#A2A7AF] leading-relaxed">No squads yet. Create one or join with a code to start a streak battle with friends.</p>
             </div>
           ) : (
             myGroups.map((group) => (
@@ -360,14 +364,14 @@ export default function ScreenGroups({
                 <div className="flex items-center gap-3.5 min-w-0">
                   <div className="w-10 h-10 rounded-2xl bg-[#0A0E1A] border border-white/5 flex items-center justify-center text-xl flex-shrink-0 not-italic">{group.emoji}</div>
                   <div className="min-w-0">
-                    <h3 className="text-sm font-black italic text-slate-100 uppercase tracking-tight truncate">{group.name}</h3>
-                    <p className="text-[10px] font-mono text-[#8E9299] mt-0.5 uppercase tracking-wider">
+                    <h3 className="text-sm font-black text-slate-100 uppercase tracking-tight truncate pr-0.5">{group.name}</h3>
+                    <p className="text-[10px] font-mono text-[#A2A7AF] mt-0.5 uppercase tracking-wider">
                       {group.memberCount} {group.memberCount === 1 ? "Member" : "Members"} • Code: {group.inviteCode}
                     </p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end flex-shrink-0">
-                  <span className="text-[8px] font-mono font-black text-[#8E9299] uppercase tracking-wider">Members</span>
+                  <span className="text-[8.8px] font-mono font-black text-[#A2A7AF] uppercase tracking-wider">Members</span>
                   <span className="text-sm font-mono font-black text-[#FF4E00]">{group.memberCount}</span>
                 </div>
               </motion.div>
@@ -381,10 +385,10 @@ export default function ScreenGroups({
         <div className="fixed inset-0 bg-[#0A0E1A]/95 z-50 flex flex-col justify-center p-6">
           <div className="bg-[#151B2E] border border-white/5 rounded-3xl p-5 shadow-2xl space-y-4 max-w-sm mx-auto w-full">
             <h3 className="text-base font-black italic text-white uppercase tracking-tight">Create a Squad</h3>
-            <p className="text-xs text-[#8E9299] leading-relaxed">Name your squad and pick an emoji to build your custom streak battle lobby.</p>
+            <p className="text-xs text-[#A2A7AF] leading-relaxed">Name your squad and pick an emoji to build your custom streak battle lobby.</p>
             <form onSubmit={handleCreateGroup} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block">Squad Name</label>
+                <label className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase tracking-widest block">Squad Name</label>
                 <input
                   type="text"
                   required
@@ -395,7 +399,7 @@ export default function ScreenGroups({
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block">Select Emoji</label>
+                <label className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase tracking-widest block">Select Emoji</label>
                 <div className="grid grid-cols-5 gap-2 max-h-36 overflow-y-auto p-1 bg-[#0A0E1A] rounded-xl border border-white/5">
                   {AVAILABLE_EMOJIS.map((emoji) => (
                     <button
@@ -412,20 +416,20 @@ export default function ScreenGroups({
 
               {/* Leaderboard type — creator's choice of how this group ranks. */}
               <div className="space-y-1.5">
-                <label className="text-[9px] font-mono font-bold text-[#8E9299] uppercase tracking-widest block">Rank Members By</label>
+                <label className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase tracking-widest block">Rank Members By</label>
                 <div className="grid grid-cols-3 gap-2">
                   {LEADERBOARD_TYPE_OPTIONS.map((opt) => (
                     <button
                       key={opt.id}
                       type="button"
                       onClick={() => setNewGroupType(opt.id)}
-                      className={`py-2 rounded-xl border text-[10px] font-black italic uppercase tracking-wide transition cursor-pointer ${newGroupType === opt.id ? "bg-[#FF4E00]/10 border-[#FF4E00] text-white" : "bg-[#0A0E1A]/50 border-white/5 text-slate-400 hover:border-white/10"}`}
+                      className={`py-2 rounded-xl border text-[10px] font-black uppercase tracking-wide transition cursor-pointer ${newGroupType === opt.id ? "bg-[#FF4E00]/10 border-[#FF4E00] text-white" : "bg-[#0A0E1A]/50 border-white/5 text-slate-400 hover:border-white/10"}`}
                     >
                       {opt.label}
                     </button>
                   ))}
                 </div>
-                <p className="text-[8px] font-mono text-[#8E9299] leading-relaxed pt-0.5">
+                <p className="text-[8.8px] font-mono text-[#A2A7AF] leading-relaxed pt-0.5">
                   {newGroupType === "both"
                     ? "Members can toggle between active streak and points."
                     : newGroupType === "points"
@@ -436,7 +440,7 @@ export default function ScreenGroups({
 
               <div className="flex gap-2.5 pt-2">
                 <button type="button" onClick={() => setShowCreateModal(false)} className="w-1/2 bg-[#0A0E1A] hover:bg-[#2D364F]/30 border border-white/5 text-slate-400 text-xs font-bold py-2.5 rounded-xl cursor-pointer">Cancel</button>
-                <button type="submit" disabled={creating} className="w-1/2 bg-[#FF4E00] hover:bg-orange-650 text-white text-xs font-black italic py-2.5 rounded-xl cursor-pointer disabled:opacity-60">
+                <button type="submit" disabled={creating} className="w-1/2 bg-[#FF4E00] hover:bg-orange-650 text-white text-xs font-black py-2.5 rounded-xl cursor-pointer disabled:opacity-60">
                   {creating ? "Creating…" : "Create Squad"}
                 </button>
               </div>

@@ -1169,7 +1169,11 @@ export async function getFeed(limit = 60): Promise<FeedItem[]> {
     join fixtures f on f.id = me.fixture_id
     join teams ta on ta.id = f.team_a_id
     join teams tb on tb.id = f.team_b_id
-    where me.created_at > now() - interval '2 days'
+    -- Recency window sized to bridge the multi-day gaps between knockout rounds
+    -- (so the Hub isn't empty on a match-free day) AND to keep the Final visible
+    -- through the post-tournament judging window. Newest-first + the limit still
+    -- keep live moments on top.
+    where me.created_at > now() - interval '15 days'
       and f.round <> 'Group Stage'
       and f.status in ('live', 'finished', 'upcoming')
     -- Pin a live/upcoming match's lineup card to the very top (it's the headline

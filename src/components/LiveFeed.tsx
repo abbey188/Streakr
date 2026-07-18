@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Activity, ArrowLeftRight, Play, Crosshair } from "lucide-react";
+import { Activity, ArrowLeftRight, Play, Crosshair, Tv } from "lucide-react";
 import type { Fixture, FeedItem } from "../types";
 import { useNow, liveMinuteLabel } from "@/lib/live-clock";
-import { kickoffLabel, kickoffWhen } from "@/lib/match-groups";
+import { kickoffLabel, kickoffWhen, kickoffDay, isTodayFixture } from "@/lib/match-groups";
 import { momentPhrase, momentTone } from "@/lib/social/moment";
 import CountryFlag from "./CountryFlag";
 import LineupModal from "./LineupModal";
@@ -55,7 +55,7 @@ function momentMeta(item: FeedItem): MomentMeta {
       <>
         {ph.subject ? <b className="text-white font-bold">{ph.subject}</b> : null}
         {ph.subject ? " " : null}{ph.predicate}
-        {ph.context ? <span className="text-[#8E9299]"> · {ph.context}</span> : null}
+        {ph.context ? <span className="text-[#A2A7AF]"> · {ph.context}</span> : null}
       </>
     ),
   };
@@ -68,27 +68,32 @@ function StripCard({ fixture, now, onOpen }: { fixture: Fixture; now: number; on
   return (
     <button
       onClick={onOpen}
-      className="flex-shrink-0 w-[158px] bg-[#151B2E] border border-white/5 rounded-2xl px-3 py-2.5 text-left transition hover:border-white/15 active:scale-[0.98]"
+      className="flex-shrink-0 w-[170px] bg-[#151B2E] border border-white/5 rounded-2xl px-3 py-2.5 text-left transition hover:border-white/15 active:scale-[0.98]"
     >
       <div className="flex items-center gap-1.5 mb-2">
-        <span className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-red-500 animate-pulse" : "bg-[#8E9299]"}`} />
-        <span className="text-[7.5px] font-mono font-bold uppercase tracking-widest text-[#8E9299]">
+        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isLive ? "bg-red-500 animate-pulse" : "bg-[#A2A7AF]"}`} />
+        <span className="text-[8.8px] font-mono font-bold uppercase tracking-widest text-[#A2A7AF] whitespace-nowrap flex-shrink-0">
           {isLive ? "Live" : "Kicks off"}
         </span>
-        <span className="ml-auto text-[8.5px] font-mono text-[#8E9299] tabular-nums">
-          {isLive ? liveMinuteLabel(fixture, now) : kickoffLabel(fixture)}
+        <span className="ml-auto text-[8.5px] font-mono text-[#A2A7AF] tabular-nums whitespace-nowrap flex-shrink-0">
+          {/* live → minute · today → kickoff time · days away → the date */}
+          {isLive
+            ? liveMinuteLabel(fixture, now)
+            : isTodayFixture(fixture)
+            ? kickoffLabel(fixture)
+            : kickoffDay(fixture)}
         </span>
       </div>
-      <div className="flex items-center justify-between gap-1.5">
-        <span className="flex items-center gap-1.5 min-w-0">
+      <div className="flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5 min-w-0 flex-1">
           <CountryFlag name={fixture.teamA.name} className="w-4 h-3 flex-shrink-0" />
-          <span className="text-[11px] font-black italic tracking-tight truncate">{fixture.teamA.code}</span>
+          <span className="text-[11px] font-black tracking-tight whitespace-nowrap flex-shrink-0 pr-0.5">{fixture.teamA.code}</span>
         </span>
-        <span className="text-[13px] font-mono font-bold tabular-nums text-white">
+        <span className="text-[13px] font-mono font-bold tabular-nums text-white flex-shrink-0 px-0.5 whitespace-nowrap">
           {isLive ? `${fixture.scoreA ?? 0}–${fixture.scoreB ?? 0}` : "v"}
         </span>
-        <span className="flex items-center gap-1.5 min-w-0 justify-end">
-          <span className="text-[11px] font-black italic tracking-tight truncate">{fixture.teamB.code}</span>
+        <span className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
+          <span className="text-[11px] font-black tracking-tight whitespace-nowrap flex-shrink-0 pl-0.5">{fixture.teamB.code}</span>
           <CountryFlag name={fixture.teamB.name} className="w-4 h-3 flex-shrink-0" />
         </span>
       </div>
@@ -114,7 +119,7 @@ function MomentCard({ item, onOpen, onShare }: { item: FeedItem; onOpen: () => v
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${meta.tone}`}>
+          <span className={`text-[8.8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${meta.tone}`}>
             {meta.label}
           </span>
           <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-slate-300 tabular-nums whitespace-nowrap flex-shrink-0">
@@ -122,7 +127,7 @@ function MomentCard({ item, onOpen, onShare }: { item: FeedItem; onOpen: () => v
             <span className="whitespace-nowrap">{m.teamA.code} {m.scoreA ?? 0}–{m.scoreB ?? 0} {m.teamB.code}</span>
             <CountryFlag name={m.teamB.name} className="w-3.5 h-2.5" />
           </span>
-          <span className="ml-auto text-[9px] font-mono text-[#8E9299] tabular-nums">
+          <span className="ml-auto text-[9px] font-mono text-[#A2A7AF] tabular-nums">
             {minLabel(item)}
           </span>
         </div>
@@ -135,8 +140,8 @@ function MomentCard({ item, onOpen, onShare }: { item: FeedItem; onOpen: () => v
           return (
             <div className="mt-2">
               <div className="flex justify-between text-[8.5px] font-mono font-bold tabular-nums">
-                <span className={leadA ? "text-[#FF4E00]" : "text-[#8E9299]"}>{m.teamA.code} {pa}%</span>
-                <span className={!leadA ? "text-[#FF4E00]" : "text-[#8E9299]"}>{pb}% {m.teamB.code}</span>
+                <span className={leadA ? "text-[#FF4E00]" : "text-[#A2A7AF]"}>{m.teamA.code} {pa}%</span>
+                <span className={!leadA ? "text-[#FF4E00]" : "text-[#A2A7AF]"}>{pb}% {m.teamB.code}</span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden flex mt-1 bg-[#2D364F]">
                 <span className={`h-full ${leadA ? "bg-[#FF4E00]" : "bg-transparent"}`} style={{ width: `${pa}%` }} />
@@ -181,8 +186,8 @@ function StateBeat({ item }: { item: FeedItem }) {
   return (
     <div className="flex items-center gap-2.5 py-1.5">
       <div className="flex-1 h-px bg-white/5" />
-      <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold uppercase tracking-widest text-[#8E9299] whitespace-nowrap">
-        {isKickoff ? <Play className="w-2.5 h-2.5 text-[#8E9299]" strokeWidth={3} fill="currentColor" /> : <span className="text-[11px]">{ph.icon}</span>}
+      <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold uppercase tracking-widest text-[#A2A7AF] whitespace-nowrap">
+        {isKickoff ? <Play className="w-2.5 h-2.5 text-[#A2A7AF]" strokeWidth={3} fill="currentColor" /> : <span className="text-[11px]">{ph.icon}</span>}
         {ph.label}
         <span className="text-slate-400">· {context}</span>
         {result && <span className="text-[#FF4E00]">· {result}</span>}
@@ -210,14 +215,14 @@ function ResultCard({ item }: { item: FeedItem }) {
       <div className="w-9 h-9 rounded-xl grid place-items-center text-[17px] bg-[#0A0E1A] border border-[#FF4E00]/20 flex-shrink-0">🏁</div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded text-[#FF4E00] bg-[#FF4E00]/15">Full-time</span>
+          <span className="text-[8.8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded text-[#FF4E00] bg-[#FF4E00]/15">Full-time</span>
           <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-slate-300 tabular-nums whitespace-nowrap">
             <CountryFlag name={m.teamA.name} className="w-3.5 h-2.5" />
             <span className="whitespace-nowrap">{m.teamA.code} {m.scoreA ?? 0}–{m.scoreB ?? 0} {m.teamB.code}</span>
             <CountryFlag name={m.teamB.name} className="w-3.5 h-2.5" />
           </span>
         </div>
-        <div className="text-[13px] font-black italic text-white mt-1 leading-snug">{verdict}</div>
+        <div className="text-[13px] font-black text-white mt-1 leading-snug">{verdict}</div>
       </div>
     </div>
   );
@@ -230,21 +235,19 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
   const [lineupItem, setLineupItem] = useState<FeedItem | null>(null);
 
   const live = fixtures.filter((f) => f.status === "live");
-  // The strip is a scoreboard glance for TODAY only — live matches + any still
-  // to kick off today. Future fixtures live on Play, not here.
-  const isToday = (iso?: string) => {
-    if (!iso) return false;
-    const d = new Date(iso), n = new Date();
-    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
-  };
-  const upcoming = fixtures
-    .filter((f) => f.status === "upcoming" && isToday(f.kickoffAt))
-    .sort((a, b) => (a.kickoffAt ? Date.parse(a.kickoffAt) : 0) - (b.kickoffAt ? Date.parse(b.kickoffAt) : 0));
-  const strip = [...live, ...upcoming];
-  // For the empty banner state: the soonest upcoming fixture on any day.
-  const nextUp = fixtures
-    .filter((f) => f.status === "upcoming")
-    .sort((a, b) => (a.kickoffAt ? Date.parse(a.kickoffAt) : 0) - (b.kickoffAt ? Date.parse(b.kickoffAt) : 0))[0];
+  const byKickoff = (a: Fixture, b: Fixture) =>
+    (a.kickoffAt ? Date.parse(a.kickoffAt) : 0) - (b.kickoffAt ? Date.parse(b.kickoffAt) : 0);
+  const upcomingAll = fixtures.filter((f) => f.status === "upcoming").sort(byKickoff);
+  // Today's still-to-kick-off matches — shown with their kickoff time.
+  const upcomingToday = upcomingAll.filter(isTodayFixture);
+  // The soonest match on a FUTURE day (e.g. the Final) — always shown alongside
+  // today's so "what's next" is visible, carrying its DATE until its day arrives.
+  const nextFuture = upcomingAll.find((f) => !isTodayFixture(f));
+  // Soonest upcoming on any day — feed-body empty-state text.
+  const nextUp = upcomingAll[0];
+  // The banner is ALWAYS on: live + today's matches + the next future match. Each
+  // card adapts — LIVE, else the kickoff TIME (today) or the DATE (days away).
+  const banner = [...live, ...upcomingToday, ...(nextFuture ? [nextFuture] : [])];
 
   return (
     <div className="flex flex-col h-full bg-[#0A0E1A] text-white font-sans overflow-y-auto pb-10">
@@ -254,14 +257,20 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
       <div className="sticky top-0 z-30 bg-[#0A0E1A]">
         <div className="border-b border-white/5 px-4 py-3.5">
         <div className="flex items-center gap-2.5">
-          <h2 className="text-base font-black italic tracking-tighter uppercase text-white">Hub</h2>
+          <div className="flex items-center gap-2">
+            {/* Same Tv icon the bottom nav uses for Hub, in the orange box Squads/Inbox use. */}
+            <div className="bg-[#FF4E00]/10 border border-[#FF4E00]/20 p-1.5 rounded-lg text-[#FF4E00]">
+              <Tv className="w-4 h-4" />
+            </div>
+            <h2 className="text-base font-black italic tracking-tighter uppercase text-white">Hub</h2>
+          </div>
           {live.length > 0 && (
-            <span className="inline-flex items-center gap-1.5 text-[8.5px] font-mono font-bold uppercase tracking-widest text-[#8E9299]">
+            <span className="inline-flex items-center gap-1.5 text-[8.5px] font-mono font-bold uppercase tracking-widest text-[#A2A7AF]">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
               {live.length} Live
             </span>
           )}
-          <span className="ml-auto text-[8px] font-mono uppercase tracking-widest text-[#8E9299]">
+          <span className="ml-auto text-[8.8px] font-mono uppercase tracking-widest text-[#A2A7AF]">
             Powered by <span className="text-[#FF4E00] font-bold">TxLINE</span>
           </span>
         </div>
@@ -270,27 +279,17 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
         {/* Live strip — inside the sticky block, pinned with the header. Always
             present so the banner never collapses into the feed; shows a graceful
             state when there's nothing on today. */}
-        {strip.length > 0 ? (
+        {banner.length > 0 ? (
           <div className="flex gap-2 overflow-x-auto px-4 py-3 border-b border-white/5 no-scrollbar">
-            {strip.map((f) => (
+            {banner.map((f) => (
               <StripCard key={f.id} fixture={f} now={now} onOpen={() => onOpenMatch(f.id)} />
             ))}
           </div>
         ) : (
-          <button
-            onClick={nextUp ? () => onOpenMatch(nextUp.id) : undefined}
-            className="w-full flex items-center gap-x-2 gap-y-1 flex-wrap px-4 py-3 border-b border-white/5 text-left"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#8E9299] flex-shrink-0" />
-            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#8E9299] flex-shrink-0">No live matches</span>
-            {nextUp && (
-              <span className="ml-auto flex items-center gap-1.5 text-[9px] font-mono text-[#8E9299] whitespace-nowrap">
-                <span className="uppercase tracking-wider">Next</span>
-                <span className="font-bold text-slate-300">{nextUp.teamA.code} v {nextUp.teamB.code}</span>
-                <span>· {kickoffWhen(nextUp)}</span>
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#A2A7AF] flex-shrink-0" />
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#A2A7AF]">No matches scheduled</span>
+          </div>
         )}
       </div>
 
@@ -298,7 +297,7 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
       <div className="px-4 pt-3 max-w-2xl mx-auto w-full">
         {feed.length > 0 ? (
           <div className="flex flex-col gap-2.5">
-            <h3 className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-[#8E9299] pl-1 pb-0.5">
+            <h3 className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-[#A2A7AF] pl-1 pb-0.5">
               Latest
             </h3>
             {/* Layout-animated: a new moment fades/slides in at the top and the
@@ -333,8 +332,8 @@ export default function LiveFeed({ fixtures, feed, onOpenMatch, onShareMoment }:
         ) : (
           <div className="mt-10 text-center px-6">
             <div className="text-3xl mb-3">📡</div>
-            <p className="text-sm font-black italic text-slate-200">The feed lights up at kickoff</p>
-            <p className="text-xs text-[#8E9299] mt-1.5 leading-relaxed">
+            <p className="text-sm font-black text-slate-200">The feed lights up at kickoff</p>
+            <p className="text-xs text-[#A2A7AF] mt-1.5 leading-relaxed">
               Every goal, card, sub and VAR call lands here live — straight from TxLINE.
               {nextUp && (
                 <> Next up: <span className="text-slate-300 font-bold">{nextUp.teamA.code} v {nextUp.teamB.code}</span>, {kickoffWhen(nextUp)}.</>

@@ -107,7 +107,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             initial={{ y: -30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -30, opacity: 0 }}
-            className="fixed left-1/2 -translate-x-1/2 bg-[#151B2E] border-2 border-[#FF4E00] text-slate-100 font-black italic text-xs px-4 py-2.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2 max-w-xs text-center shadow-[0_0_15px_rgba(255,78,0,0.4)]"
+            className="fixed left-1/2 -translate-x-1/2 bg-[#151B2E] border-2 border-[#FF4E00] text-slate-100 font-black text-xs px-4 py-2.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2 max-w-xs text-center shadow-[0_0_15px_rgba(255,78,0,0.4)]"
             style={{ top: "calc(1.5rem + env(safe-area-inset-top))" }}
           >
             <span className="text-[#FF4E00]">🔥</span>
@@ -130,7 +130,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
               <div>
                 <h1 className="text-2xl font-black italic tracking-tighter text-[#FF4E00]">STREAKR</h1>
-                <span className="text-[9px] font-mono text-[#8E9299] font-bold uppercase tracking-widest block leading-none mt-0.5">
+                <span className="text-[9px] font-mono text-[#A2A7AF] font-bold uppercase tracking-widest block leading-none mt-0.5">
                   World Cup &apos;26
                 </span>
               </div>
@@ -149,7 +149,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-black italic transition cursor-pointer ${
                       active
                         ? "bg-[#FF4E00] text-white shadow-[0_4px_12px_rgba(255,78,0,0.25)]"
-                        : "text-[#8E9299] hover:bg-[#2D364F]/40 hover:text-white"
+                        : "text-[#A2A7AF] hover:bg-[#2D364F]/40 hover:text-white"
                     }`}
                   >
                     <Icon
@@ -161,7 +161,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     />
                     <span>{item.label}</span>
                     {item.href === "/hub" && anyLive && (
-                      <span className="ml-auto inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-widest text-red-500 not-italic">
+                      <span className="ml-auto inline-flex items-center gap-1 text-[8.8px] font-mono font-bold uppercase tracking-widest text-red-500 not-italic">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Live
                       </span>
                     )}
@@ -192,12 +192,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
             {/* Share sheet overlay */}
             {app.activeShareSheet && (
-              <div className="absolute inset-0 z-50 flex items-center justify-center p-0 sm:p-6 md:p-12 bg-black/75 backdrop-blur-sm">
-                <div className="w-full max-w-md h-full sm:h-[780px] sm:border sm:border-slate-800 sm:rounded-[36px] overflow-hidden relative bg-slate-950 shadow-2xl">
+              <div className="absolute inset-0 z-50 flex items-center justify-center p-0 sm:p-6 md:p-10 bg-black/75 backdrop-blur-sm">
+                {/* h-full on mobile; on desktop a phone-frame capped to the viewport
+                    (max-h-full) so a short browser window never clips it at the edges. */}
+                <div className="w-full max-w-md h-full sm:h-[780px] sm:max-h-full sm:border sm:border-slate-800 sm:rounded-[36px] overflow-hidden relative bg-slate-950 shadow-2xl">
                   <ShareSheets
                     avatar={app.avatar}
                     streak={app.streak}
                     personalBest={app.personalBest}
+                    points={app.points}
                     groupName={app.shareGroupInfo?.name || "🏆 Local Legends WC"}
                     inviteCode={app.shareGroupInfo?.inviteCode || "STREAK-99X"}
                     leaderboard={app.shareGroupInfo?.leaderboard || app.leaderboard}
@@ -227,7 +230,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   href={item.href}
                   onClick={() => app.closeShareSheet()}
                   className={`relative flex flex-col items-center justify-center flex-1 cursor-pointer transition ${
-                    active ? "text-[#FF4E00] scale-105" : "text-[#8E9299] hover:text-slate-300"
+                    active ? "text-[#FF4E00] scale-105" : "text-[#A2A7AF] hover:text-slate-300"
                   }`}
                 >
                   <Icon
@@ -241,7 +244,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     <span className="absolute top-0 right-[26%] w-2 h-2 rounded-full bg-red-500 animate-pulse ring-2 ring-[#151B2E]" />
                   )}
                   {item.href === "/inbox" && unreadCount > 0 && (
-                    <span className="absolute top-0 right-[22%] min-w-[15px] h-[15px] px-0.5 rounded-full bg-[#FF4E00] text-white text-[8px] font-black flex items-center justify-center">
+                    <span className="absolute top-0 right-[22%] min-w-[15px] h-[15px] px-0.5 rounded-full bg-[#FF4E00] text-white text-[8.8px] font-black flex items-center justify-center">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}

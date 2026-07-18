@@ -66,7 +66,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, 
 
     return (
       <div
-        className={`absolute top-2 right-2 rotate-6 text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md border-2 ${stampColor} shadow z-25`}
+        className={`absolute top-2 right-2 rotate-6 text-[8.8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md border-2 ${stampColor} shadow z-25`}
         style={{ fontFamily: "'Fira Code', 'JetBrains Mono', monospace" }}
       >
         ★ CALL: {label}
@@ -89,7 +89,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, 
       edgeAccent = "absolute left-0 top-0 bottom-0 w-1.5 bg-red-600";
     } else if (isFinished) {
       cardBg = "bg-[#151B2E] border-white/5 opacity-70";
-      scoreColor = "text-[#8E9299]";
+      scoreColor = "text-[#A2A7AF]";
     } else {
       cardBg = "bg-[#151B2E] border-white/5 hover:border-white/10";
     }
@@ -108,19 +108,19 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, 
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-1.5">
             {isLive ? (
-              <span className="inline-flex items-center gap-1 text-[8px] font-bold bg-red-500/10 text-red-500 border border-red-500/20 px-2 py-0.5 rounded-md animate-pulse">
+              <span className="inline-flex items-center gap-1 text-[8.8px] font-bold bg-red-500/10 text-red-500 border border-red-500/20 px-2 py-0.5 rounded-md animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> LIVE • {liveMinuteLabel(match, now)}
               </span>
             ) : isFinished ? (
-              <span className="text-[8px] font-mono text-[#8E9299] font-bold uppercase bg-[#0A0E1A] px-2 py-0.5 rounded border border-white/5">
+              <span className="text-[8.8px] font-mono text-[#A2A7AF] font-bold uppercase bg-[#0A0E1A] px-2 py-0.5 rounded border border-white/5">
                 FINAL RESULT
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-[8px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md">
+              <span className="inline-flex items-center gap-1 text-[8.8px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md">
                 <Clock className="w-2.5 h-2.5" /> UPCOMING
               </span>
             )}
-            <span className="text-[9px] font-mono text-[#8E9299] font-bold uppercase tracking-wider">
+            <span className="text-[9px] font-mono text-[#A2A7AF] font-bold uppercase tracking-wider">
               {match.round}
             </span>
           </div>
@@ -134,7 +134,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, 
             <span className="text-[10px] sm:text-xs font-black text-white uppercase tracking-tight leading-tight text-center">
               {match.teamA.name}
             </span>
-            <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase">
+            <span className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase">
               {match.teamA.code}
             </span>
           </div>
@@ -147,7 +147,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, 
                   {match.scoreA} - {match.scoreB}
                 </span>
               ) : (
-                <span className="text-[10px] font-mono font-bold text-[#8E9299] whitespace-nowrap px-1">
+                <span className="text-[10px] font-mono font-bold text-[#A2A7AF] whitespace-nowrap px-1">
                   {kickoffLabel(match)}
                 </span>
               )}
@@ -160,7 +160,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, 
             <span className="text-[10px] sm:text-xs font-black text-white uppercase tracking-tight leading-tight text-center">
               {match.teamB.name}
             </span>
-            <span className="text-[9px] font-mono font-bold text-[#8E9299] uppercase">
+            <span className="text-[9px] font-mono font-bold text-[#A2A7AF] uppercase">
               {match.teamB.code}
             </span>
           </div>
@@ -198,7 +198,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, 
             {title ?? "Score Hub"}
           </h2>
         </div>
-        <span className="text-[10px] font-mono text-[#8E9299] font-bold uppercase tracking-widest bg-[#151B2E] px-2.5 py-1 rounded-lg border border-white/5">
+        <span className="text-[10px] font-mono text-[#A2A7AF] font-bold uppercase tracking-widest bg-[#151B2E] px-2.5 py-1 rounded-lg border border-white/5">
           World Cup 2026
         </span>
       </div>
@@ -227,7 +227,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, 
               <div key={grp.key} className="space-y-3">
                 <h4 className="text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest pl-1 flex items-center gap-2">
                   {grp.label}
-                  <span className="text-[#8E9299] font-normal">· {grp.fixtures.length}</span>
+                  <span className="text-[#A2A7AF] font-normal">· {grp.fixtures.length}</span>
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {grp.fixtures.map(renderMatchCard)}
@@ -240,7 +240,7 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, 
         {/* 3. Completed matches */}
         {finishedMatches.length > 0 && (
           <div className="space-y-3">
-            <h3 className="text-[10px] font-mono font-bold text-[#8E9299] uppercase tracking-wider pl-1">
+            <h3 className="text-[10px] font-mono font-bold text-[#A2A7AF] uppercase tracking-wider pl-1">
               {onlyFinished ? "Every match played" : "Completed Matches"}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -253,8 +253,8 @@ export default function ScreenLiveScores({ fixtures, onOpenMatch, onlyFinished, 
         {onlyFinished && finishedMatches.length === 0 && (
           <div className="mt-16 text-center px-6">
             <div className="text-3xl mb-3">🗂</div>
-            <p className="text-sm font-black italic text-slate-200">No matches played yet</p>
-            <p className="text-xs text-[#8E9299] mt-1.5">Finished matches show up here as the tournament unfolds.</p>
+            <p className="text-sm font-black text-slate-200">No matches played yet</p>
+            <p className="text-xs text-[#A2A7AF] mt-1.5">Finished matches show up here as the tournament unfolds.</p>
           </div>
         )}
       </div>

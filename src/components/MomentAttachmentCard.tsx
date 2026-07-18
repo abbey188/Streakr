@@ -21,7 +21,7 @@ export default function MomentAttachmentCard({ att, className = "" }: { att: Mom
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={`text-[7.5px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${momentTone(att.type)}`}>
+          <span className={`text-[8.8px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${momentTone(att.type)}`}>
             {att.label}
           </span>
           <span className="inline-flex items-center gap-1 text-[8.5px] font-mono font-bold text-slate-300 tabular-nums">
@@ -29,7 +29,7 @@ export default function MomentAttachmentCard({ att, className = "" }: { att: Mom
             {att.teamACode} {att.scoreA}–{att.scoreB} {att.teamBCode}
             <CountryFlag name={att.teamBName} className="w-3 h-2" />
           </span>
-          {att.minute != null && <span className="text-[8.5px] font-mono text-[#8E9299]">· {att.minute}&apos;</span>}
+          {att.minute != null && <span className="text-[8.5px] font-mono text-[#A2A7AF]">· {att.minute}&apos;</span>}
         </div>
         <div className="text-[11.5px] text-slate-200 mt-0.5 leading-snug">{att.text}</div>
       </div>
