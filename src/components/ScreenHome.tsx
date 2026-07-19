@@ -935,7 +935,7 @@ export default function ScreenHome({
             {/* Middle Call to action instructions */}
             <div className="text-center px-4">
               <span className="inline-block bg-[#FF4E00]/10 border border-[#FF4E00]/20 text-[#FF4E00] text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-1 rounded-full mb-2">
-                🔒 Knockout Stage Rules
+                🔒 Bracket Rules
               </span>
               <h2 className="text-2xl font-black italic tracking-tighter text-white uppercase">
                 WHO ADVANCES?

@@ -117,7 +117,7 @@ export default function ScreenAuth({ temporaryPick, onBack }: ScreenAuthProps) {
                 Sign In To Start Your <span className="text-[#FF4E00] block mt-0.5 lg:inline">Streak</span>
               </h2>
               <p className="text-xs sm:text-sm text-[#A2A7AF] mt-3 leading-relaxed max-w-md mx-auto lg:mx-0">
-                Make your picks, win, climb the leaderboard, compete with friends in groups, and share your streak.
+                Make your picks, win, climb the leaderboard, compete and enjoy every moment with friends.
               </p>
             </div>
 

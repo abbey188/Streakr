@@ -164,10 +164,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           setPoints(user.points);
           setUserEmail(user.email ?? identity.email ?? "");
           setProfileStatus("ready");
-          // Demo: the CleanSheet99 account replays the guided tour on every
-          // sign-in (it shows on /play once they land there) so it's always ready
-          // to showcase. No effect for any other user.
-          if (user.avatar?.username?.toLowerCase() === "cleansheet99") setShowTour(true);
         } else {
           setUserEmail(identity.email ?? "");
           setProfileStatus("none"); // authenticated, needs onboarding

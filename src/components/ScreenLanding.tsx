@@ -129,7 +129,7 @@ export default function ScreenLanding({ onTimeout, onSkipToHome }: ScreenLanding
           transition={{ duration: 0.6, delay: 0.7 }}
           className="text-xs sm:text-sm font-mono font-black uppercase tracking-[0.12em] text-white bg-black/80 border border-white/10 px-4 py-1.5 rounded-full shadow-lg text-center"
         >
-          MAKE YOUR PICK TO WIN AND BUILD YOUR STREAK.
+          MAKE YOUR PICK, BUILD YOUR STREAK, LIVE EVERY MOMENT WITH YOUR SQUAD.
         </motion.p>
       </div>
 
