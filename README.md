@@ -1,11 +1,16 @@
 # Streakr
 
-**The knockouts, turned into a game you play with your squad.**
+**Make the moment competitive — pick it, track it live, play it with your squad.**
 
-Streakr is a free-to-play, live, social football experience. You **call who advances**,
-put a **streak** on the line, follow every match as **live commentary** in the Hub, and drop
-any moment straight into your **squad** to argue about. Live at
-**[streakr.click](https://streakr.click)** — built for the **TxLINE live-data + Solana** track.
+Streakr is a free-to-play layer that turns live sport into a **competitive, social game**: you put
+a **pick** on the moment and a **streak** on the line, **track what's happening** as it unfolds in
+the Hub, and play the whole thing inside your **squad** — your people, your chat, your leaderboard.
+Live at **[streakr.click](https://streakr.click)** — built for the **TxLINE live-data + Solana** track.
+
+It **launches on the World Cup knockouts** — pick who advances, no draws — because that's a clean,
+high-stakes ruleset. But knockouts are the *first* ruleset, not the idea. The idea is the primitive
+underneath: **a pick turns any moment into competition, a squad turns it into community, and the
+live feed keeps everyone on top of it.** New rules and formats build from there.
 
 > This repository is the source of a **running product with real users**, shared here so the
 > build can be reviewed. It isn't a template or a starter — it's the thing that's live at
@@ -39,11 +44,13 @@ three layers create:
 
 ## Three layers, one loop
 
-### 1 · The Game — the stakes
-Pick who advances in each knockout tie (winner after extra time and penalties — **no draws**).
-Get it right, your **streak** grows; get it wrong, it resets. Points bank permanently, and the
-Final crowns **The Streakr**. The pick window stays open until the first goal, a red card, or
-the second-half whistle — so get in early.
+### 1 · The Game — the competitive layer
+The **pick** is the primitive: it turns a moment into a competition and puts your **streak** on the
+line. The launch ruleset is knockout football — **pick who advances** (winner after extra time and
+penalties, **no draws**); right, your streak grows; wrong, it resets. Points bank permanently, and
+the Final crowns **The Streakr**. The pick window stays open until the first goal, a red card, or
+the second-half whistle — so get in early. Different competitions bring **different rules** around
+the same primitive — a result, a weekly streak, a final table position.
 
 ### 2 · The Hub — the broadcast
 A live, scrollable feed of everything happening in the tournament right now, derived entirely
