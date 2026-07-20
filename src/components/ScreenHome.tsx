@@ -119,6 +119,60 @@ function ChampionRow({ r, rank }: { r: TournamentRacer; rank: number }) {
   );
 }
 
+// Tournament close-off — shown on Play once the Final is done. Celebrates the
+// World Champions, reflects the player's run back at them, and teases what's next.
+function ChampionsCard({
+  team, bestStreak, correctPicks, points,
+}: { team: { name: string; code: string }; bestStreak: number; correctPicks: number; points: number }) {
+  const stats = [
+    { label: "Best streak", value: bestStreak, icon: "🔥" },
+    { label: "Correct picks", value: correctPicks, icon: "🎯" },
+    { label: "Points", value: points, icon: "⭐" },
+  ];
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-amber-400/25 bg-gradient-to-b from-amber-500/[0.08] via-[#FF4E00]/[0.05] to-[#151B2E] p-6 text-center">
+      <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-amber-400/15 rounded-full blur-3xl" />
+      <div className="relative">
+        <div className="text-4xl mb-2">🏆</div>
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <CountryFlag name={team.name} className="w-6 h-4 flex-shrink-0" width={40} />
+          <h2 className="text-xl font-black italic tracking-tighter uppercase text-white pr-0.5">
+            {team.name} — World Champions
+          </h2>
+        </div>
+        <p className="text-[11px] font-mono font-bold uppercase tracking-widest text-amber-300/80">
+          World Cup 2026 · that&apos;s a wrap
+        </p>
+
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          {stats.map((s) => (
+            <div key={s.label} className="bg-[#0A0E1A]/60 border border-white/5 rounded-2xl py-3">
+              <div className="text-base font-black font-mono text-white leading-none tabular-nums">
+                {s.icon} {s.value}
+              </div>
+              <div className="text-[8.8px] font-mono font-bold uppercase tracking-widest text-[#A2A7AF] mt-1.5">
+                {s.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 flex items-center gap-2.5">
+          <div className="flex-1 h-px bg-white/10" />
+          <span className="text-[9px] font-mono font-black uppercase tracking-widest text-[#FF4E00]">More coming soon</span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
+        <p className="text-xs text-slate-300 mt-3 leading-relaxed max-w-xs mx-auto">
+          New sports. New tournaments. New ways to play with your squad.
+        </p>
+        <p className="text-[11px] font-black text-white mt-3">
+          Thanks for playing — this is just the kick-off.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function ScreenHome({
   avatar,
   streak,
@@ -255,6 +309,16 @@ export default function ScreenHome({
     .filter((f) => f.userPick && f.status === "finished" && f.actualWinner && !dismissedResults.has(f.id))
     .sort((a, b) => (b.kickoffAt ? Date.parse(b.kickoffAt) : 0) - (a.kickoffAt ? Date.parse(a.kickoffAt) : 0))
     .slice(0, 6);
+
+  // Tournament close-off: once the Final's done, the champion + the player's run.
+  const finalFixture = fixtures.find((f) => f.round === "Final");
+  const championTeam =
+    finalDone && finalFixture?.actualWinner
+      ? finalFixture.actualWinner === "A" ? finalFixture.teamA : finalFixture.teamB
+      : null;
+  const correctPicks = fixtures.filter(
+    (f) => f.userPick && f.status === "finished" && f.actualWinner && f.userPick === f.actualWinner
+  ).length;
 
   const handlePickSubmit = (fixtureId: string, pick: "A" | "B") => {
     onMakePick(fixtureId, pick);
@@ -528,7 +592,16 @@ export default function ScreenHome({
               </div>
             )}
 
-            {/* 2. Upcoming — grouped by day (Today / Tomorrow / dates) */}
+            {/* 2. Matches — the pick area. Once the tournament's done it becomes
+                the champions close-off (no empty "Bracket Picks" header lingers). */}
+            {championTeam ? (
+              <ChampionsCard
+                team={championTeam}
+                bestStreak={personalBest}
+                correctPicks={correctPicks}
+                points={points}
+              />
+            ) : upcomingMatches.length > 0 ? (
             <div className="space-y-5">
               <h3 className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pl-1">
                 <Zap className="w-3.5 h-3.5 text-[#FF4E00]" />
@@ -648,6 +721,7 @@ export default function ScreenHome({
                 </div>
               ))}
             </div>
+            ) : null}
 
           </div>
 

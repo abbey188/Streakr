@@ -53,6 +53,15 @@ export function usePrivyIdentity(): UseIdentity {
   const creatingRef = useRef(false);
 
   const walletAddress = wallets[0]?.address ?? null;
+  // A returning user's embedded wallet is listed on their Privy account the moment
+  // they authenticate — before `useWallets()` finishes rehydrating the address.
+  // That lets routing tell "wallet still loading" (returning) from "no wallet yet"
+  // (brand new) and stop flashing the onboarding screen on a returning sign-in.
+  // The only wallet a Streakr user ever has is the Privy embedded one (there's no
+  // external-wallet linking flow), so any linked account of type "wallet" is it.
+  const hasEmbeddedWallet =
+    wallets.length > 0 ||
+    Boolean(user?.linkedAccounts?.some((a) => a.type === "wallet"));
 
   useEffect(() => {
     if (!ready || !authenticated) {
@@ -111,6 +120,7 @@ export function usePrivyIdentity(): UseIdentity {
     isLoading: !ready,
     isAuthenticated: authenticated,
     walletAddress,
+    hasEmbeddedWallet,
     email: extractEmail(user),
     signInWithOAuth,
     sendEmailCode,

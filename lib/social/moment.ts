@@ -51,13 +51,19 @@ export function matchSummary(m: FeedMatch, lastGoalMin?: number): string | null 
     return `${win.name} outlast ${lose.name}${aet ? " after extra time" : ""} — they ${dest}.`;
   }
 
-  // A late one-goal winner is the story — lean into it.
+  // A late one-goal winner is the story — lean into it. For the showcase rounds,
+  // still land the trophy line (a Final/Third result is the payoff, not "past X").
   if (margin === 1 && lastGoalMin != null && lastGoalMin >= 80 && !aet) {
+    const crown = isFinal
+      ? `, and ${win.name} are World Champions`
+      : isThird
+        ? `, and ${win.name} take third place`
+        : "";
     return variant(
       [
-        `${win.name} snatch it — a ${lastGoalMin}' winner sends them past ${lose.name}, ${score}.`,
-        `Drama late on: a ${lastGoalMin}'-minute strike wins it for ${win.name}, ${score}.`,
-        `${win.name} break ${lose.name} hearts — a ${lastGoalMin}' goal, ${score}, and they ${dest}.`,
+        `${win.name} snatch it — a ${lastGoalMin}' winner sends them past ${lose.name}, ${score}${crown}.`,
+        `Drama late on: a ${lastGoalMin}'-minute strike wins it for ${win.name}, ${score}${crown}.`,
+        `${win.name} break ${lose.name} hearts — a ${lastGoalMin}' goal, ${score}${crown}.`,
       ],
       seed,
     );

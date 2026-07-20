@@ -28,6 +28,7 @@ const STUB_IDENTITY: UseIdentity = {
   isLoading: false,
   isAuthenticated: false,
   walletAddress: null,
+  hasEmbeddedWallet: false,
   email: null,
   signInWithOAuth: notConfigured,
   sendEmailCode: notConfigured,

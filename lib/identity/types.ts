@@ -19,6 +19,14 @@ export interface Identity {
   isAuthenticated: boolean;
   /** Solana wallet address — the stable identity key used everywhere. */
   walletAddress: string | null;
+  /**
+   * True once the user has a Privy embedded wallet linked. A returning user has
+   * it immediately on auth (even before `walletAddress` finishes rehydrating); a
+   * brand-new user only gets it after provisioning. Distinguishes "wallet
+   * rehydrating" from "genuinely new" — so a returning sign-in never flashes the
+   * onboarding screen while the wallet loads.
+   */
+  hasEmbeddedWallet: boolean;
   /** Email if the user signed in with (or linked) one; else null. */
   email: string | null;
 }
